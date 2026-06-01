@@ -26,6 +26,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [ufState, setUfState] = useState('SP');
   const [showUpdateSeriesConfirm, setShowUpdateSeriesConfirm] = useState(false);
+  const [showRecurrenceDocConfirm, setShowRecurrenceDocConfirm] = useState(false);
   const [formData, setFormData] = useState<Partial<Appointment>>({
     pacienteId: '',
     data: initialDate.toISOString().split('T')[0],
@@ -44,6 +45,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
     });
     setIsRescheduling(false);
     setShowUpdateSeriesConfirm(false);
+    setShowRecurrenceDocConfirm(false);
     if (appointment) {
       setFormData(appointment);
     } else {
@@ -138,6 +140,13 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         }
       }
 
+      // Check if recurrence changed
+      const recurrenceChanged = appointment && formData.recorrencia !== appointment.recorrencia;
+      if (recurrenceChanged) {
+        setShowRecurrenceDocConfirm(true);
+        return;
+      }
+
       // Check if date/time changed for existing appointment and if they have future appointments
       if (appointment && (formData.data !== appointment.data || formData.hora !== appointment.hora)) {
         const futureApps = await db.agendamentos
@@ -152,13 +161,13 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         }
       }
 
-      await handleSaveConfirmed(false);
+      await handleSaveConfirmed(false, false);
     } catch (error) {
       console.error(error);
     }
   };
 
-  const handleSaveConfirmed = async (updateSeries: boolean) => {
+  const handleSaveConfirmed = async (updateSeries: boolean, deleteDocs: boolean = false) => {
     try {
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
 
@@ -220,6 +229,12 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
             .and(a => a.data > appointment.data && a.id !== appointment.id)
             .delete();
 
+          // Delete medical records and attachments if user selected to delete
+          if (deleteDocs) {
+            await db.prontuarios.delete(formData.pacienteId!);
+            await db.anexos.where('ownerId').equals(formData.pacienteId!).delete();
+          }
+
           // Generate new occurrences if new recurrence is active
           if (formData.recorrencia && formData.recorrencia !== 'nao') {
             formData.recorrenciaPaiId = undefined; // convert this appointment into the new root
@@ -247,6 +262,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
       }
 
       setShowUpdateSeriesConfirm(false);
+      setShowRecurrenceDocConfirm(false);
       onClose();
     } catch (error) {
       console.error(error);
@@ -522,6 +538,41 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
                   <button
                     type="button"
                     onClick={() => setShowUpdateSeriesConfirm(false)}
+                    className="w-full py-4 bg-bg-sidebar border border-border-subtle text-text-dim hover:text-text-main font-black text-[10px] tracking-widest rounded-2xl transition-all uppercase cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {showRecurrenceDocConfirm && (
+              <div className="absolute inset-0 bg-bg-deep/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 mb-6 border border-indigo-500/20">
+                  <Shield size={28} />
+                </div>
+                <h3 className="text-lg font-display font-bold text-text-main mb-3 uppercase tracking-wider">Alteração de Recorrência</h3>
+                <p className="text-xs text-text-dim leading-relaxed max-w-sm mb-8 font-medium">
+                  Você alterou a modalidade de recorrência. Deseja manter o prontuário clínico e todos os documentos já salvos deste paciente ou prefere apagá-los?
+                </p>
+                <div className="flex flex-col gap-3 w-full max-w-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveConfirmed(false, false)}
+                    className="w-full py-4 bg-primary text-bg-deep font-black text-[10px] tracking-widest rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all uppercase cursor-pointer"
+                  >
+                    Manter prontuário e documentos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveConfirmed(false, true)}
+                    className="w-full py-4 bg-red-500 text-white font-black text-[10px] tracking-widest rounded-2xl shadow-xl hover:-translate-y-0.5 transition-all uppercase cursor-pointer"
+                  >
+                    Apagar prontuário e documentos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRecurrenceDocConfirm(false)}
                     className="w-full py-4 bg-bg-sidebar border border-border-subtle text-text-dim hover:text-text-main font-black text-[10px] tracking-widest rounded-2xl transition-all uppercase cursor-pointer"
                   >
                     Cancelar
