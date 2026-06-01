@@ -179,8 +179,10 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         await db.agendamentos.add(newApp);
         logAction(currentUser, `Reagendou sessão de: ${formData.pacienteId}`);
       } else if (appointment) {
-        // Run series update if selected
-        if (updateSeries) {
+        const recurrenceChanged = formData.recorrencia !== appointment.recorrencia;
+
+        // Run series update if selected and recurrence has not changed
+        if (updateSeries && !recurrenceChanged) {
           const originalDate = new Date(appointment.data + 'T00:00:00');
           const newDate = new Date(formData.data! + 'T00:00:00');
           const diffDays = Math.round((newDate.getTime() - originalDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -205,6 +207,28 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
                 hora: formData.hora
               });
             }
+          }
+        }
+
+        // If recurrence type has changed, adjust future appointments
+        if (recurrenceChanged) {
+          const oldRootId = appointment.recorrenciaPaiId || appointment.id;
+          // Delete future occurrences of the old series
+          await db.agendamentos
+            .where('recorrenciaPaiId')
+            .equals(oldRootId)
+            .and(a => a.data > appointment.data && a.id !== appointment.id)
+            .delete();
+
+          // Generate new occurrences if new recurrence is active
+          if (formData.recorrencia && formData.recorrencia !== 'nao') {
+            formData.recorrenciaPaiId = undefined; // convert this appointment into the new root
+            await generateRecurrences(appointment.id, {
+              ...formData,
+              recorrenciaPaiId: undefined
+            });
+          } else {
+            formData.recorrenciaPaiId = undefined; // clear old parent reference
           }
         }
 
