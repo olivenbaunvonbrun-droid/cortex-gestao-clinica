@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and configuration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "crp": { "type": "string" },
+        "keyword": { "type": "string" },
+        "settings": { "type": "object" }
+      },
+      "required": ["id", "username"]
+    },
+    "Patient": {
+      "title": "Patient",
+      "description": "Patient information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "nome": { "type": "string" },
+        "fotoPerfilDataUrl": { "type": "string" },
+        "cpf": { "type": "string" },
+        "email": { "type": "string" },
+        "telefone": { "type": "string" },
+        "nascimento": { "type": "string" },
+        "endereco": { "type": "string" },
+        "dataCadastro": { "type": "string" },
+        "evidenciaLGPDAceite": { "type": "boolean" },
+        "dataAceiteLGPD": { "type": "string" },
+        "isMenor": { "type": "boolean" },
+        "responsavelNome": { "type": "string" },
+        "responsavelCpf": { "type": "string" },
+        "responsavelTelefone": { "type": "string" },
+        "responsavelEmail": { "type": "string" },
+        "contratoTerapeuticoHtml": { "type": "string" }
+      },
+      "required": ["id", "userId", "nome", "dataCadastro"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Appointment schedule",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "pacienteId": { "type": "string" },
+        "data": { "type": "string" },
+        "hora": { "type": "string" },
+        "tipo": { "type": "string", "enum": ["individual", "grupo", "online"] },
+        "recorrencia": { "type": "string", "enum": ["nao", "semanal", "quinzenal", "mensal_data", "mensal_dia_semana", "anual_semanal"] },
+        "recorrenciaPaiId": { "type": "string" },
+        "obsAgendamento": { "type": "string" }
+      },
+      "required": ["id", "userId", "pacienteId", "data", "hora"]
+    },
+    "MedicalRecord": {
+      "title": "Medical Record",
+      "description": "Patient medical record summary and anamnese",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "pacienteId": { "type": "string" },
+        "anamneseData": { "type": "object" }
+      },
+      "required": ["userId", "pacienteId"]
+    },
+    "MedicalRecordEntry": {
+      "title": "Medical Record Entry",
+      "description": "A single clinical evolution entry",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "number" },
+        "data": { "type": "string" },
+        "textoHtml": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["timestamp", "data", "textoHtml", "userId"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial transaction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "tipo": { "type": "string", "enum": ["receita", "despesa"] },
+        "descricao": { "type": "string" },
+        "valor": { "type": "number" },
+        "data": { "type": "string" },
+        "pacienteId": { "type": "string" },
+        "formaPagamento": { "type": "string" },
+        "categoria": { "type": "string" }
+      },
+      "required": ["id", "userId", "tipo", "descricao", "valor", "data"]
+    },
+    "Attachment": {
+      "title": "Attachment",
+      "description": "File metadata and base64 content",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "ownerType": { "type": "string", "enum": ["prontuario", "agendamento"] },
+        "folderName": { "type": "string" },
+        "nomeArquivo": { "type": "string" },
+        "tipoArquivo": { "type": "string" },
+        "conteudoArquivo": { "type": "string" }
+      },
+      "required": ["userId", "ownerId", "ownerType", "nomeArquivo", "tipoArquivo", "conteudoArquivo"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/pacientes/{pacienteId}": {
+      "schema": "Patient",
+      "description": "Patient records"
+    },
+    "/agendamentos/{agendamentoId}": {
+      "schema": "Appointment",
+      "description": "Clinical appointments"
+    },
+    "/prontuarios/{pacienteId}": {
+      "schema": "MedicalRecord",
+      "description": "Patient medical records"
+    },
+    "/prontuarios/{pacienteId}/entradas/{entradaId}": {
+      "schema": "MedicalRecordEntry",
+      "description": "Clinical evolutions"
+    },
+    "/transacoes/{transacaoId}": {
+      "schema": "Transaction",
+      "description": "Financial records"
+    },
+    "/anexos/{anexoId}": {
+      "schema": "Attachment",
+      "description": "File attachments"
+    }
+  }
+}

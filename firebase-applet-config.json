@@ -1,0 +1,10 @@
+{
+  "projectId": "cortex-clinica",
+  "appId": "1:738251629317:web:9cacf4d338448f04a28d6c",
+  "apiKey": "AIzaSyBvQfZ6EVFwFHJaTv6csm5cDPY5ihQ2Qb4",
+  "authDomain": "cortex-clinica.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "cortex-clinica.firebasestorage.app",
+  "messagingSenderId": "738251629317",
+  "measurementId": "G-YSHSZECWNM"
+}

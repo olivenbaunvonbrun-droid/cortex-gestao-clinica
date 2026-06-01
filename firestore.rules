@@ -1,0 +1,176 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'username']) 
+        && data.id is string && data.id.size() <= 128
+        && data.username is string && data.username.size() <= 100
+        && (!('crp' in data) || (data.crp is string && data.crp.size() <= 50))
+        && data.id == request.auth.uid;
+    }
+
+    function isValidPatient(data) {
+      return data.keys().hasAll(['id', 'userId', 'nome'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.nome is string && data.nome.size() <= 200
+        && (!('dataCadastro' in data) || (data.dataCadastro is string && data.dataCadastro.size() <= 50))
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['id', 'userId', 'pacienteId', 'data', 'hora'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.pacienteId is string && data.pacienteId.size() <= 128
+        && data.data is string && data.data.size() <= 20
+        && data.hora is string && data.hora.size() <= 10
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidMedicalRecord(data) {
+      return data.keys().hasAll(['userId', 'pacienteId'])
+        && data.userId is string && data.userId.size() <= 128
+        && data.pacienteId is string && data.pacienteId.size() <= 128
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidMedicalRecordEntry(data) {
+      return data.keys().hasAll(['timestamp', 'data', 'textoHtml', 'userId'])
+        && data.timestamp is number
+        && data.data is string && data.data.size() <= 20
+        && data.textoHtml is string && data.textoHtml.size() <= 100000
+        && data.userId is string && data.userId.size() <= 128
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['id', 'userId', 'tipo', 'descricao', 'valor', 'data'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.tipo in ['receita', 'despesa']
+        && data.descricao is string && data.descricao.size() <= 500
+        && data.valor is number
+        && data.data is string && data.data.size() <= 20
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidAttachment(data) {
+      return data.keys().hasAll(['userId', 'ownerId', 'ownerType', 'nomeArquivo', 'tipoArquivo', 'conteudoArquivo'])
+        && data.userId is string && data.userId.size() <= 128
+        && data.ownerId is string && data.ownerId.size() <= 128
+        && data.ownerType in ['prontuario', 'agendamento']
+        && data.nomeArquivo is string && data.nomeArquivo.size() <= 500
+        && data.tipoArquivo is string && data.tipoArquivo.size() <= 100
+        && data.conteudoArquivo is string && data.conteudoArquivo.size() <= 10000000 // ~10MB limit in string, though firestore doc limit is 1MB total. 
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidSetting(data) {
+      return data.keys().hasAll(['key', 'value', 'userId'])
+        && data.key is string && data.key.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.userId == request.auth.uid;
+    }
+
+    // --- Collection Matches ---
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) 
+        && incoming().id == userId;
+    }
+
+    match /pacientes/{pacienteId} {
+      allow get: if isSignedIn() && isOwner(existing().userId) && isValidId(pacienteId);
+      allow list: if isSignedIn() && (resource == null || !('userId' in resource.data) || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidPatient(incoming()) && isValidId(pacienteId);
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidPatient(incoming()) 
+        && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+
+    match /agendamentos/{agendamentoId} {
+      allow get: if isSignedIn() && isOwner(existing().userId) && isValidId(agendamentoId);
+      allow list: if isSignedIn() && (resource == null || !('userId' in resource.data) || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidAppointment(incoming()) && isValidId(agendamentoId);
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidAppointment(incoming())
+        && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+
+    match /prontuarios/{pacienteId} {
+      allow get: if isSignedIn() && isOwner(existing().userId) && isValidId(pacienteId);
+      allow list: if isSignedIn() && (resource == null || !('userId' in resource.data) || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidMedicalRecord(incoming()) && isValidId(pacienteId);
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidMedicalRecord(incoming())
+        && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+
+      match /entradas/{entradaId} {
+        allow get: if isSignedIn() && isOwner(existing().userId) && isValidId(entradaId);
+        allow list: if isSignedIn() && (resource == null || !('userId' in resource.data) || resource.data.userId == request.auth.uid);
+        allow create: if isSignedIn() && isValidMedicalRecordEntry(incoming()) && isValidId(entradaId);
+        allow update: if isSignedIn() && isOwner(existing().userId) && isValidMedicalRecordEntry(incoming())
+          && incoming().userId == existing().userId;
+        allow delete: if isSignedIn() && isOwner(existing().userId);
+      }
+    }
+
+    match /transacoes/{transacaoId} {
+      allow get: if isSignedIn() && isOwner(existing().userId) && isValidId(transacaoId);
+      allow list: if isSignedIn() && (resource == null || !('userId' in resource.data) || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidTransaction(incoming()) && isValidId(transacaoId);
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidTransaction(incoming())
+        && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+
+    match /anexos/{anexoId} {
+      allow get: if isSignedIn() && isOwner(existing().userId) && isValidId(anexoId);
+      allow list: if isSignedIn() && (resource == null || !('userId' in resource.data) || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidAttachment(incoming()) && isValidId(anexoId);
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidAttachment(incoming())
+        && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+
+    match /settings/{settingId} {
+      allow get: if isSignedIn() && isOwner(existing().userId) && isValidId(settingId);
+      allow list: if isSignedIn() && (resource == null || !('userId' in resource.data) || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidSetting(incoming()) && isValidId(settingId);
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidSetting(incoming())
+        && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+  }
+}

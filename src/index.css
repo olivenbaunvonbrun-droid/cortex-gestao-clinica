@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-serif: "Libre Baskerville", serif;
+  
+  --color-primary: #4dabf7;
+  --color-primary-hover: #339af0;
+  --color-bg-deep: #080808;
+  --color-bg-sidebar: #0f0f0f;
+  --color-bg-card: #141414;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-text-main: #f8f9fa;
+  --color-text-dim: #adb5bd;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-deep text-text-main font-sans;
+  }
+}
+
+.editable-div {
+  @apply min-h-[80px] p-3 border rounded-md bg-bg-sidebar focus:ring-2 focus:ring-primary/25 outline-none;
+}
+
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto;
+}
+
+.modal-content {
+  @apply bg-bg-card border border-border-subtle rounded-xl shadow-2xl w-full max-w-4xl relative max-h-[90vh] overflow-y-auto p-6 transition-all;
+}
+
+.record-entry-content-exclusive {
+  @apply font-serif text-text-main/90 leading-[1.8] tracking-tight;
+}
+
+.record-entry-content-exclusive p {
+  @apply mb-6;
+}
+
+.record-entry-content-exclusive h1, 
+.record-entry-content-exclusive h2 {
+  @apply font-display font-bold text-text-main mt-8 mb-4 tracking-tighter;
+}
+
+.record-entry-content-exclusive strong {
+  @apply text-primary/90 font-bold;
+}
+
+/* Custom highly-visible scrollbar style matching the PSI.CORE theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4dabf7; /* Primary blue on hover for high affordance */
+}
+
+.scroller-hide {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.02);
+}
+
+.scroller-hide::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+  height: 6px;
+}
+
+/* Layout/Font-size scales: small, medium, large (default) */
+.layout-scale-small {
+  font-size: 75% !important; /* 12px default */
+}
+.layout-scale-medium {
+  font-size: 87.5% !important; /* 14px default */
+}
+.layout-scale-large {
+  font-size: 100% !important; /* 16px default */
+}
