@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Clock, Calendar as CalendarIcon, Link as LinkIcon, Plus, Trash2, CalendarClock, Ban, User, MessageCircle } from 'lucide-react';
+import { X, Save, Clock, Calendar as CalendarIcon, Link as LinkIcon, Plus, Trash2, CalendarClock, Ban, User, MessageCircle, Shield } from 'lucide-react';
 import { db, type Appointment, type Patient, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
