@@ -398,7 +398,13 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
     try {
       await db.prontuarios.update(selectedPatient.id, { longitudinalProfile: longitudinalSummary });
       const recordUpdate = await db.prontuarios.get(selectedPatient.id);
-      if (recordUpdate) setRecord(recordUpdate);
+      if (recordUpdate) {
+        setRecord(recordUpdate);
+        const firebaseUid = auth.currentUser?.uid;
+        if (firebaseUid) {
+          await syncService.saveToCloud(firebaseUid, 'prontuarios', recordUpdate);
+        }
+      }
       
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
       logAction(currentUser, `Salvou Perfil Longitudinal: ${selectedPatient.nome}`);
@@ -419,7 +425,13 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
         await db.prontuarios.update(selectedPatient.id, { longitudinalProfile: '' });
         setLongitudinalSummary('');
         const recordUpdate = await db.prontuarios.get(selectedPatient.id);
-        if (recordUpdate) setRecord(recordUpdate);
+        if (recordUpdate) {
+          setRecord(recordUpdate);
+          const firebaseUid = auth.currentUser?.uid;
+          if (firebaseUid) {
+            await syncService.saveToCloud(firebaseUid, 'prontuarios', recordUpdate);
+          }
+        }
         
         const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
         logAction(currentUser, `Removeu Perfil Longitudinal: ${selectedPatient.nome}`);
@@ -464,6 +476,10 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
     if (!r) {
       r = { pacienteId: patient.id, entradas: [], anamneseData: {} };
       await db.prontuarios.add(r);
+      const firebaseUid = auth.currentUser?.uid;
+      if (firebaseUid) {
+        await syncService.saveToCloud(firebaseUid, 'prontuarios', r);
+      }
     }
     setRecord(r);
     setAiAnalysis('');
@@ -502,7 +518,12 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
           tipoArquivo: file.type,
           conteudoArquivo: reader.result as string
         };
-        await db.anexos.add(attachment);
+        const id = await db.anexos.add(attachment);
+        
+        const firebaseUid = auth.currentUser?.uid;
+        if (firebaseUid) {
+          await syncService.saveToCloud(firebaseUid, 'anexos', { ...attachment, id });
+        }
         
         // Refresh
         const updated = await db.anexos
@@ -581,7 +602,15 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
 
     const updatedEntradas = [entry, ...record.entradas];
     await db.prontuarios.update(selectedPatient.id, { entradas: updatedEntradas });
-    setRecord({ ...record, entradas: updatedEntradas });
+    
+    const updatedRecord = { ...record, entradas: updatedEntradas };
+    setRecord(updatedRecord);
+    
+    const firebaseUid = auth.currentUser?.uid;
+    if (firebaseUid) {
+      await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+    }
+    
     setNewEntry('');
     setAiAnalysis('');
     
@@ -604,6 +633,11 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
     setRecord(updatedRecord);
     setTreatmentPlan(newPlan);
     
+    const firebaseUid = auth.currentUser?.uid;
+    if (firebaseUid) {
+      await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+    }
+    
     const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
     logAction(currentUser, `Atualizou plano de tratamento: ${selectedPatient.nome}`);
   };
@@ -618,10 +652,19 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
         if (!selectedPatient || !record) return;
         const updatedEntradas = record.entradas.filter(e => e.timestamp !== timestamp);
         await db.prontuarios.update(selectedPatient.id, { entradas: updatedEntradas });
-        setRecord({ ...record, entradas: updatedEntradas });
+        
+        const updatedRecord = { ...record, entradas: updatedEntradas };
+        setRecord(updatedRecord);
+        
+        const firebaseUid = auth.currentUser?.uid;
+        if (firebaseUid) {
+          await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+        }
         
         const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
         logAction(currentUser, `Removeu entrada de histórico: ${selectedPatient.nome}`);
+        
+        loadTimeline(selectedPatient.id);
       }
     });
   };
@@ -655,7 +698,14 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
           : e
       );
       await db.prontuarios.update(selectedPatient.id, { entradas: updatedEntradas });
-      setRecord({ ...record, entradas: updatedEntradas });
+      
+      const updatedRecord = { ...record, entradas: updatedEntradas };
+      setRecord(updatedRecord);
+      
+      const firebaseUid = auth.currentUser?.uid;
+      if (firebaseUid) {
+        await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+      }
       
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
       logAction(currentUser, `Editou evolução clínica (ID: ${selectedEvent.timestamp}): ${selectedPatient.nome}`);
@@ -664,6 +714,107 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
       setSelectedEvent(null);
       setIsEditingEvent(false);
     }
+  };
+
+  const handleExportRecordJson = () => {
+    if (!selectedPatient || !record) return;
+    const dataStr = JSON.stringify({
+      pacienteId: selectedPatient.id,
+      pacienteNome: selectedPatient.nome,
+      entradas: record.entradas,
+      anamneseData: record.anamneseData,
+      treatmentPlan: record.anamneseData?.treatmentPlan || treatmentPlan,
+      longitudinalProfile: record.longitudinalProfile || longitudinalSummary
+    }, null, 2);
+    
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `prontuario_${selectedPatient.nome.toLowerCase().replace(/\s+/g, '_')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
+    logAction(currentUser, `Exportou prontuário em JSON: ${selectedPatient.nome}`);
+  };
+
+  const handleImportRecordJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedPatient || !record) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const importedData = JSON.parse(event.target?.result as string);
+        
+        if (!importedData.entradas || !Array.isArray(importedData.entradas)) {
+          alert('Formato de arquivo inválido. O arquivo JSON deve conter um array "entradas".');
+          return;
+        }
+        
+        if (!window.confirm(`Deseja importar ${importedData.entradas.length} evoluções para o prontuário de ${selectedPatient.nome}? Isso irá mesclar com as evoluções existentes.`)) {
+          return;
+        }
+        
+        // Merge entries by timestamp
+        const existingMap = new Map<number, MedicalRecordEntry>();
+        record.entradas.forEach(ent => existingMap.set(ent.timestamp, ent));
+        
+        importedData.entradas.forEach((ent: any) => {
+          if (ent.timestamp && ent.textoHtml && ent.data) {
+            existingMap.set(ent.timestamp, {
+              timestamp: Number(ent.timestamp),
+              data: String(ent.data),
+              textoHtml: String(ent.textoHtml),
+              tipo: ent.tipo,
+              metadata: ent.metadata
+            });
+          }
+        });
+        
+        const mergedEntradas = Array.from(existingMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+        
+        let updatedAnamnese = { ...record.anamneseData };
+        if (importedData.treatmentPlan) {
+          updatedAnamnese.treatmentPlan = importedData.treatmentPlan;
+          setTreatmentPlan(importedData.treatmentPlan);
+        }
+        
+        let updatedLongitudinal = record.longitudinalProfile || longitudinalSummary;
+        if (importedData.longitudinalProfile) {
+          updatedLongitudinal = importedData.longitudinalProfile;
+          setLongitudinalSummary(importedData.longitudinalProfile);
+        }
+        
+        await db.prontuarios.update(selectedPatient.id, { 
+          entradas: mergedEntradas,
+          anamneseData: updatedAnamnese,
+          longitudinalProfile: updatedLongitudinal
+        });
+        
+        const updatedRecord = await db.prontuarios.get(selectedPatient.id);
+        if (updatedRecord) {
+          setRecord(updatedRecord);
+          const firebaseUid = auth.currentUser?.uid;
+          if (firebaseUid) {
+            await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+          }
+        }
+        
+        loadTimeline(selectedPatient.id);
+        
+        const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
+        logAction(currentUser, `Importou ${importedData.entradas.length} evoluções de JSON para: ${selectedPatient.nome}`);
+        alert('Prontuário importado e sincronizado com sucesso!');
+      } catch (error) {
+        console.error(error);
+        alert('Erro ao ler o arquivo JSON. Certifique-se de que é um JSON válido.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleClearForm = () => {
@@ -1084,9 +1235,30 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
 
                     <hr className="border-border-subtle/50 my-12" />
 
-                    <h4 className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
-                      <History size={14} className="text-primary" /> Histórico Evolutivo Consolidado
-                    </h4>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-4">
+                      <h4 className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] flex items-center gap-3">
+                        <History size={14} className="text-primary" /> Histórico Evolutivo Consolidado
+                      </h4>
+                      <div className="flex items-center gap-3">
+                        {/* Importar JSON */}
+                        <label className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sidebar/80 hover:bg-white/5 border border-border-subtle rounded-xl text-[9px] font-black uppercase tracking-widest text-text-main transition-all cursor-pointer shadow-sm select-none">
+                          <Upload size={11} className="text-text-dim" /> Importar JSON
+                          <input 
+                            type="file" 
+                            accept=".json" 
+                            className="hidden" 
+                            onChange={handleImportRecordJson} 
+                          />
+                        </label>
+                        {/* Exportar JSON */}
+                        <button 
+                          onClick={handleExportRecordJson}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sidebar/80 hover:bg-white/5 border border-border-subtle rounded-xl text-[9px] font-black uppercase tracking-widest text-text-main transition-all cursor-pointer shadow-sm select-none"
+                        >
+                          <Download size={11} className="text-text-dim" /> Exportar JSON
+                        </button>
+                      </div>
+                    </div>
                     <div className="space-y-8">
                        {record && record.entradas && record.entradas.length > 0 ? (
                          [...record.entradas].sort((a, b) => b.timestamp - a.timestamp).map((entry, idx) => (
@@ -1094,20 +1266,44 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                              <div className="absolute -left-[4.5px] top-0 w-2 h-2 rounded-full bg-border-subtle group-hover/entry:bg-primary transition-colors" />
                              <div className="bg-bg-sidebar/40 border border-border-subtle rounded-[1.5rem] p-8 group hover:border-primary/20 transition-all hover:bg-bg-card/50 relative">
                                
-                               <button 
-                                 onClick={() => {
-                                   confirm({
-                                     title: 'Excluir Evolução',
-                                     message: 'Tem certeza que deseja excluir esta evolução? Esta ação não pode ser desfeita.',
-                                     confirmLabel: 'Excluir',
-                                     variant: 'danger',
-                                     onConfirm: () => handleDeleteEntry(entry.timestamp)
-                                   });
-                                 }}
-                                 className="absolute top-8 right-8 p-2 text-text-dim/20 hover:text-red-500 transition-colors opacity-0 group-hover/entry:opacity-100"
-                               >
-                                 <Trash2 size={16} />
-                               </button>
+                               <div className="absolute top-8 right-8 flex items-center gap-2 opacity-0 group-hover/entry:opacity-100 transition-opacity">
+                                 {(!entry.tipo || entry.tipo === 'evolucao') && (
+                                   <button 
+                                     onClick={() => {
+                                       const eventObj = {
+                                         type: 'evolution',
+                                         timestamp: entry.timestamp,
+                                         data: entry.data,
+                                         title: 'Evolução Clínica',
+                                         content: entry.textoHtml,
+                                         icon: 'evolution'
+                                       };
+                                       setSelectedEvent(eventObj);
+                                       setEditEventContent(entry.textoHtml);
+                                       setIsEditingEvent(true);
+                                     }}
+                                     className="p-2 text-text-dim hover:text-primary cursor-pointer transition-colors"
+                                     title="Editar Evolução"
+                                   >
+                                     <Edit size={16} />
+                                   </button>
+                                 )}
+                                 <button 
+                                   onClick={() => {
+                                     confirm({
+                                       title: 'Excluir Evolução',
+                                       message: 'Tem certeza que deseja excluir esta evolução? Esta ação não pode ser desfeita.',
+                                       confirmLabel: 'Excluir',
+                                       variant: 'danger',
+                                       onConfirm: () => handleDeleteEntry(entry.timestamp)
+                                     });
+                                   }}
+                                   className="p-2 text-text-dim hover:text-red-500 cursor-pointer transition-colors"
+                                   title="Excluir Evolução"
+                                 >
+                                   <Trash2 size={16} />
+                                 </button>
+                               </div>
 
                                <div className="flex items-center justify-between mb-6">
                                  <div className="flex items-center gap-4">
