@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck } from 'lucide-react';
 import { db, type Patient, type MedicalRecord, type MedicalRecordEntry, logAction, type Attachment } from '../../lib/db';
 import { cn, formatDate } from '../../lib/utils';
+import { syncService } from '../../lib/syncService';
+import { auth } from '../../lib/firebase';
 import RichTextEditor from '../RichTextEditor';
 import { clinicalInsight } from '../../services/geminiService';
 import ConfirmModal from '../ui/ConfirmModal';
@@ -11,9 +13,11 @@ import { motion, AnimatePresence } from 'motion/react';
 interface RecordsProps {
   preSelectedPatientId?: string | null;
   onClearPreSelection?: () => void;
+  onPatientSelected?: (id: string | null) => void;
+  openTool?: (toolId: string, patientId?: string | null) => void;
 }
 
-export default function Records({ preSelectedPatientId, onClearPreSelection }: RecordsProps) {
+export default function Records({ preSelectedPatientId, onClearPreSelection, onPatientSelected, openTool }: RecordsProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -433,12 +437,14 @@ export default function Records({ preSelectedPatientId, onClearPreSelection }: R
     loadPatients();
   }, [searchTerm]);
 
+  const lastAppliedPreSelectedId = useRef<string | null>(null);
+
   useEffect(() => {
-    if (preSelectedPatientId && patients.length > 0) {
+    if (preSelectedPatientId && patients.length > 0 && preSelectedPatientId !== lastAppliedPreSelectedId.current) {
       const p = patients.find(pat => pat.id === preSelectedPatientId);
       if (p) {
+        lastAppliedPreSelectedId.current = preSelectedPatientId;
         handleSelectPatient(p);
-        if (onClearPreSelection) onClearPreSelection();
       }
     }
   }, [preSelectedPatientId, patients]);
@@ -451,6 +457,9 @@ export default function Records({ preSelectedPatientId, onClearPreSelection }: R
 
   const handleSelectPatient = async (patient: Patient) => {
     setSelectedPatient(patient);
+    if (onPatientSelected) {
+      onPatientSelected(patient.id);
+    }
     let r = await db.prontuarios.get(patient.id);
     if (!r) {
       r = { pacienteId: patient.id, entradas: [], anamneseData: {} };
@@ -520,6 +529,10 @@ export default function Records({ preSelectedPatientId, onClearPreSelection }: R
 
   const handleDeleteAttachment = async (id: number) => {
     await db.anexos.delete(id);
+    const firebaseUid = auth.currentUser?.uid;
+    if (firebaseUid) {
+      await syncService.removeFromCloud(firebaseUid, 'anexos', String(id));
+    }
     setAttachments(prev => prev.filter(a => a.id !== id));
     if (selectedPatient) {
       loadTimeline(selectedPatient.id);
@@ -987,13 +1000,35 @@ export default function Records({ preSelectedPatientId, onClearPreSelection }: R
                        <h4 className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] flex items-center gap-3">
                         <Plus size={14} className="text-primary" /> Registro de Sessão Atual
                       </h4>
-                      <button
-                        onClick={handleClearForm}
-                        className="p-2 text-text-dim hover:text-amber-500 transition-all"
-                        title="Limpar formulário"
-                      >
-                        <RotateCcw size={16} />
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {openTool && (
+                          <>
+                            <button
+                              onClick={() => openTool('rid-inteligente', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir RID Inteligente na tela"
+                            >
+                              <Brain size={11} />
+                              Usar RID
+                            </button>
+                            <button
+                              onClick={() => openTool('ihs-digital', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir IHS Digital na tela"
+                            >
+                              <ClipboardCheck size={11} />
+                              Usar IHS
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={handleClearForm}
+                          className="p-2 text-text-dim hover:text-amber-500 transition-all"
+                          title="Limpar formulário"
+                        >
+                          <RotateCcw size={16} />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="bg-bg-sidebar rounded-3xl border border-border-subtle overflow-hidden shadow-inner focus-within:border-primary/30 transition-colors">

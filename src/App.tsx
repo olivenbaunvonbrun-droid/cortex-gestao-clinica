@@ -14,6 +14,12 @@ import Finance from './components/Finance/Finance';
 import Reports from './components/Reports/Reports';
 import Settings from './components/Settings/Settings';
 import Dashboard from './components/Dashboard/Dashboard';
+import RidInteligenteApp from './components/RidInteligente/RidInteligenteApp';
+import IhsDigitalApp from './components/IhsDigital/IhsDigitalApp';
+import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
+import { Window } from './components/ui/Window';
+import { Brain } from 'lucide-react';
+import { cn } from './lib/utils';
 import LGPDNotice from './components/LGPDNotice';
 import { useFirebase } from './hooks/useFirebase';
 import { auth } from './lib/firebase';
@@ -33,6 +39,90 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+
+  // === WINDOW MANAGER FOR TOOLS ===
+  interface ToolWindow {
+    id: string;
+    title: string;
+    isMinimized: boolean;
+    isMaximized: boolean;
+    zIndex: number;
+    patientId?: string | null;
+  }
+
+  const [openWindows, setOpenWindows] = useState<ToolWindow[]>([]);
+  const [maxZIndex, setMaxZIndex] = useState(60);
+
+  const handleOpenTool = (toolId: string, patientId?: string | null) => {
+    const titleMap: Record<string, string> = {
+      'rid-inteligente': 'RID Inteligente',
+      'ihs-digital': 'IHS Digital',
+      'ysq-smart-ai': 'YSQ-Smart AI',
+      'neurolitera': 'NeuroLitera',
+      'registro-atendimento': 'Registro de Atendimento',
+    };
+
+    const nextZ = maxZIndex + 1;
+    setMaxZIndex(nextZ);
+
+    setOpenWindows(prev => {
+      const existing = prev.find(w => w.id === toolId);
+      if (existing) {
+        return prev.map(w => 
+          w.id === toolId 
+            ? { ...w, isMinimized: false, zIndex: nextZ, patientId: patientId || w.patientId } 
+            : w
+        );
+      }
+      return [...prev, {
+        id: toolId,
+        title: titleMap[toolId] || 'Ferramenta',
+        isMinimized: false,
+        isMaximized: false,
+        zIndex: nextZ,
+        patientId: patientId
+      }];
+    });
+  };
+
+  const handleCloseTool = (toolId: string) => {
+    setOpenWindows(prev => prev.filter(w => w.id !== toolId));
+  };
+
+  const handleToggleMinimize = (toolId: string) => {
+    const nextZ = maxZIndex + 1;
+    setMaxZIndex(nextZ);
+    setOpenWindows(prev => prev.map(w => {
+      if (w.id === toolId) {
+        return { 
+          ...w, 
+          isMinimized: !w.isMinimized,
+          zIndex: w.isMinimized ? nextZ : w.zIndex
+        };
+      }
+      return w;
+    }));
+  };
+
+  const handleMinimizeTool = (toolId: string) => {
+    setOpenWindows(prev => prev.map(w => 
+      w.id === toolId ? { ...w, isMinimized: true } : w
+    ));
+  };
+
+  const handleMaximizeTool = (toolId: string) => {
+    setOpenWindows(prev => prev.map(w => 
+      w.id === toolId ? { ...w, isMaximized: !w.isMaximized } : w
+    ));
+  };
+
+  const handleFocusTool = (toolId: string) => {
+    const nextZ = maxZIndex + 1;
+    setMaxZIndex(nextZ);
+    setOpenWindows(prev => prev.map(w => 
+      w.id === toolId ? { ...w, zIndex: nextZ } : w
+    ));
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -157,13 +247,73 @@ export default function App() {
         {activeSection === 'prontuarios' && (
           <Records 
             preSelectedPatientId={selectedPatientId} 
-            onClearPreSelection={() => setSelectedPatientId(null)} 
+            onPatientSelected={setSelectedPatientId}
+            openTool={handleOpenTool}
           />
         )}
         {activeSection === 'financeiro' && <Finance />}
         {activeSection === 'relatorios' && <Reports />}
+        {activeSection === 'ferramentas' && <ToolsLibrary onOpenTool={handleOpenTool} openWindows={openWindows.map(w => w.id)} />}
         {activeSection === 'settings' && <Settings onUpdateSettings={(newS) => setSettings({ ...settings, ...newS })} />}
       </Layout>
+ 
+      {/* FLOATING TOOL WINDOWS */}
+      {openWindows.map(win => (
+        <Window
+          key={`win-instance-${win.id}`}
+          title={win.title}
+          isMinimized={win.isMinimized}
+          isMaximized={win.isMaximized}
+          zIndex={win.zIndex}
+          onClose={() => handleCloseTool(win.id)}
+          onMinimize={() => handleToggleMinimize(win.id)}
+          onMaximize={() => handleMaximizeTool(win.id)}
+          onFocus={() => handleFocusTool(win.id)}
+        >
+          {win.id === 'rid-inteligente' && (
+            <RidInteligenteApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'ihs-digital' && (
+            <IhsDigitalApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+        </Window>
+      ))}
+
+      {/* FLOATING WINDOWS DOCK */}
+      {openWindows.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-bg-sidebar/85 backdrop-blur-xl border border-border-subtle/60 px-6 py-3 rounded-full flex items-center gap-4 shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <span className="text-[9px] font-black text-text-dim/60 uppercase tracking-widest border-r border-border-subtle/50 pr-4">Ferramentas Ativas</span>
+          <div className="flex items-center gap-2">
+            {openWindows.map(win => (
+              <button
+                key={`dock-win-${win.id}`}
+                onClick={() => handleToggleMinimize(win.id)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2 cursor-pointer",
+                  win.isMinimized
+                    ? "bg-bg-card border-border-subtle text-text-dim hover:text-text-main"
+                    : "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                )}
+              >
+                <Brain size={12} className={cn(!win.isMinimized && "text-primary")} />
+                {win.title}
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  win.isMinimized ? "bg-text-dim/40" : "bg-emerald-500 animate-pulse"
+                )} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {showLGPD && (
         <LGPDNotice 

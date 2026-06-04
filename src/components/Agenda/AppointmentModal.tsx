@@ -4,6 +4,8 @@ import { db, type Appointment, type Patient, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { getHoliday } from '../../utils/holidays';
+import { syncService } from '../../lib/syncService';
+import { auth } from '../../lib/firebase';
 
 export const checkBookingOverlap = async (dataStr: string, horaStr: string, excludeAppId?: string): Promise<boolean> => {
   const appsOnDate = await db.agendamentos.where('data').equals(dataStr).toArray();
@@ -222,6 +224,16 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         // If recurrence type has changed, adjust future appointments
         if (recurrenceChanged) {
           const oldRootId = appointment.recorrenciaPaiId || appointment.id;
+          const firebaseUid = auth.currentUser?.uid;
+
+          // Fetch old appointments to delete
+          const appointmentsToDelete = await db.agendamentos
+            .where('recorrenciaPaiId')
+            .equals(oldRootId)
+            .and(a => a.data > appointment.data && a.id !== appointment.id)
+            .toArray();
+          const idsToDelete = appointmentsToDelete.map(a => a.id);
+
           // Delete future occurrences of the old series
           await db.agendamentos
             .where('recorrenciaPaiId')
@@ -229,10 +241,24 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
             .and(a => a.data > appointment.data && a.id !== appointment.id)
             .delete();
 
+          if (firebaseUid && idsToDelete.length > 0) {
+            await syncService.deleteFromCloudBatch(firebaseUid, 'agendamentos', idsToDelete);
+          }
+
           // Delete medical records and attachments if user selected to delete
           if (deleteDocs) {
             await db.prontuarios.delete(formData.pacienteId!);
+            if (firebaseUid) {
+              await syncService.removeFromCloud(firebaseUid, 'prontuarios', formData.pacienteId!);
+            }
+
+            const attachments = await db.anexos.where('ownerId').equals(formData.pacienteId!).toArray();
+            const attachmentIds = attachments.map(a => String(a.id));
             await db.anexos.where('ownerId').equals(formData.pacienteId!).delete();
+
+            if (firebaseUid && attachmentIds.length > 0) {
+              await syncService.deleteFromCloudBatch(firebaseUid, 'anexos', attachmentIds);
+            }
           }
 
           // Generate new occurrences if new recurrence is active

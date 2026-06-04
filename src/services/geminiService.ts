@@ -148,3 +148,49 @@ export async function generateLongitudinalProfile(historyText: string, approach:
 
   return response.text;
 }
+
+export async function analyzeIhsAssessment(
+  patient: { name: string; age: string },
+  answersText: string
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Tarefa: Analisar os resultados do Inventário de Habilidades Sociais (IHS-Del-Prette) e gerar um Relatório Psicológico Profissional.
+
+Dados do Paciente:
+Nome: ${patient.name}
+Idade: ${patient.age}
+
+Respostas do Questionário (Escala A-E):
+${answersText}
+
+ESTRUTURA DO RELATÓRIO (Conforme Diretrizes do Conselho Federal de Psicologia - CFP):
+1. IDENTIFICAÇÃO (Nome e idade)
+2. DESCRIÇÃO DA DEMANDA (Motivo da avaliação baseado nos resultados do IHS)
+3. PROCEDIMENTO (Uso do IHS e entrevista de triagem)
+4. ANÁLISE (Agrupar por fatores de habilidades sociais:
+   - Fator 1: Enfrentamento e autoafirmação com risco
+   - Fator 2: Autoafirmação na expressão de sentimento positivo
+   - Fator 3: Conversação e desenvoltura social
+   - Fator 4: Autoexposição a desconhecidos e falar em público
+   - Fator 5: Autocontrole da agressividade)
+5. CONCLUSÃO/PROGNÓSTICO
+6. RECOMENDAÇÕES TERAPÊUTICAS
+
+Instruções importantes:
+- Tom clínico, ético e empático.
+- Use linguagem profissional (Ex: "O examinando demonstra...", "Observa-se um déficit em...").
+- NÃO seja determinista; use termos como "sugere", "indica tendência a".
+- Formate em Markdown com títulos em negrito.
+- IMPORTANTE: NÃO inclua campos vazios como "Local:", "Data:", "Assinatura:" ou rodapés, pois estes são gerados automaticamente pelo sistema no cabeçalho e rodapé do documento.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+
+  return response.text || "Erro ao gerar análise.";
+}

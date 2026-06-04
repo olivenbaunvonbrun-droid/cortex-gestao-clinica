@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Users, Calendar, MessageSquare, DollarSign, BarChart3, Palette, Bell, HelpCircle, History, AlertTriangle, AlertCircle, Info, Check, X, CheckSquare, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { User, LogOut, Users, Calendar, MessageSquare, DollarSign, BarChart3, Palette, Bell, HelpCircle, History, AlertTriangle, AlertCircle, Info, Check, X, CheckSquare, Cloud, CloudOff, RefreshCw, Brain } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../lib/db';
 import { syncService, SyncState } from '../lib/syncService';
@@ -191,6 +191,7 @@ export default function Layout({
     { id: 'prontuarios', label: 'Prontuários', icon: MessageSquare },
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
     { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
+    { id: 'ferramentas', label: 'Ferramentas', icon: Brain },
     { id: 'settings', label: 'Configurações', icon: Palette },
   ];
 

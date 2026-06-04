@@ -3,6 +3,8 @@ import { Plus, Download, TrendingUp, TrendingDown, DollarSign, Filter, Trash2, S
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { db, type Transaction, type Patient, logAction } from '../../lib/db';
 import { cn, formatCurrency, formatDate } from '../../lib/utils';
+import { syncService } from '../../lib/syncService';
+import { auth } from '../../lib/firebase';
 import TransactionModal from './TransactionModal';
 import ConfirmModal from '../ui/ConfirmModal';
 import useConfirm from '../../hooks/useConfirm';
@@ -150,6 +152,12 @@ export default function Finance() {
       variant: 'danger',
       onConfirm: async () => {
         await db.transacoes.delete(id);
+
+        const firebaseUid = auth.currentUser?.uid;
+        if (firebaseUid) {
+          await syncService.removeFromCloud(firebaseUid, 'transacoes', id);
+        }
+
         const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
         logAction(currentUser, `Removeu transação: ${desc}`);
         loadTransactions();

@@ -4,6 +4,8 @@ import { db, type Appointment, type Patient, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, formatDate } from '../../lib/utils';
 import AppointmentModal, { checkBookingOverlap } from './AppointmentModal';
+import { syncService } from '../../lib/syncService';
+import { auth } from '../../lib/firebase';
 import RegistrationModal from './RegistrationModal';
 import ConfirmModal from '../ui/ConfirmModal';
 import useConfirm from '../../hooks/useConfirm';
@@ -306,15 +308,33 @@ export default function Agenda() {
       confirmLabel: isRecurring ? 'Excluir Série Completa' : 'Excluir Sessão',
       variant: 'danger',
       onConfirm: async () => {
+        const firebaseUid = auth.currentUser?.uid;
         if (isRecurring) {
           const rootId = appointment.recorrenciaPaiId || appointment.id;
+          const appointmentsToDelete = await db.agendamentos
+            .where('recorrenciaPaiId')
+            .equals(rootId)
+            .toArray();
+          const ids = appointmentsToDelete.map(a => a.id);
+          ids.push(rootId);
+
           await db.transaction('rw', db.agendamentos, async () => {
             await db.agendamentos.where('recorrenciaPaiId').equals(rootId).delete();
             await db.agendamentos.delete(rootId);
           });
+
+          if (firebaseUid && ids.length > 0) {
+            await syncService.deleteFromCloudBatch(firebaseUid, 'agendamentos', ids);
+          }
+
           logAction(localStorage.getItem('psiCurrentUsername_v9') || 'system', `Excluiu série recorrente: ${appointment.patientName || 'Paciente'}`);
         } else {
           await db.agendamentos.delete(appointment.id);
+
+          if (firebaseUid) {
+            await syncService.removeFromCloud(firebaseUid, 'agendamentos', appointment.id);
+          }
+
           logAction(localStorage.getItem('psiCurrentUsername_v9') || 'system', `Excluiu agendamento único: ${appointment.patientName || 'Paciente'}`);
         }
         loadAppointments();

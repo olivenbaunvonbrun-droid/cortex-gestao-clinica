@@ -5,7 +5,8 @@ import {
   getDocs, 
   query, 
   where,
-  deleteDoc
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { db as firestore, handleFirestoreError, OperationType } from './firebase';
 import { db as localDB } from './db';
@@ -57,6 +58,11 @@ function updateSyncState(newState: Partial<SyncState>) {
 
 let isSyncInProgress = false;
 
+const getLatestProntuarioTimestamp = (item: any) => {
+  if (!item || !item.entradas || !Array.isArray(item.entradas) || item.entradas.length === 0) return 0;
+  return Math.max(...item.entradas.map((e: any) => e.timestamp || 0));
+};
+
 export const syncService = {
   getSyncState: () => currentSyncState,
 
@@ -100,34 +106,32 @@ export const syncService = {
           const localItems = await localTable.toArray();
           const localItemsMap = new Map<string, any>();
           localItems.forEach(item => {
-            // If the primary key is 'id', 'pacienteId' (for prontuarios), or 'key' (for settings)
             const key = name === 'prontuarios' ? item.pacienteId : (name === 'settings' ? item.key : item.id);
             if (key) localItemsMap.set(String(key), item);
           });
 
           // 3. Upload local-only or newer items to Cloud
+          const itemsToUpload: any[] = [];
           for (const [key, localItem] of localItemsMap.entries()) {
             const remoteItem = remoteItemsMap.get(key);
-            
-            // Force set userId for rules authentication compatibility
-            const itemToUpload = cleanUndefinedFields({ 
-              ...localItem, 
-              userId,
-              id: localItem.id ? String(localItem.id) : undefined,
-              pacienteId: localItem.pacienteId ? String(localItem.pacienteId) : undefined,
-              ownerId: localItem.ownerId ? String(localItem.ownerId) : undefined
-            });
-
-            // If it doesn't exist remotely, or local version was updated
             if (!remoteItem) {
-              try {
-                await setDoc(doc(firestore, name, key), itemToUpload);
-              } catch (e: any) {
-                if (e?.code === 'permission-denied' || e?.message?.includes('permissions')) {
-                  handleFirestoreError(e, OperationType.WRITE, `${name}/${key}`);
-                }
-                throw e;
+              itemsToUpload.push(localItem);
+            } else if (name === 'prontuarios') {
+              const localMax = getLatestProntuarioTimestamp(localItem);
+              const remoteMax = getLatestProntuarioTimestamp(remoteItem);
+              if (localMax > remoteMax) {
+                itemsToUpload.push(localItem);
               }
+            }
+          }
+          if (itemsToUpload.length > 0) {
+            try {
+              await syncService.saveToCloudBatch(userId, name, itemsToUpload);
+            } catch (e: any) {
+              if (e?.code === 'permission-denied' || e?.message?.includes('permissions')) {
+                handleFirestoreError(e, OperationType.WRITE, name);
+              }
+              throw e;
             }
           }
 
@@ -136,8 +140,13 @@ export const syncService = {
             const localItem = localItemsMap.get(key);
             
             if (!localItem) {
-              // Write to Dexie
               await localTable.put(remoteItem);
+            } else if (name === 'prontuarios') {
+              const localMax = getLatestProntuarioTimestamp(localItem);
+              const remoteMax = getLatestProntuarioTimestamp(remoteItem);
+              if (remoteMax > localMax) {
+                await localTable.put(remoteItem);
+              }
             }
           }
         } catch (tableError: any) {
@@ -189,6 +198,48 @@ export const syncService = {
       await deleteDoc(doc(firestore, tableName, itemId));
     } catch (e) {
       console.error(`Erro ao remover documento em tempo real no Cloud (${tableName}):`, e);
+    }
+  },
+
+  saveToCloudBatch: async (userId: string, tableName: string, items: any[]) => {
+    if (!userId || userId.length < 10 || items.length === 0) return;
+    try {
+      for (let i = 0; i < items.length; i += 400) {
+        const chunk = items.slice(i, i + 400);
+        const batch = writeBatch(firestore);
+        chunk.forEach(item => {
+          const key = tableName === 'prontuarios' ? item.pacienteId : (tableName === 'settings' ? item.key : item.id);
+          if (key) {
+            const itemToUpload = cleanUndefinedFields({ 
+              ...item, 
+              userId,
+              id: item.id ? String(item.id) : undefined,
+              pacienteId: item.pacienteId ? String(item.pacienteId) : undefined,
+              ownerId: item.ownerId ? String(item.ownerId) : undefined
+            });
+            batch.set(doc(firestore, tableName, String(key)), itemToUpload);
+          }
+        });
+        await batch.commit();
+      }
+    } catch (e) {
+      console.error(`Erro ao salvar documentos em lote no Cloud (${tableName}):`, e);
+    }
+  },
+
+  deleteFromCloudBatch: async (userId: string, tableName: string, ids: string[]) => {
+    if (!userId || userId.length < 10 || ids.length === 0) return;
+    try {
+      for (let i = 0; i < ids.length; i += 400) {
+        const chunk = ids.slice(i, i + 400);
+        const batch = writeBatch(firestore);
+        chunk.forEach(id => {
+          batch.delete(doc(firestore, tableName, String(id)));
+        });
+        await batch.commit();
+      }
+    } catch (e) {
+      console.error(`Erro ao remover documentos em lote no Cloud (${tableName}):`, e);
     }
   }
 };

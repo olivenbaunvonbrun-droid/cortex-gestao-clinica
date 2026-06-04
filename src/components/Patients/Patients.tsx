@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Search, UserPlus, Filter, Trash2, Edit2, FileText, Calendar as CalendarIcon, ExternalLink, LayoutGrid, List, MessageCircle, Mail, Shield, Users } from 'lucide-react';
 import { db, type Patient, logAction } from '../../lib/db';
 import { cn, formatDate, calculateAge, formatCurrency } from '../../lib/utils';
+import { syncService } from '../../lib/syncService';
+import { auth } from '../../lib/firebase';
 import PatientModal from './PatientModal';
 import ConfirmModal from '../ui/ConfirmModal';
 import useConfirm from '../../hooks/useConfirm';
@@ -64,12 +66,29 @@ export default function Patients({ onOpenProntuario }: PatientsProps) {
       confirmLabel: 'Excluir Definitivamente',
       variant: 'danger',
       onConfirm: async () => {
+        const appts = await db.agendamentos.where('pacienteId').equals(id).toArray();
+        const apptIds = appts.map(a => a.id);
+        const trans = await db.transacoes.where('pacienteId').equals(id).toArray();
+        const transIds = trans.map(t => t.id);
+
         await db.transaction('rw', [db.pacientes, db.agendamentos, db.prontuarios, db.transacoes], async () => {
           await db.pacientes.delete(id);
           await db.agendamentos.where('pacienteId').equals(id).delete();
           await db.prontuarios.where('pacienteId').equals(id).delete();
           await db.transacoes.where('pacienteId').equals(id).delete();
         });
+
+        const firebaseUid = auth.currentUser?.uid;
+        if (firebaseUid) {
+          await syncService.removeFromCloud(firebaseUid, 'pacientes', id);
+          await syncService.removeFromCloud(firebaseUid, 'prontuarios', id);
+          if (apptIds.length > 0) {
+            await syncService.deleteFromCloudBatch(firebaseUid, 'agendamentos', apptIds);
+          }
+          if (transIds.length > 0) {
+            await syncService.deleteFromCloudBatch(firebaseUid, 'transacoes', transIds);
+          }
+        }
         
         const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
         logAction(currentUser, `Exclusão atômica de paciente: ${nome}`);
