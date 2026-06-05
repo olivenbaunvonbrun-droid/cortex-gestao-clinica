@@ -1,6 +1,37 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI as OriginalGoogleGenAI, Type } from "@google/genai";
 import { db } from "../lib/db";
 import { decryptData } from "../lib/crypto";
+
+const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro"
+];
+
+class GoogleGenAI extends OriginalGoogleGenAI {
+  constructor(options: any) {
+    super(options);
+    const originalGenerateContent = this.models.generateContent.bind(this.models);
+    this.models.generateContent = async (params: any) => {
+      let lastError: any = null;
+      for (const modelName of GEMINI_MODELS) {
+        try {
+          console.log(`[Resiliência] Tentando modelo Gemini: ${modelName}`);
+          return await originalGenerateContent({
+            ...params,
+            model: modelName
+          });
+        } catch (err: any) {
+          console.warn(`[Resiliência] Falha no modelo ${modelName}:`, err.message || err);
+          lastError = err;
+        }
+      }
+      throw lastError || new Error("Todos os modelos candidatos do Gemini falharam.");
+    };
+  }
+}
 
 // Use environment variable if available, otherwise fallback to DB
 async function getApiKey(): Promise<string> {
