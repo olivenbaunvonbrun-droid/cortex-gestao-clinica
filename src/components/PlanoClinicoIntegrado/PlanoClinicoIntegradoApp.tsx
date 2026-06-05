@@ -778,13 +778,15 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
                               label="Necessidades Identificadas (Não Satisfeitas)" 
                               value={formState.necessidadesIdentificadas} 
                               onChange={v => setFormState(p => ({ ...p, necessidadesIdentificadas: v }))} 
-                              suggestions={[
-                                ...TCC_CONCEPTS.NecessidadesInfantis,
-                                ...TCC_CONCEPTS.NecessidadesParentais,
-                                ...TCC_CONCEPTS.NecessidadesConjugais,
-                                ...TCC_CONCEPTS.NecessidadesAdultas,
-                                ...TCC_CONCEPTS.DimensoesVida,
-                                ...TCC_CONCEPTS.PsFelicidade
+                              suggestions={[]}
+                              isGrouped={true}
+                              groups={[
+                                { category: "Necessidades Infantis", label: "Infantis", color: "text-blue-400 bg-blue-500/10 border-blue-500/20", items: TCC_CONCEPTS.NecessidadesInfantis },
+                                { category: "Necessidades Conjugais", label: "Conjugais", color: "text-pink-400 bg-pink-500/10 border-pink-500/20", items: TCC_CONCEPTS.NecessidadesConjugais },
+                                { category: "Necessidades Parentais", label: "Parentais", color: "text-purple-400 bg-purple-500/10 border-purple-500/20", items: TCC_CONCEPTS.NecessidadesParentais },
+                                { category: "Necessidades Adultas", label: "Adultas", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20", items: TCC_CONCEPTS.NecessidadesAdultas },
+                                { category: "Dimensões da Vida", label: "Dimensões da Vida", color: "text-amber-400 bg-amber-500/10 border-amber-500/20", items: TCC_CONCEPTS.DimensoesVida },
+                                { category: "P's da Felicidade", label: "P's da Felicidade", color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20", items: TCC_CONCEPTS.PsFelicidade }
                               ]}
                               placeholder="Selecione as necessidades infantis, parentais, conjugais ou adultas insatisfeitas..."
                             />
@@ -1029,7 +1031,9 @@ function SuggestionTextArea({
   suggestions, 
   placeholder, 
   rows = 3, 
-  className 
+  className,
+  isGrouped,
+  groups
 }: { 
   label: string, 
   value?: string, 
@@ -1038,7 +1042,9 @@ function SuggestionTextArea({
   suggestions: any[], 
   placeholder?: string, 
   rows?: number, 
-  className?: string 
+  className?: string,
+  isGrouped?: boolean,
+  groups?: Array<{ category: string, label: string, color: string, items: any[] }>
 }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   
@@ -1084,26 +1090,63 @@ function SuggestionTextArea({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-[60] left-0 right-0 top-full mt-1 bg-bg-card border border-border-subtle rounded-xl shadow-2xl max-h-56 overflow-y-auto scroller-hide p-2"
+            className={cn(
+              "absolute z-[60] left-0 right-0 top-full mt-1 bg-bg-card border border-border-subtle rounded-2xl shadow-2xl overflow-y-auto scroller-hide p-3",
+              isGrouped ? "max-h-96 space-y-4" : "max-h-56 p-2"
+            )}
           >
-            {(suggestions || []).map((s, idx) => {
-              const name = typeof s === 'string' ? s : s.name;
-              const desc = typeof s === 'string' ? '' : s.desc;
-              
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelect(s)}
-                  className="w-full text-left px-3 py-2.5 hover:bg-bg-sidebar rounded-lg transition-colors border-b border-border-subtle/50 last:border-0 cursor-pointer"
-                >
-                  <div className="font-bold text-text-main text-[11px] mb-0.5">
-                    {name}
+            {isGrouped && groups ? (
+              groups.map((group, gIdx) => (
+                <div key={gIdx} className="space-y-2 pb-3 border-b border-border-subtle/30 last:border-0 last:pb-0">
+                  <div className="flex items-center gap-2 px-1">
+                    <span className={cn(
+                      "px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded border",
+                      group.color
+                    )}>
+                      {group.label}
+                    </span>
                   </div>
-                  {desc && <p className="text-[10px] text-text-dim/80 leading-normal">{desc}</p>}
-                </button>
-              );
-            })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {group.items.map((s, idx) => {
+                      const name = typeof s === 'string' ? s : s.name;
+                      const desc = typeof s === 'string' ? '' : s.desc;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSelect(s)}
+                          className="text-left p-2 hover:bg-bg-sidebar rounded-xl border border-border-subtle/40 hover:border-primary/30 transition-all cursor-pointer flex flex-col justify-start"
+                        >
+                          <span className="font-bold text-text-main text-[11px] mb-0.5">
+                            {name}
+                          </span>
+                          {desc && <span className="text-[9px] text-text-dim/80 leading-normal">{desc}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
+            ) : (
+              (suggestions || []).map((s, idx) => {
+                const name = typeof s === 'string' ? s : s.name;
+                const desc = typeof s === 'string' ? '' : s.desc;
+                
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelect(s)}
+                    className="w-full text-left px-3 py-2.5 hover:bg-bg-sidebar rounded-lg transition-colors border-b border-border-subtle/50 last:border-0 cursor-pointer"
+                  >
+                    <div className="font-bold text-text-main text-[11px] mb-0.5">
+                      {name}
+                    </div>
+                    {desc && <p className="text-[10px] text-text-dim/80 leading-normal">{desc}</p>}
+                  </button>
+                );
+              })
+            )}
           </motion.div>
         )}
       </AnimatePresence>

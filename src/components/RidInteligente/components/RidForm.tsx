@@ -358,17 +358,38 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
                 {activeSuggestionField === 'necessidade' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2 max-h-40 overflow-y-auto grid grid-cols-1 gap-1"
+                    className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2 max-h-80 overflow-y-auto space-y-3"
                   >
-                    {allNeeds.map(n => (
-                      <button 
-                        key={n}
-                        onClick={() => handleSelectSuggestion('necessidade', n)}
-                        className="text-left px-3 py-1.5 text-[10px] font-bold text-text-main hover:bg-bg-sidebar hover:text-primary rounded-lg transition-colors cursor-pointer"
-                      >
-                        {n}
-                      </button>
-                    ))}
+                    {[
+                      { key: "Necessidades Infantis", label: "Infantis", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
+                      { key: "Necessidades Conjugais", label: "Conjugais", color: "text-pink-400 bg-pink-500/10 border-pink-500/20" },
+                      { key: "Necessidades Parentais", label: "Parentais", color: "text-purple-400 bg-purple-500/10 border-purple-500/20" },
+                      { key: "Necessidades Adultas", label: "Adultas", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" }
+                    ].map(group => {
+                      const groupData = NEEDS_DATA.find(c => c.category === group.key);
+                      if (!groupData) return null;
+                      return (
+                        <div key={group.key} className="space-y-1.5 p-1 border-b border-border-subtle/30 last:border-0 pb-2.5 last:pb-1">
+                          <div className="flex items-center gap-1.5 px-1">
+                            <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded border ${group.color}`}>
+                              {group.label}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {groupData.needs.map(n => (
+                              <button 
+                                key={n}
+                                type="button"
+                                onClick={() => handleSelectSuggestion('necessidade', n)}
+                                className="px-2 py-1 text-[10px] font-semibold text-text-main bg-bg-deep border border-border-subtle hover:border-primary hover:text-primary rounded-lg transition-colors cursor-pointer"
+                              >
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </motion.div>
                 )}
               </AnimatePresence>
