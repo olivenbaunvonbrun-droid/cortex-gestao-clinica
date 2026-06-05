@@ -125,8 +125,18 @@ export const COPING_STYLES = [
 ];
 
 export const BASIC_EMOTIONS = [
-  "Alegria", "Tristeza", "Raiva", "Medo", "Nojo", "Surpresa", 
-  "Ansiedade", "Culpa", "Vergonha", "Frustração", "Alívio", "Amor"
+  { name: "Alegria", symptoms: "Calor no corpo, leveza, sorriso involuntário, energia elevada, batimentos ligeiramente aumentados." },
+  { name: "Tristeza", symptoms: "Sensação de aperto ou vazio no peito, nó na garganta, fadiga, choro, peso nos olhos." },
+  { name: "Raiva", symptoms: "Tensão muscular (mandíbula apertada, punhos cerrados), calor no rosto/pescoço, aceleração cardíaca." },
+  { name: "Medo", symptoms: "Taquicardia (coração disparado), respiração curta/ofegante, tremores, suor frio, boca seca." },
+  { name: "Nojo", symptoms: "Náusea, contração na região do estômago, careta/expressão facial de repulsa, salivação excessiva." },
+  { name: "Surpresa", symptoms: "Sobressalto, olhos arregalados/elevação das sobrancelhas, inspiração rápida e retenção do ar." },
+  { name: "Ansiedade", symptoms: "Aperto no peito, inquietação motora, suor nas mãos, nó no estômago, tremores, tensão nos ombros." },
+  { name: "Culpa", symptoms: "Sensação de peso nos ombros/peito, nó na garganta, evitação do olhar, desconforto no estômago." },
+  { name: "Vergonha", symptoms: "Rubor facial (corar), calor súbito, aumento cardíaco repentino, evitação do contato visual." },
+  { name: "Frustração", symptoms: "Tensão na mandíbula/ombros, suspiros frequentes, sensação de calor na cabeça, impaciência." },
+  { name: "Alívio", symptoms: "Expiração profunda (suspiro), relaxamento muscular imediato, sensação de leveza, batimentos calmos." },
+  { name: "Amor", symptoms: "Sensação de calor/acolhimento no peito, sorriso fácil, expressão suave, leve frio no estômago." }
 ];
 
 export const COGNITIVE_DISTORTIONS = [

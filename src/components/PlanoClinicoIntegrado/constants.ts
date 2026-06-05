@@ -699,11 +699,11 @@ export const TCC_CONCEPTS = {
     { name: "Personalização", desc: "Atribuir a si mesmo a culpa por eventos externos fora de seu controle." }
   ],
   RID_Emocoes: [
-    { name: "Ansiedade / Medo", desc: "Sensação de perigo iminente ou apreensão." },
-    { name: "Tristeza / Desânimo", desc: "Sentimento de perda ou falta de energia vital." },
-    { name: "Raiva / Irritabilidade", desc: "Resposta a injustiças percebidas ou bloqueio de metas." },
-    { name: "Culpa / Vergonha", desc: "Sentimento de ter violado regras próprias ou ser inadequado." },
-    { name: "Vazio Emocional", desc: "Sensação de anestesia ou falta de sentido." }
+    { name: "Ansiedade / Medo", desc: "Apreensão, taquicardia (coração disparado), respiração curta, suor frio, boca seca, tremores, tensão." },
+    { name: "Tristeza / Desânimo", desc: "Desalento, choro, peso físico, aperto ou vazio no peito, nó na garganta, fadiga, fadiga muscular." },
+    { name: "Raiva / Irritabilidade", desc: "Tensão muscular (mandíbula, punhos), rosto/pescoço quente, batimentos acelerados, impaciência." },
+    { name: "Culpa / Vergonha", desc: "Evitação do olhar, rubor facial (corar), peso nos ombros/peito, desconforto gástrico, postura encurvada." },
+    { name: "Vazio Emocional", desc: "Sensação de anestesia afetiva, falta de energia física, descolamento/despersonalização." }
   ],
   RID_Comportamentos: [
     { name: "Esquiva Comportamental", desc: "Fugir ou evitar fisicamente a situação temida." },

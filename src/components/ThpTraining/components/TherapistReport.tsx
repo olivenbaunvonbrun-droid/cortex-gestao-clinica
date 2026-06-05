@@ -167,7 +167,7 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
     const logs = patient.sessionHistory;
     if (logs.length < 1) {
       return (
-        <div className="h-44 flex items-center justify-center text-slate-400 text-xs">
+        <div className="h-44 flex items-center justify-center text-text-dim text-xs">
           Registros insuficientes para mapeamento em gráfico de linhas (mínimo de 1 sessão).
         </div>
       );
@@ -198,10 +198,10 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
     }).join(" ");
 
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto bg-slate-950 p-2 rounded-xl text-[9px] font-mono select-none">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto bg-bg-deep p-2 rounded-xl text-[9px] font-mono select-none">
         {/* Helper grid lines */}
-        <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="#1e293b" strokeDasharray="3" />
-        <line x1={padding} y1={height/2} x2={width - padding} y2={height/2} stroke="#1e293b" strokeDasharray="3" />
+        <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="3" />
+        <line x1={padding} y1={height/2} x2={width - padding} y2={height/2} stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="3" />
         <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#334155" />
 
         {/* Labels */}
@@ -250,31 +250,31 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
     <div className="space-y-6 font-sans">
       
       {/* Top Clinical Conceptualization Grid Mapping */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <h4 className="flex items-center gap-1.5 font-bold text-slate-800 text-sm mb-4">
-          <BrainCircuit className="w-4 h-4 text-indigo-500" />
+      <div className="bg-bg-sidebar p-5 rounded-xl border border-border-subtle shadow-sm">
+        <h4 className="flex items-center gap-1.5 font-bold text-text-main text-sm mb-4">
+          <BrainCircuit className="w-4 h-4 text-primary" />
           Fator de Concatenamento Clínico Integrado (Amostragem PCI)
         </h4>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
           <div className="p-3.5 bg-red-50/50 rounded-lg border border-red-100">
             <span className="font-bold text-red-800 block uppercase font-mono text-[9px] mb-1">Necessidades Negligenciadas</span>
-            <p className="text-slate-600 leading-snug">{patient.neglectedNeeds.join(", ") || "Sem registros"}</p>
+            <p className="text-text-dim leading-snug">{patient.neglectedNeeds.join(", ") || "Sem registros"}</p>
           </div>
 
-          <div className="p-3.5 bg-indigo-50/50 rounded-lg border border-indigo-100">
-            <span className="font-bold text-indigo-800 block uppercase font-mono text-[9px] mb-1">Esquemas Ativos EIDs</span>
-            <p className="text-slate-600 leading-snug">{patient.activeSchemas.join(", ") || "Sem registros"}</p>
+          <div className="p-3.5 bg-primary/5 rounded-lg border border-primary/20">
+            <span className="font-bold text-primary block uppercase font-mono text-[9px] mb-1">Esquemas Ativos EIDs</span>
+            <p className="text-text-dim leading-snug">{patient.activeSchemas.join(", ") || "Sem registros"}</p>
           </div>
 
           <div className="p-3.5 bg-amber-50/50 rounded-lg border border-amber-100">
             <span className="font-bold text-amber-800 block uppercase font-mono text-[9px] mb-1">Crenças Centrais</span>
-            <p className="text-[11px] text-slate-600 font-mono italic">"{patient.beliefs.coreBeliefs[0] || "Sem registros"}"</p>
+            <p className="text-[11px] text-text-dim font-mono italic">"{patient.beliefs.coreBeliefs[0] || "Sem registros"}"</p>
           </div>
 
-          <div className="p-3.5 bg-indigo-50/50 rounded-lg border border-indigo-100">
-            <span className="font-bold text-indigo-800 block uppercase font-mono text-[9px] mb-1">Diretriz PDP Alvo</span>
-            <p className="text-slate-600 leading-snug">Treinamento de {patient.periodization[0]?.skill || "Assertividade"}</p>
+          <div className="p-3.5 bg-primary/5 rounded-lg border border-primary/20">
+            <span className="font-bold text-primary block uppercase font-mono text-[9px] mb-1">Diretriz PDP Alvo</span>
+            <p className="text-text-dim leading-snug">Treinamento de {patient.periodization[0]?.skill || "Assertividade"}</p>
           </div>
         </div>
       </div>
@@ -283,24 +283,24 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Line graph column */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 lg:col-span-2 space-y-4">
+        <div className="bg-bg-sidebar rounded-xl border border-border-subtle shadow-sm p-5 lg:col-span-2 space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <h4 className="font-bold text-slate-800 text-sm">Curvas de Evolução Comportamental</h4>
-              <p className="text-[10px] text-slate-500 font-mono">Mapeamento cronológico das sessões ativas</p>
+              <h4 className="font-bold text-text-main text-sm">Curvas de Evolução Comportamental</h4>
+              <p className="text-[10px] text-text-dim font-mono">Mapeamento cronológico das sessões ativas</p>
             </div>
 
             {/* Legends */}
             <div className="flex gap-2 text-[9px] font-mono">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Adesão</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-500" />Assertividade</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> Adesão</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary text-bg-deep font-bold" />Assertividade</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-400" />Postura</span>
             </div>
           </div>
 
           {renderSVGChart()}
 
-          <div className="p-4 bg-indigo-50 text-indigo-950 rounded-xl border border-indigo-100 text-xs">
+          <div className="p-4 bg-primary/10 text-indigo-950 rounded-xl border border-primary/20 text-xs">
             <span className="font-bold font-mono text-[10px] uppercase block mb-1">Diagnóstico Neurofuncional:</span>
             <p className="leading-relaxed leading-snug">{generateNeuroDiagnostics()}</p>
           </div>
@@ -308,22 +308,22 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
 
         {/* Quick Add and stats col */}
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col justify-between h-full">
+          <div className="bg-bg-sidebar rounded-xl border border-border-subtle shadow-sm p-4 flex flex-col justify-between h-full">
             <div>
-              <h4 className="font-bold text-slate-800 text-xs uppercase font-mono mb-3">Registrar Evolução de Sessão</h4>
-              <p className="text-[10px] text-slate-500 mb-4 leading-snug">Insira um novo sumário de atendimento clínico e atribua notas técnicas auditadas.</p>
+              <h4 className="font-bold text-text-main text-xs uppercase font-mono mb-3">Registrar Evolução de Sessão</h4>
+              <p className="text-[10px] text-text-dim mb-4 leading-snug">Insira um novo sumário de atendimento clínico e atribua notas técnicas auditadas.</p>
               
               {!showLogForm ? (
                 <button
                   onClick={() => setShowLogForm(true)}
-                  className="w-full py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 bg-bg-deep text-white font-bold text-xs rounded-xl hover:bg-white/10 transition flex items-center justify-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" /> Escrever Nota Clínicas
                 </button>
               ) : (
-                <div className="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs">
+                <div className="space-y-3 p-3 bg-bg-card rounded-lg border border-border-subtle text-xs">
                   <div>
-                    <label className="flex items-center text-[10px] font-bold text-slate-600 mb-0.5">
+                    <label className="flex items-center text-[10px] font-bold text-text-dim mb-0.5">
                       <span>Sumário do Progresso Clínico</span>
                       <FieldHelp 
                         title="Sumário de Progresso"
@@ -334,7 +334,7 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                     </label>
                     <input
                       type="text"
-                      className="w-full p-2 bg-white border border-slate-200 rounded outline-none"
+                      className="w-full p-2 bg-bg-sidebar border border-border-subtle rounded outline-none"
                       placeholder="Ex: Treino de Nível 1 efetuado com controle."
                       value={evolutionSummary}
                       onChange={(e) => setEvolutionSummary(e.target.value)}
@@ -343,7 +343,7 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
 
                   <div className="grid grid-cols-3 gap-1.5">
                     <div>
-                      <label className="flex items-center text-[9px] font-mono text-slate-500">
+                      <label className="flex items-center text-[9px] font-mono text-text-dim">
                         <span>Adesão %</span>
                         <FieldHelp 
                           title="Adesão / Compromisso"
@@ -359,7 +359,7 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                       />
                     </div>
                     <div>
-                      <label className="flex items-center text-[9px] font-mono text-slate-500">
+                      <label className="flex items-center text-[9px] font-mono text-text-dim">
                         <span>Assert. %</span>
                         <FieldHelp 
                           title="Assertividade Verbal"
@@ -375,7 +375,7 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                       />
                     </div>
                     <div>
-                      <label className="flex items-center text-[9px] font-mono text-slate-500">
+                      <label className="flex items-center text-[9px] font-mono text-text-dim">
                         <span>Postura %</span>
                         <FieldHelp 
                           title="Postura Não-Verbal"
@@ -393,13 +393,13 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                   </div>
 
                   {/* 🧬 Mini Neuro-Indices Inputs Grid */}
-                  <div className="p-2.5 bg-indigo-50/50 rounded-lg border border-indigo-100/60 space-y-2 mt-1">
-                    <span className="font-mono text-[8px] font-bold text-indigo-800 uppercase block tracking-wider">
+                  <div className="p-2.5 bg-primary/5 rounded-lg border border-primary/20/60 space-y-2 mt-1">
+                    <span className="font-mono text-[8px] font-bold text-primary uppercase block tracking-wider">
                       Métricas de Diagnóstico Clínico (Neurociência)
                     </span>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="flex items-center text-[8px] font-mono text-slate-500">
+                        <label className="flex items-center text-[8px] font-mono text-text-dim">
                           <span>VFC/HRV (ms)</span>
                           <FieldHelp 
                             title="Variabilidade da Frequência Cardíaca (HRV)"
@@ -409,13 +409,13 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                         </label>
                         <input
                           type="number"
-                          className="w-full p-1 bg-white border border-slate-200 font-mono rounded text-[10px]"
+                          className="w-full p-1 bg-bg-sidebar border border-border-subtle font-mono rounded text-[10px]"
                           value={hrvBaseline}
                           onChange={(e) => setHrvBaseline(Number(e.target.value))}
                         />
                       </div>
                       <div>
-                        <label className="flex items-center text-[8px] font-mono text-slate-500">
+                        <label className="flex items-center text-[8px] font-mono text-text-dim">
                           <span>Efic. Diafragmática (%)</span>
                           <FieldHelp 
                             title="Eficácia Diafragmática"
@@ -425,29 +425,29 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                         </label>
                         <input
                           type="number"
-                          className="w-full p-1 bg-white border border-slate-200 font-mono rounded text-[10px]"
+                          className="w-full p-1 bg-bg-sidebar border border-border-subtle font-mono rounded text-[10px]"
                           value={diaphragmaticEffectiveness}
                           onChange={(e) => setDiaphragmaticEffectiveness(Number(e.target.value))}
                         />
                       </div>
                       <div>
-                        <label className="flex items-center text-[8px] font-mono text-slate-500">
+                        <label className="flex items-center text-[8px] font-mono text-text-dim">
                           <span>Acerto Socrático %</span>
                           <FieldHelp 
                             title="Acerto Socrático"
-                            suggestion="Taxa de sucesso de Pedro em reestruturar asneiras mentais autocríticas."
+                            suggestion={`Taxa de sucesso de ${patient.name} em reestruturar asneiras mentais autocríticas.`}
                             explanation="Mede a modulação cortical contornando pensamentos disadaptativos sob pressão de timing."
                           />
                         </label>
                         <input
                           type="number"
-                          className="w-full p-1 bg-white border border-slate-200 font-mono rounded text-[10px]"
+                          className="w-full p-1 bg-bg-sidebar border border-border-subtle font-mono rounded text-[10px]"
                           value={socraticRestructureScore}
                           onChange={(e) => setSocraticRestructureScore(Number(e.target.value))}
                         />
                       </div>
                       <div>
-                        <label className="flex items-center text-[8px] font-mono text-slate-500">
+                        <label className="flex items-center text-[8px] font-mono text-text-dim">
                           <span>Higiene de Sono %</span>
                           <FieldHelp 
                             title="Higiene do Sono síncrona"
@@ -457,7 +457,7 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                         </label>
                         <input
                           type="number"
-                          className="w-full p-1 bg-white border border-slate-200 font-mono rounded text-[10px]"
+                          className="w-full p-1 bg-bg-sidebar border border-border-subtle font-mono rounded text-[10px]"
                           value={sleepWakeHygieneScore}
                           onChange={(e) => setSleepWakeHygieneScore(Number(e.target.value))}
                         />
@@ -466,10 +466,10 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Observações Adicionais</label>
+                    <label className="block text-[10px] font-bold text-text-dim mb-0.5">Observações Adicionais</label>
                     <textarea
                       rows={2}
-                      className="w-full p-2 bg-white border border-slate-200 rounded outline-none resize-none"
+                      className="w-full p-2 bg-bg-sidebar border border-border-subtle rounded outline-none resize-none"
                       placeholder="Ex: Menos taquicardia registrada..."
                       value={clinicalObs}
                       onChange={(e) => setClinicalObs(e.target.value)}
@@ -479,13 +479,13 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                   <div className="flex justify-end gap-2 pt-1">
                     <button
                       onClick={() => setShowLogForm(false)}
-                      className="px-2 py-1 bg-slate-200 rounded text-[10px]"
+                      className="px-2 py-1 bg-bg-sidebar rounded text-[10px]"
                     >
                       Cancelar
                     </button>
                     <button
                       onClick={saveSessionLog}
-                      className="px-3.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[10px]"
+                      className="px-3.5 py-1 bg-primary text-bg-deep font-bold hover:bg-primary-hover text-bg-deep font-bold text-white rounded font-bold text-[10px]"
                     >
                       Salvar Nota
                     </button>
@@ -494,8 +494,8 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
               )}
             </div>
             
-            <div className="pt-4 border-t border-slate-100 mt-4 text-[10px] text-slate-400 font-mono leading-relaxed bg-slate-50 p-2 rounded-lg">
-              <span className="font-bold text-slate-600 block mb-0.5">Indicador de Neuroplasticidade</span>
+            <div className="pt-4 border-t border-border-subtle mt-4 text-[10px] text-text-dim font-mono leading-relaxed bg-bg-card p-2 rounded-lg">
+              <span className="font-bold text-text-dim block mb-0.5">Indicador de Neuroplasticidade</span>
               A assertividade repetitiva reorganiza e altera fisicamente conexões neurais inibitórias. Quanto maior o tom de assertividade (Verbal), maior a atenuação do estresse somático corporal.
             </div>
           </div>
@@ -504,23 +504,23 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
       </div>
 
       {/* 🧪 Relatório Analítico de IA Científico Clínico */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="bg-bg-sidebar rounded-xl border border-border-subtle shadow-sm p-5 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border-subtle pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1 px-2.5 bg-indigo-50 text-indigo-700 text-[10px] rounded-full font-bold font-mono tracking-wider flex items-center gap-1 uppercase">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" /> Inteligência Psicoterapêutica
+              <span className="p-1 px-2.5 bg-primary/10 text-primary text-[10px] rounded-full font-bold font-mono tracking-wider flex items-center gap-1 uppercase">
+                <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" /> Inteligência Psicoterapêutica
               </span>
             </div>
-            <h4 className="font-bold text-slate-800 text-sm mt-1.5 font-sans">Laudo Clínico Analítico Multidimensional (IA)</h4>
-            <p className="text-[10.5px] text-slate-500 leading-snug">
+            <h4 className="font-bold text-text-main text-sm mt-1.5 font-sans">Laudo Clínico Analítico Multidimensional (IA)</h4>
+            <p className="text-[10.5px] text-text-dim leading-snug">
               Cruzamento estocástico de biofeedback autonômico, flexibilização cortical socrática e periodização técnica com embasamento científico de literatura clínica.
             </p>
           </div>
           {!loadingReport && (
             <button
               onClick={generateAIReport}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm font-sans"
+              className="px-4 py-2 bg-primary text-bg-deep font-bold hover:bg-primary-hover text-bg-deep font-bold text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm font-sans"
             >
               <Sparkles className="w-4 h-4" />
               {reportText ? "Regerar Laudo Clínico" : "Gerar Laudo Clínico"}
@@ -530,22 +530,22 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
 
         {/* LOADING STATE WITH SCIENTIFIC UPDATES */}
         {loadingReport && (
-          <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-slate-50 rounded-xl border border-slate-100 space-y-4 animate-fade-in">
+          <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-bg-card rounded-xl border border-border-subtle space-y-4 animate-fade-in">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
-              <BrainCircuit className="w-6 h-6 text-indigo-600 absolute top-3 left-3 animate-pulse" />
+              <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-indigo-600 animate-spin" />
+              <BrainCircuit className="w-6 h-6 text-primary absolute top-3 left-3 animate-pulse" />
             </div>
             <div className="space-y-1.5 max-w-md">
-              <p className="text-xs font-mono font-bold text-indigo-700 select-none">
+              <p className="text-xs font-mono font-bold text-primary select-none">
                 Estágio {loadingStep + 1}/5: {loadingStepsText[loadingStep]}
               </p>
-              <div className="w-48 h-1 bg-slate-200 rounded-full mx-auto overflow-hidden">
+              <div className="w-48 h-1 bg-bg-sidebar rounded-full mx-auto overflow-hidden">
                 <div 
-                  className="h-full bg-indigo-600 transition-all duration-500" 
+                  className="h-full bg-primary text-bg-deep font-bold transition-all duration-500" 
                   style={{ width: `${(loadingStep + 1) * 20}%` }}
                 />
               </div>
-              <p className="text-[10px] text-slate-400 font-mono">
+              <p className="text-[10px] text-text-dim font-mono">
                 Processando modelo cognitivo e referências científicas...
               </p>
             </div>
@@ -566,13 +566,13 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
             </div>
 
             {reportError.code === "GEMINI_API_KEY_MISSING" && (
-              <div className="bg-white/80 p-3 rounded-lg border border-red-100/60 mt-2 space-y-2 text-[10.5px]">
-                <p className="font-semibold text-slate-800">Como reestabelecer o serviço em 2 passos:</p>
+              <div className="bg-bg-sidebar/80 p-3 rounded-lg border border-red-100/60 mt-2 space-y-2 text-[10.5px]">
+                <p className="font-semibold text-text-main">Como reestabelecer o serviço em 2 passos:</p>
                 <ol className="list-decimal list-inside text-slate-650 space-y-1">
                   <li>Clique no painel superior esquerdo de ferramentas do <strong>AI Studio</strong>.</li>
-                  <li>Acesse o menu <strong>Settings &gt; Secrets</strong> e insira a chave secreta com o nome de <code className="px-1 py-0.5 bg-slate-100 text-pink-600 font-mono text-[9.5px] rounded border border-slate-200">GEMINI_API_KEY</code>.</li>
+                  <li>Acesse o menu <strong>Settings &gt; Secrets</strong> e insira a chave secreta com o nome de <code className="px-1 py-0.5 bg-bg-sidebar text-pink-600 font-mono text-[9.5px] rounded border border-border-subtle">GEMINI_API_KEY</code>.</li>
                 </ol>
-                <p className="text-[9.5px] text-slate-400 font-mono italic">Os segredos e variáveis ambientais são criptografados estritamente na sandbox deste applet.</p>
+                <p className="text-[9.5px] text-text-dim font-mono italic">Os segredos e variáveis ambientais são criptografados estritamente na sandbox deste applet.</p>
               </div>
             )}
           </div>
@@ -581,37 +581,37 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
         {/* PLACEHOLDER BEFORE FIRST TIME GENERATION */}
         {!loadingReport && !reportText && !reportError && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
-            <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl flex flex-col justify-between">
+            <div className="p-4 bg-bg-card/70 border border-border-subtle/80 rounded-xl flex flex-col justify-between">
               <div className="space-y-2">
-                <div className="p-1.5 bg-indigo-50 text-indigo-700 w-fit rounded-lg">
+                <div className="p-1.5 bg-primary/10 text-primary w-fit rounded-lg">
                   <Activity className="w-4 h-4" />
                 </div>
-                <h5 className="font-bold text-slate-800 text-[11px] uppercase tracking-wider font-sans">Análise Autonômica</h5>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
+                <h5 className="font-bold text-text-main text-[11px] uppercase tracking-wider font-sans">Análise Autonômica</h5>
+                <p className="text-[10px] text-text-dim leading-relaxed">
                   Correlação do tônus vagal e barorreceptores (VFC/HRV, eficácia respiratória) sob os fundamentos fisiológicos da Teoria Polivagal.
                 </p>
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl flex flex-col justify-between">
+            <div className="p-4 bg-bg-card/70 border border-border-subtle/80 rounded-xl flex flex-col justify-between">
               <div className="space-y-2">
-                <div className="p-1.5 bg-emerald-50 text-emerald-700 w-fit rounded-lg">
+                <div className="p-1.5 bg-emerald-50 text-primary w-fit rounded-lg">
                   <BrainCircuit className="w-4 h-4" />
                 </div>
-                <h5 className="font-bold text-slate-800 text-[11px] uppercase tracking-wider font-sans">Mapeamento Cognitivo</h5>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
+                <h5 className="font-bold text-text-main text-[11px] uppercase tracking-wider font-sans">Mapeamento Cognitivo</h5>
+                <p className="text-[10px] text-text-dim leading-relaxed">
                   Evolução do diálogo socrático versus esquemas iniciais desadaptativos (EIDs) e ativações de crenças disadaptativas profundas.
                 </p>
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl flex flex-col justify-between">
+            <div className="p-4 bg-bg-card/70 border border-border-subtle/80 rounded-xl flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="p-1.5 bg-amber-50 text-amber-700 w-fit rounded-lg">
                   <BookOpen className="w-4 h-4" />
                 </div>
-                <h5 className="font-bold text-slate-800 text-[11px] uppercase tracking-wider font-sans">Diretriz de Neuroplasticidade</h5>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
+                <h5 className="font-bold text-text-main text-[11px] uppercase tracking-wider font-sans">Diretriz de Neuroplasticidade</h5>
+                <p className="text-[10px] text-text-dim leading-relaxed">
                   Periodização técnica quantitativa baseada no treinamento de habilidades e nos processos de aprendizado hebbiano para reconfiguração cortical-emocional.
                 </p>
               </div>
@@ -623,18 +623,18 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
         {reportText && !loadingReport && (
           <div className="space-y-4 animate-fade-in">
             {/* Action buttons bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200 text-xs">
-              <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5 pl-1.5">
-                <FileText className="w-3.5 h-3.5 text-slate-400" /> Laudo compilado formalmente · {new Date().toLocaleDateString("pt-BR")}
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-bg-card p-2 rounded-lg border border-border-subtle text-xs">
+              <span className="text-[10px] font-mono text-text-dim flex items-center gap-1.5 pl-1.5">
+                <FileText className="w-3.5 h-3.5 text-text-dim" /> Laudo compilado formalmente · {new Date().toLocaleDateString("pt-BR")}
               </span>
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={handleCopyReport}
-                  className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded text-[10px] font-bold text-slate-700 flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  className="px-2.5 py-1 bg-bg-sidebar hover:bg-bg-card border border-border-subtle rounded text-[10px] font-bold text-text-main flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
                 >
                   {copied ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" /> Copiado!
+                      <Check className="w-3.5 h-3.5 text-primary" /> Copiado!
                     </>
                   ) : (
                     <>
@@ -644,7 +644,7 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
                 </button>
                 <button
                   onClick={handleExportTextFile}
-                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  className="px-3 py-1 bg-primary text-bg-deep font-bold hover:bg-primary-hover text-bg-deep font-bold text-white rounded text-[10px] font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" /> Exportar .TXT (Laudo)
                 </button>
@@ -652,33 +652,33 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
             </div>
 
             {/* Scientific Sheet frame */}
-            <div className="p-6 md:p-8 bg-slate-50/60 rounded-xl border border-slate-200 font-sans shadow-inner max-h-[500px] overflow-y-auto style-scrollbar relative">
+            <div className="p-6 md:p-8 bg-bg-card/60 rounded-xl border border-border-subtle font-sans shadow-inner max-h-[500px] overflow-y-auto style-scrollbar relative">
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600" />
               
               {/* Formal clinic paper header */}
-              <div className="border-b-2 border-slate-300 pb-5 mb-5 space-y-3.5">
+              <div className="border-b-2 border-border-subtle pb-5 mb-5 space-y-3.5">
                 <div className="text-center space-y-1">
-                  <span className="font-serif text-lg tracking-widest uppercase font-bold text-slate-800 block">Dossier de Integração Clínica</span>
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-slate-500 block">THP — Treinamento de Habilidades Psicológicas Avançado</span>
+                  <span className="font-serif text-lg tracking-widest uppercase font-bold text-text-main block">Dossier de Integração Clínica</span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-text-dim block">THP — Treinamento de Habilidades Psicológicas Avançado</span>
                 </div>
 
                 {/* Patient metadata box */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-3 rounded-lg border border-slate-250 font-mono text-[9.5px]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-bg-sidebar p-3 rounded-lg border border-slate-250 font-mono text-[9.5px]">
                   <div>
-                    <span className="text-slate-400 block font-bold text-[8px] uppercase">Paciente</span>
-                    <span className="font-bold text-slate-700">{patient.name}</span>
+                    <span className="text-text-dim block font-bold text-[8px] uppercase">Paciente</span>
+                    <span className="font-bold text-text-main">{patient.name}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-bold text-[8px] uppercase">Faixa Etária</span>
-                    <span className="font-bold text-slate-700">{patient.age} Anos</span>
+                    <span className="text-text-dim block font-bold text-[8px] uppercase">Faixa Etária</span>
+                    <span className="font-bold text-text-main">{patient.age} Anos</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-bold text-[8px] uppercase">Ocupação / Setor</span>
-                    <span className="font-bold text-slate-700 truncate block sm:max-w-xs">{patient.profession}</span>
+                    <span className="text-text-dim block font-bold text-[8px] uppercase">Ocupação / Setor</span>
+                    <span className="font-bold text-text-main truncate block sm:max-w-xs">{patient.profession}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block font-bold text-[8px] uppercase">Código UID</span>
-                    <span className="font-bold text-indigo-600">ID-{patient.id.toUpperCase()}</span>
+                    <span className="text-text-dim block font-bold text-[8px] uppercase">Código UID</span>
+                    <span className="font-bold text-primary">ID-{patient.id.toUpperCase()}</span>
                   </div>
                 </div>
               </div>
@@ -687,15 +687,15 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
               <div className="markdown-body space-y-4">
                 <Markdown
                   components={{
-                    h1: ({ children }) => <h1 className="text-xs font-bold text-indigo-750 border-b border-slate-200 pb-1 mb-2 mt-5 uppercase font-sans tracking-wide">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-[11px] font-bold text-indigo-700 mb-1.5 mt-4 uppercase font-sans tracking-tight">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-[10px] font-bold text-slate-700 mb-1 mt-3">{children}</h3>,
+                    h1: ({ children }) => <h1 className="text-xs font-bold text-indigo-750 border-b border-border-subtle pb-1 mb-2 mt-5 uppercase font-sans tracking-wide">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-[11px] font-bold text-primary mb-1.5 mt-4 uppercase font-sans tracking-tight">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-[10px] font-bold text-text-main mb-1 mt-3">{children}</h3>,
                     p: ({ children }) => <p className="text-slate-650 leading-relaxed mb-2.5 text-[10.5px] text-justify font-sans">{children}</p>,
                     ul: ({ children }) => <ul className="list-disc list-inside text-[10.5px] text-slate-650 space-y-1 mb-2.5 pl-1">{children}</ul>,
                     ol: ({ children }) => <ol className="list-decimal list-inside text-[10.5px] text-slate-650 space-y-1 mb-2.5 pl-1">{children}</ol>,
                     li: ({ children }) => <li className="mb-0.5 leading-relaxed">{children}</li>,
-                    blockquote: ({ children }) => <blockquote className="border-l-4 border-indigo-400 pl-3 py-0.5 italic my-3 text-[10.5px] text-slate-600 bg-indigo-50/60 rounded-r">{children}</blockquote>,
-                    strong: ({ children }) => <strong className="font-bold text-slate-800">{children}</strong>,
+                    blockquote: ({ children }) => <blockquote className="border-l-4 border-indigo-400 pl-3 py-0.5 italic my-3 text-[10.5px] text-text-dim bg-primary/10/60 rounded-r">{children}</blockquote>,
+                    strong: ({ children }) => <strong className="font-bold text-text-main">{children}</strong>,
                   }}
                 >
                   {reportText}
@@ -703,11 +703,11 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
               </div>
 
               {/* Scientific Stamp footer */}
-              <div className="border-t border-slate-250 pt-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[9px] font-mono text-slate-400">
+              <div className="border-t border-slate-250 pt-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[9px] font-mono text-text-dim">
                 <span>Laudo emitido por amostragem cibernética de IA</span>
-                <div className="text-right border-t sm:border-t-0 pt-2 sm:pt-0 sm:pl-4 border-slate-200">
-                  <div className="font-serif italic text-slate-600 font-bold block">Assinatura Digital Integrada</div>
-                  <div className="text-[8px] uppercase select-all tracking-wider font-sans text-indigo-500">SHA-256 CLI_THP_{patient.id.slice(0, 8)}</div>
+                <div className="text-right border-t sm:border-t-0 pt-2 sm:pt-0 sm:pl-4 border-border-subtle">
+                  <div className="font-serif italic text-text-dim font-bold block">Assinatura Digital Integrada</div>
+                  <div className="text-[8px] uppercase select-all tracking-wider font-sans text-primary">SHA-256 CLI_THP_{patient.id.slice(0, 8)}</div>
                 </div>
               </div>
             </div>
@@ -716,56 +716,56 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
       </div>
 
       {/* Chronological session timeline */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
-        <h4 className="font-bold text-slate-800 text-sm">Prontuário Histórico de Sessões</h4>
+      <div className="bg-bg-sidebar rounded-xl border border-border-subtle shadow-sm p-5 space-y-4">
+        <h4 className="font-bold text-text-main text-sm">Prontuário Histórico de Sessões</h4>
 
         <div className="space-y-3">
           {patient.sessionHistory.map((log, idx) => {
             return (
-              <div key={log.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200/60 leading-relaxed text-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2 mb-2">
+              <div key={log.id} className="p-4 bg-bg-card rounded-xl border border-border-subtle/60 leading-relaxed text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center font-bold text-[10px] text-slate-700">0{idx + 1}</span>
-                    <span className="font-bold text-slate-800 text-xs">Sessão {idx + 1} · {log.date}</span>
+                    <span className="w-5 h-5 rounded-full bg-bg-sidebar flex items-center justify-center font-bold text-[10px] text-text-main">0{idx + 1}</span>
+                    <span className="font-bold text-text-main text-xs">Sessão {idx + 1} · {log.date}</span>
                   </div>
 
                   {/* Badges row with score details */}
                   <div className="flex gap-2 font-mono text-[9px] font-bold">
-                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded">Adesão: {log.adherenceScore}%</span>
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded">Assert.: {log.verbalCompetenceScore}%</span>
-                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-900 border border-indigo-200 rounded font-bold">Postura: {log.nonVerbalCompetenceScore}%</span>
+                    <span className="px-2 py-0.5 bg-emerald-50 text-primary border border-emerald-100 rounded">Adesão: {log.adherenceScore}%</span>
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded">Assert.: {log.verbalCompetenceScore}%</span>
+                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-900 border border-primary/20 rounded font-bold">Postura: {log.nonVerbalCompetenceScore}%</span>
                   </div>
                 </div>
 
-                <p className="text-slate-700 font-medium">
+                <p className="text-text-main font-medium">
                   {log.evolutionSummary}
                 </p>
 
                 {/* Custom Neuro-Diagnostics Metrics Display */}
                 {(log.hrvBaseline !== undefined || log.diaphragmaticEffectiveness !== undefined || log.socraticRestructureScore !== undefined || log.sleepWakeHygieneScore !== undefined) && (
-                  <div className="mt-2.5 text-[10px] font-mono grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900 text-slate-100 p-2.5 rounded-lg border border-slate-800">
-                    <div className="flex flex-col border-r border-slate-800 pr-1.5">
-                      <span className="text-slate-400 text-[8px] uppercase font-bold tracking-tight">VFC/HRV Baseline</span>
+                  <div className="mt-2.5 text-[10px] font-mono grid grid-cols-2 sm:grid-cols-4 gap-2 bg-bg-deep text-text-main p-2.5 rounded-lg border border-border-subtle">
+                    <div className="flex flex-col border-r border-border-subtle pr-1.5">
+                      <span className="text-text-dim text-[8px] uppercase font-bold tracking-tight">VFC/HRV Baseline</span>
                       <span className="font-bold text-sky-400 text-xs mt-0.5">{log.hrvBaseline ?? 45} ms</span>
                     </div>
-                    <div className="flex flex-col sm:border-r border-slate-800 sm:px-1.5">
-                      <span className="text-slate-400 text-[8px] uppercase font-bold tracking-tight">Eficácia Diafragma</span>
+                    <div className="flex flex-col sm:border-r border-border-subtle sm:px-1.5">
+                      <span className="text-text-dim text-[8px] uppercase font-bold tracking-tight">Eficácia Diafragma</span>
                       <span className="font-bold text-emerald-400 text-xs mt-0.5">{log.diaphragmaticEffectiveness ?? 55}%</span>
                     </div>
-                    <div className="flex flex-col border-r border-slate-800 pr-1.5 sm:pl-1.5">
-                      <span className="text-slate-400 text-[8px] uppercase font-bold tracking-tight">Acerto Socrático</span>
+                    <div className="flex flex-col border-r border-border-subtle pr-1.5 sm:pl-1.5">
+                      <span className="text-text-dim text-[8px] uppercase font-bold tracking-tight">Acerto Socrático</span>
                       <span className="font-bold text-violet-400 text-xs mt-0.5">{log.socraticRestructureScore ?? 60}%</span>
                     </div>
                     <div className="flex flex-col sm:pl-1.5">
-                      <span className="text-slate-400 text-[8px] uppercase font-bold tracking-tight">Higiene do Sono</span>
+                      <span className="text-text-dim text-[8px] uppercase font-bold tracking-tight">Higiene do Sono</span>
                       <span className="font-bold text-amber-400 text-xs mt-0.5">{log.sleepWakeHygieneScore ?? 70}%</span>
                     </div>
                   </div>
                 )}
                 
                 {log.clinicalObservations && (
-                  <p className="text-slate-500 italic mt-1 bg-white p-2 border border-slate-100 rounded font-mono text-[11px]">
-                    <span className="font-bold font-mono uppercase text-[9px] not-italic block text-slate-400">Observações Clínicas:</span>
+                  <p className="text-text-dim italic mt-1 bg-bg-sidebar p-2 border border-border-subtle rounded font-mono text-[11px]">
+                    <span className="font-bold font-mono uppercase text-[9px] not-italic block text-text-dim">Observações Clínicas:</span>
                     {log.clinicalObservations}
                   </p>
                 )}
@@ -773,7 +773,7 @@ export default function TherapistReport({ patient, onAddSessionLog }: TherapistR
             );
           })}
           {patient.sessionHistory.length === 0 && (
-            <div className="text-center p-8 border border-dashed border-slate-200 rounded-lg text-slate-400 text-xs">
+            <div className="text-center p-8 border border-dashed border-border-subtle rounded-lg text-text-dim text-xs">
               Nenhuma sessão clínica registrada para este paciente ainda. Adicione logs para monitorar a evolução.
             </div>
           )}

@@ -480,8 +480,17 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
               </AnimatePresence>
             </div>
 
-            <div className="col-span-1 space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">5. Intensidade Emocional</label>
+            <div className="col-span-1 space-y-1.5 relative">
+              <div className="flex justify-between items-end">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">5. Intensidade Emocional</label>
+                <button 
+                  type="button"
+                  onClick={() => setActiveSuggestionField(activeSuggestionField === 'emocao' ? null : 'emocao')}
+                  className="text-[9px] font-bold text-text-dim hover:underline mb-1 cursor-pointer"
+                >
+                  Sintomas Físicos
+                </button>
+              </div>
               <div className="flex items-center gap-3 bg-bg-deep p-2 border border-border-subtle rounded-xl h-[52px]">
                 <select
                   name="emocao-name"
@@ -491,7 +500,7 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
                 >
                   <option value="" className="bg-bg-card text-text-dim">Emoção</option>
                   {BASIC_EMOTIONS.map(e => (
-                    <option key={e} value={e} className="bg-bg-card text-text-main">{e.toUpperCase()}</option>
+                    <option key={e.name} value={e.name} className="bg-bg-card text-text-main">{e.name.toUpperCase()}</option>
                   ))}
                 </select>
                 <div className="flex-1 flex flex-col">
@@ -510,6 +519,32 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
                   />
                 </div>
               </div>
+              <AnimatePresence>
+                {activeSuggestionField === 'emocao' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    className="absolute z-10 bottom-full left-0 right-0 mb-2 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2 max-h-48 overflow-y-auto grid grid-cols-1 gap-1"
+                  >
+                    {BASIC_EMOTIONS.map(e => (
+                      <button 
+                        key={e.name}
+                        type="button"
+                        onClick={() => handleSelectSuggestion('emocao', e.name)}
+                        className="text-left px-3 py-1.5 hover:bg-bg-sidebar rounded-lg transition-colors group cursor-pointer"
+                      >
+                        <span className="block text-[10px] font-black text-primary uppercase tracking-wider group-hover:text-primary-hover">{e.name}</span>
+                        <span className="block text-[9px] text-text-dim whitespace-normal leading-tight">{e.symptoms}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {formData.emocao.name && (
+                <div className="mt-1 p-2 bg-primary/5 border border-primary/10 rounded-lg text-[9px] text-text-dim leading-relaxed">
+                  <span className="font-bold text-primary block mb-0.5">Sintomas Físicos Típicos:</span>
+                  {BASIC_EMOTIONS.find(e => e.name === formData.emocao.name)?.symptoms}
+                </div>
+              )}
             </div>
 
             <div className="col-span-1 space-y-1.5 relative">

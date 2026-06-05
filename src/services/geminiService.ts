@@ -537,11 +537,79 @@ Instruções importantes:
   return response.text || "Erro ao gerar análise do Treinamento de Habilidades Psicológicas.";
 }
 
+export async function extractThpProfileFromProntuario(patientHistoryText: string) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
 
+  const prompt = `
+Você é um psicólogo clínico sênior especializado em Terapia do Esquema e Terapia Cognitivo-Comportamental de Quarta Geração.
+Sua tarefa é analisar o prontuário do paciente (histórico de consultas, anamnese, exames e evoluções clínicas) e extrair os componentes essenciais para o Treinamento de Habilidades Psicológicas (THP) do Neocortex.
 
+Histórico de Evoluções e Anamnese do Paciente:
+"""
+${patientHistoryText}
+"""
 
+Por favor, analise cuidadosamente as informações acima e extraia de forma precisa, clara e científica:
+1. clinicalQueixa: A queixa clínica principal (ex: sentimentos de inadequação, fobia social, perfeccionismo rígido, dependência emocional, etc.).
+2. establishingOperations: Operações estabelecedoras/fatores de estresse ambientais recorrentes (ex: pressão no trabalho, rotina exaustiva, dinâmicas de cobrança familiar).
+3. neglectedNeeds: Uma lista das necessidades emocionais básicas da infância que foram negligenciadas. Escolha apenas entre as opções válidas de enums: "Atenção", "Carinho", "Admiração", "Vínculo", "Proteção", "Cuidado", "Autonomia", "Sociabilidade", "Conversação", "Instrução", "Diversão", "Responsabilidade", "Gregariedade", "Identidade", "Compreensão".
+4. activeSchemas: Uma lista dos Esquemas Iniciais Disfuncionais (EIDs) ativos observados. Escolha apenas entre as opções válidas: "Fracasso", "Abandono/Instabilidade", "Desconfiança/Abuso", "Privação Emocional", "Defectividade/Vergonha", "Isolamento Social/Alienação", "Dependência/Incompetência", "Vulnerabilidade a Danos ou Doenças", "Emaranhamento/Self Subdesenvolvido", "Grandiosidade/Arrogância", "Autocontrole/Autodisciplina Insuficientes", "Subjugação", "Auto-sacrifício", "Busca de Aprovação/Reconhecimento", "Negatividade/Pessimismo", "Inibição Emocional", "Padrões Inflexíveis/Crítica Exagerada", "Punitividade".
+5. beliefs: As crenças em três níveis estruturados:
+   - coreBeliefs: Crenças Centrais disfuncionais (ex: "Sou inadequado", "Sou incapaz", "Vou falhar").
+   - intermediateBeliefs: Regras ou pressupostos condicionais (ex: "Se eu não for perfeito, serei rejeitado").
+   - automaticThoughts: Pensamentos automáticos recorrentes comuns relatados pelo paciente em momentos de trigger.
+6. copingStyleSelected: O estilo de enfrentamento desadaptativo predominante do paciente. Escolha uma das opções exatas: "Evitação (Fugir ou esquivar-se)", "Rendição (Ceder ao esquema)", "Hipercompensação (Agir de forma contrária/arrogante)".
+7. copingBehaviors: Lista de comportamentos desadaptativos específicos que o paciente apresenta como resposta aos seus esquemas (ex: procrastinação, isolamento, tentar agradar a todos, trabalhar em excesso).
 
+Retorne os dados em formato JSON estrito conforme o schema especificado. Seja preciso, clínico e científico.
+`;
 
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          clinicalQueixa: { type: Type.STRING },
+          establishingOperations: { type: Type.STRING },
+          neglectedNeeds: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          activeSchemas: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          beliefs: {
+            type: Type.OBJECT,
+            properties: {
+              coreBeliefs: { type: Type.ARRAY, items: { type: Type.STRING } },
+              intermediateBeliefs: { type: Type.ARRAY, items: { type: Type.STRING } },
+              automaticThoughts: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ["coreBeliefs", "intermediateBeliefs", "automaticThoughts"]
+          },
+          copingStyleSelected: { type: Type.STRING },
+          copingBehaviors: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          }
+        },
+        required: [
+          "clinicalQueixa",
+          "establishingOperations",
+          "neglectedNeeds",
+          "activeSchemas",
+          "beliefs",
+          "copingStyleSelected",
+          "copingBehaviors"
+        ]
+      }
+    }
+  });
 
-
-
+  return JSON.parse(response.text || "{}");
+}
