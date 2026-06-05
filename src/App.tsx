@@ -23,6 +23,7 @@ import IhpPrDigitalApp from './components/IhpPrDigital/IhpPrDigitalApp';
 import LinhaVidaApp from './components/LinhaVida/LinhaVidaApp';
 import PsidiagnosticProApp from './components/PsidiagnosticPro/PsidiagnosticProApp';
 import DfcAssistidoApp from './components/DfcAssistido/DfcAssistidoApp';
+import ThpTrainingApp from './components/ThpTraining/ThpTrainingApp';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import { Window } from './components/ui/Window';
 import { Brain } from 'lucide-react';
@@ -72,6 +73,7 @@ export default function App() {
       'linha-vida': 'Linha da Vida',
       'psidiagnostic-pro': 'Psidiagnostic Pro',
       'dfc-assistido': 'DFC Assistido',
+      'thp-training': 'Treinamento THP',
     };
 
     const nextZ = maxZIndex + 1;
@@ -340,6 +342,13 @@ export default function App() {
           )}
           {win.id === 'dfc-assistido' && (
             <DfcAssistidoApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'thp-training' && (
+            <ThpTrainingApp 
               activePatientId={win.patientId || selectedPatientId || undefined} 
               lockPatient={false} 
               userId={currentUser?.id}

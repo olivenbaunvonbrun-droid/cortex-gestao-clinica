@@ -8,6 +8,9 @@ import RichTextEditor from '../RichTextEditor';
 import { clinicalInsight } from '../../services/geminiService';
 import ConfirmModal from '../ui/ConfirmModal';
 import useConfirm from '../../hooks/useConfirm';
+import { exportToHtml as exportLinhaVida } from '../LinhaVida/utils/export';
+import { exportToHtml as exportDfc } from '../DfcAssistido/utils/export';
+import { exportThpToHtml as exportThp } from '../ThpTraining/utils/export';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface RecordsProps {
@@ -1407,6 +1410,14 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                 <Layers size={11} />
                                 Usar DFC
                               </button>
+                              <button
+                                onClick={() => openTool('thp-training', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir Treinamento THP na tela"
+                              >
+                                <Activity size={11} />
+                                Usar THP
+                              </button>
                             </div>
                           )}
                           <button
@@ -1504,7 +1515,56 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                              <div className="bg-bg-sidebar/40 border border-border-subtle rounded-[1.5rem] p-8 group hover:border-primary/20 transition-all hover:bg-bg-card/50 relative">
                                
                                <div className="absolute top-8 right-8 flex items-center gap-2 opacity-0 group-hover/entry:opacity-100 transition-opacity">
-                                 {(!entry.tipo || entry.tipo === 'evolucao') && (
+                                  {entry.tipo && entry.tipo !== 'evolucao' && openTool && (
+                                    <>
+                                      <button 
+                                        onClick={() => {
+                                          const toolIdMap: Record<string, string> = {
+                                            'linha_vida': 'linha-vida',
+                                            'dfc': 'dfc-assistido',
+                                            'thp': 'thp-training',
+                                            'rid-inteligente': 'rid-inteligente',
+                                            'rid': 'rid-inteligente',
+                                            'ihs-digital': 'ihs-digital',
+                                            'ihs': 'ihs-digital',
+                                            'ysq-smart-ai': 'ysq-smart-ai',
+                                            'ysq': 'ysq-smart-ai',
+                                            'psidiagnostic': 'psidiagnostic-pro',
+                                            'psidiagnostic-pro': 'psidiagnostic-pro',
+                                            'plano-clinico-integrado': 'plano-clinico-integrado',
+                                            'pci': 'plano-clinico-integrado',
+                                            'ihp-pr-digital': 'ihp-pr-digital',
+                                            'ihp': 'ihp-pr-digital',
+                                            'registro-atendimento': 'registro-atendimento'
+                                          };
+                                          const mappedId = toolIdMap[entry.tipo as string] || entry.tipo;
+                                          openTool(mappedId, selectedPatient?.id);
+                                        }}
+                                        className="p-2 text-text-dim hover:text-primary cursor-pointer transition-colors"
+                                        title="Abrir e Editar no Módulo"
+                                      >
+                                        <Edit size={16} />
+                                      </button>
+                                      {(entry.tipo === 'linha_vida' || entry.tipo === 'dfc' || entry.tipo === 'thp') && (
+                                        <button 
+                                          onClick={() => {
+                                            if (entry.tipo === 'linha_vida' && entry.metadata?.linhaVidaData) {
+                                              exportLinhaVida(entry.metadata.linhaVidaData);
+                                            } else if (entry.tipo === 'dfc' && entry.metadata?.dfcData) {
+                                              exportDfc(entry.metadata.dfcData);
+                                            } else if (entry.tipo === 'thp' && entry.metadata?.thpData) {
+                                              exportThp(entry.metadata.thpData);
+                                            }
+                                          }}
+                                          className="p-2 text-text-dim hover:text-emerald-400 cursor-pointer transition-colors"
+                                          title="Exportar Relatório PDF/Html"
+                                        >
+                                          <Download size={16} />
+                                        </button>
+                                      )}
+                                    </>
+                                  )}
+                                  {(!entry.tipo || entry.tipo === 'evolucao') && (
                                    <button 
                                      onClick={() => {
                                        const eventObj = {

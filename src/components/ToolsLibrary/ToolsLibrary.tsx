@@ -12,7 +12,8 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight, 
-  GripVertical 
+  GripVertical,
+  Activity
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -44,6 +45,14 @@ const DEFAULT_TOOLS: ToolItem[] = [
     title: 'Linha da Vida',
     description: 'Mapeamento cronológico de marcos autobiográficos e de valência emocional (picos e vales) com elaboração de laudos integrativos via IA.',
     icon: TrendingUp,
+    status: 'active',
+    category: 'Clínico & TCC',
+  },
+  {
+    id: 'thp-training',
+    title: 'Treinamento THP',
+    description: 'Programa estruturado para Treinamento de Habilidades Psicológicas (THP) do paciente, contendo diário de treino, plano de exercícios práticos e supervisão clínica via IA.',
+    icon: Activity,
     status: 'active',
     category: 'Clínico & TCC',
   },

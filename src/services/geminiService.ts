@@ -484,6 +484,60 @@ Instruções importantes:
   return response.text || "Erro ao gerar análise da conceituação cognitiva.";
 }
 
+export async function analyzeThpAssessment(
+  patient: { name: string; age: string },
+  skillName: string,
+  progressText: string,
+  sessionLogsText: string,
+  exercisesText: string,
+  additionalContext: string = ""
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Tarefa: Realizar supervisão clínica e elaborar um laudo de evolução psicoterapêutica com base no Treinamento de Habilidades Psicológicas (THP) do paciente.
+
+Dados do Paciente:
+Nome: ${patient.name}
+Idade: ${patient.age} Anos
+
+Habilidade Psicológica em Treinamento: ${skillName}
+
+DADOS DO TREINAMENTO DE HABILIDADE:
+- Níveis de Progresso:
+${progressText}
+
+- Exercícios Propostos e Status:
+${exercisesText}
+
+- Diários/Sessões de Treinamento Executadas:
+${sessionLogsText}
+
+${additionalContext ? `Contexto Clínico Adicional (Prontuário/Evoluções): \n${additionalContext}\n` : ""}
+
+ESTRUTURA DO RELATÓRIO CLÍNICO / LAUDO DE EVOLUÇÃO THP:
+1. ANÁLISE QUANTITATIVA E EVOLUTIVA (Análise do progresso atual do nível de habilidade e nível alvo, contextualizando o comprometimento do paciente)
+2. AVALIAÇÃO DE EXERCÍCIOS E ADERÊNCIA (Discussão sobre a realização dos exercícios recomendados, o que funcionou e o que não funcionou)
+3. DINÂMICA DOS OBSTÁCULOS E ESTRATÉGIAS DE ENFRENTAMENTO (Análise sutil das principais barreiras encontradas, como resistências cognitivas, esquemas ativados ou contingências ambientais, e a eficácia das estratégias usadas para superá-las)
+4. CONCLUSÃO CLÍNICA E RECOMENDAÇÕES (Diretrizes terapêuticas para o paciente continuar evoluindo nessa habilidade ou se já é o momento de iniciar o treinamento de outra habilidade psicológica)
+
+Instruções importantes:
+- Tom clínico qualificado, empático, analítico e profissional.
+- Evite julgamentos de valor ou determinismos. Use expressões adequadas de hipóteses clínicas.
+- Formate em Markdown com títulos claros em negrito.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados de forma automática no cabeçalho e rodapé do documento de exportação.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+
+  return response.text || "Erro ao gerar análise do Treinamento de Habilidades Psicológicas.";
+}
+
+
 
 
 
