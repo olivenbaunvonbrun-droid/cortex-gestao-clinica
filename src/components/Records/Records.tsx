@@ -1328,95 +1328,95 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
               <div className="space-y-10 relative z-10">
                  {activeTab === 'evolutions' && (
                    <div className="animate-in fade-in duration-500">
-                      <div className="flex items-center justify-between mb-6">
-                       <h4 className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] flex items-center gap-3">
-                        <Plus size={14} className="text-primary" /> Registro de Sessão Atual
-                      </h4>
-                      <div className="flex items-center gap-3">
-                        {openTool && (
-                          <>
-                            <button
-                              onClick={() => openTool('rid-inteligente', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir RID Inteligente na tela"
-                            >
-                              <Brain size={11} />
-                              Usar RID
-                            </button>
-                            <button
-                              onClick={() => openTool('ihs-digital', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir IHS Digital na tela"
-                            >
-                              <ClipboardCheck size={11} />
-                              Usar IHS
-                            </button>
-                            <button
-                              onClick={() => openTool('ysq-smart-ai', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir YSQ-Smart AI na tela"
-                            >
-                              <Sparkles size={11} />
-                              Usar YSQ
-                            </button>
-                            <button
-                              onClick={() => openTool('registro-atendimento', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir Registro de Atendimento na tela"
-                            >
-                              <ClipboardList size={11} />
-                              Usar Registro
-                            </button>
-                            <button
-                              onClick={() => openTool('plano-clinico-integrado', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir Plano Clínico Integrado na tela"
-                            >
-                              <Layers size={11} />
-                              Usar PCI
-                            </button>
-                            <button
-                              onClick={() => openTool('ihp-pr-digital', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir IHP-PR Digital na tela"
-                            >
-                              <Activity size={11} />
-                              Usar IHP
-                            </button>
-                            <button
-                              onClick={() => openTool('linha-vida', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir Linha da Vida na tela"
-                            >
-                              <TrendingUp size={11} />
-                              Usar Linha da Vida
-                            </button>
-                            <button
-                              onClick={() => openTool('psidiagnostic-pro', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir Psidiagnostic Pro na tela"
-                            >
-                              <FileSpreadsheet size={11} />
-                              Usar Psidiagnostic
-                            </button>
-                            <button
-                              onClick={() => openTool('dfc-assistido', selectedPatient?.id)}
-                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
-                              title="Abrir DFC Assistido na tela"
-                            >
-                              <Layers size={11} />
-                              Usar DFC
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={handleClearForm}
-                          className="p-2 text-text-dim hover:text-amber-500 transition-all"
-                          title="Limpar formulário"
-                        >
-                          <RotateCcw size={16} />
-                        </button>
-                      </div>
+                      <div className="flex items-center justify-between mb-6 gap-4">
+                        <h4 className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] flex items-center gap-3 shrink-0">
+                          <Plus size={14} className="text-primary" /> Registro de Sessão Atual
+                        </h4>
+                        <div className="flex items-center gap-3 overflow-hidden min-w-0">
+                          {openTool && (
+                            <div className="flex items-center gap-2 overflow-x-auto scroller-hide max-w-full pb-1 scroll-smooth min-w-0 shrink">
+                              <button
+                                onClick={() => openTool('rid-inteligente', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir RID Inteligente na tela"
+                              >
+                                <Brain size={11} />
+                                Usar RID
+                              </button>
+                              <button
+                                onClick={() => openTool('ihs-digital', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir IHS Digital na tela"
+                              >
+                                <ClipboardCheck size={11} />
+                                Usar IHS
+                              </button>
+                              <button
+                                onClick={() => openTool('ysq-smart-ai', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir YSQ-Smart AI na tela"
+                              >
+                                <Sparkles size={11} />
+                                Usar YSQ
+                              </button>
+                              <button
+                                onClick={() => openTool('registro-atendimento', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir Registro de Atendimento na tela"
+                              >
+                                <ClipboardList size={11} />
+                                Usar Registro
+                              </button>
+                              <button
+                                onClick={() => openTool('plano-clinico-integrado', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir Plano Clínico Integrado na tela"
+                              >
+                                <Layers size={11} />
+                                Usar PCI
+                              </button>
+                              <button
+                                onClick={() => openTool('ihp-pr-digital', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir IHP-PR Digital na tela"
+                              >
+                                <Activity size={11} />
+                                Usar IHP
+                              </button>
+                              <button
+                                onClick={() => openTool('linha-vida', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir Linha da Vida na tela"
+                              >
+                                <TrendingUp size={11} />
+                                Usar Linha da Vida
+                              </button>
+                              <button
+                                onClick={() => openTool('psidiagnostic-pro', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir Psidiagnostic Pro na tela"
+                              >
+                                <FileSpreadsheet size={11} />
+                                Usar Psidiagnostic
+                              </button>
+                              <button
+                                onClick={() => openTool('dfc-assistido', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir DFC Assistido na tela"
+                              >
+                                <Layers size={11} />
+                                Usar DFC
+                              </button>
+                            </div>
+                          )}
+                          <button
+                            onClick={handleClearForm}
+                            className="p-2 text-text-dim hover:text-amber-500 transition-all shrink-0"
+                            title="Limpar formulário"
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                        </div>
                     </div>
 
                     <div className="bg-bg-sidebar rounded-3xl border border-border-subtle overflow-hidden shadow-inner focus-within:border-primary/30 transition-colors">
