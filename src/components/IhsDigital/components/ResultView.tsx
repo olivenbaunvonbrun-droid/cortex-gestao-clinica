@@ -24,9 +24,18 @@ export function ResultView({ assessment, onBack, onExport }: ResultViewProps) {
       [Frequency.ALWAYS]: 4,
     };
 
+    const invertedItems = new Set([2, 8, 9, 13, 17, 18, 19, 22, 23, 24, 25, 26, 33, 34, 36, 37, 39, 41, 42]);
+
     itemIds.forEach(id => {
       const ans = assessment.answers[id];
-      if (ans) rawScore += scoreMap[ans];
+      if (ans) {
+        const value = scoreMap[ans];
+        if (invertedItems.has(id)) {
+          rawScore += (4 - value);
+        } else {
+          rawScore += value;
+        }
+      }
     });
 
     return Math.round((rawScore / (itemIds.length * 4)) * 100);

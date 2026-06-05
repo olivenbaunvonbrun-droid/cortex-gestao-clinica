@@ -1,5 +1,4 @@
-import React from 'react';
-import { Brain, Users, ClipboardList, Sparkles, BookOpen, ExternalLink, Layers } from 'lucide-react';
+import { Brain, Users, ClipboardList, Sparkles, BookOpen, ExternalLink, Layers, TrendingUp, FileSpreadsheet } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface ToolItem {
@@ -18,6 +17,30 @@ interface ToolsLibraryProps {
 
 export default function ToolsLibrary({ onOpenTool, openWindows }: ToolsLibraryProps) {
   const tools: ToolItem[] = [
+    {
+      id: 'psidiagnostic-pro',
+      title: 'Psidiagnostic Pro',
+      description: 'Elaboração de laudos e pareceres psicodiagnósticos baseados no prontuário do paciente (evoluções, anamnese) e/ou arquivos de exames externos.',
+      icon: FileSpreadsheet,
+      status: 'active',
+      category: 'Avaliação Psicológica',
+    },
+    {
+      id: 'linha-vida',
+      title: 'Linha da Vida',
+      description: 'Mapeamento cronológico de marcos autobiográficos e de valência emocional (picos e vales) com elaboração de laudos integrativos via IA.',
+      icon: TrendingUp,
+      status: 'active',
+      category: 'Clínico & TCC',
+    },
+    {
+      id: 'dfc-assistido',
+      title: 'DFC Assistido',
+      description: 'Modelagem interativa do Diagrama de Funcionamento Cognitivo (DFC/DCC) em TCC com mapeamento estrutural e formulação clínica assistida por IA.',
+      icon: Layers,
+      status: 'active',
+      category: 'Clínico & TCC',
+    },
     {
       id: 'rid-inteligente',
       title: 'RID Inteligente',

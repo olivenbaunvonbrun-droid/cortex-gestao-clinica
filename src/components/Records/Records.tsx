@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck, ClipboardList, Layers, Activity } from 'lucide-react';
+import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck, ClipboardList, Layers, Activity, TrendingUp, FileSpreadsheet } from 'lucide-react';
 import { db, type Patient, type MedicalRecord, type MedicalRecordEntry, logAction, type Attachment } from '../../lib/db';
 import { cn, formatDate } from '../../lib/utils';
 import { syncService } from '../../lib/syncService';
@@ -200,22 +200,70 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                     <div className="flex items-center gap-2">
                       {(event.type === 'evolution' || event.type === 'attachment') && (
                         <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                          <button className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-bg-deep transition-all">
-                            <Eye size={12} />
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedEvent(event);
+                              setEditEventContent(event.content || '');
+                              setIsEditingEvent(false);
+                            }}
+                            className="p-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-bg-deep transition-all"
+                            title="Visualizar"
+                          >
+                            <Eye size={11} />
                           </button>
-                          {event.type === 'evolution' && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (event.type === 'evolution') {
                                 setSelectedEvent(event);
                                 setEditEventContent(event.content || '');
                                 setIsEditingEvent(true);
-                              }}
-                              className="p-2 bg-amber-500/10 text-amber-500 rounded-lg hover:bg-amber-500 hover:text-white transition-all"
-                            >
-                              <Edit size={12} />
-                            </button>
-                          )}
+                              } else {
+                                triggerEditAttachmentName(event);
+                              }
+                            }}
+                            className="p-1.5 bg-amber-500/10 text-amber-500 rounded-lg hover:bg-amber-500 hover:text-white transition-all"
+                            title={event.type === 'evolution' ? "Editar" : "Renomear"}
+                          >
+                            <Edit size={11} />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              triggerSingleFileImport(event);
+                            }}
+                            className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-bg-deep transition-all"
+                            title="Importar / Substituir"
+                          >
+                            <Upload size={11} />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExportSingleEvent(event);
+                            }}
+                            className="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all"
+                            title="Exportar"
+                          >
+                            <Download size={11} />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("Deseja realmente excluir este item?")) {
+                                if (event.type === 'evolution') {
+                                  handleDeleteEntry(event.timestamp);
+                                } else {
+                                  handleDeleteAttachment(event.file.id);
+                                }
+                              }
+                            }}
+                            className="p-1.5 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all"
+                            title="Excluir"
+                          >
+                            <Trash2 size={11} />
+                          </button>
                         </div>
                       )}
                       <span className="text-[10px] text-text-dim/40 font-black tabular-nums whitespace-nowrap">
@@ -716,6 +764,139 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
     }
   };
 
+  const handleExportSingleEvent = (event: any) => {
+    if (event.type === 'evolution') {
+      const content = event.content || '';
+      const blob = new Blob([content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `evolucao_${event.timestamp}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else if (event.type === 'attachment' && event.file) {
+      const link = document.createElement('a');
+      link.href = event.file.conteudoArquivo;
+      link.download = event.file.nomeArquivo;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleImportSingleEvent = async (event: any, file: File) => {
+    if (!selectedPatient || !record) return;
+
+    if (event.type === 'evolution') {
+      const reader = new FileReader();
+      reader.onload = async (e: any) => {
+        const text = e.target.result;
+        let content = text;
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed.content) content = parsed.content;
+          else if (parsed.textoHtml) content = parsed.textoHtml;
+        } catch (_) {}
+
+        const updatedEntradas = record.entradas.map(ent => 
+          ent.timestamp === event.timestamp 
+            ? { ...ent, textoHtml: content } 
+            : ent
+        );
+        await db.prontuarios.update(selectedPatient.id, { entradas: updatedEntradas });
+        
+        const updatedRecord = { ...record, entradas: updatedEntradas };
+        setRecord(updatedRecord);
+        
+        const firebaseUid = auth.currentUser?.uid;
+        if (firebaseUid) {
+          await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+        }
+        
+        loadTimeline(selectedPatient.id);
+        alert('Conteúdo da evolução clínica importado e substituído com sucesso!');
+        if (selectedEvent && selectedEvent.timestamp === event.timestamp) {
+          setSelectedEvent({ ...selectedEvent, content: content });
+          setEditEventContent(content);
+        }
+      };
+      reader.readAsText(file);
+    } else if (event.type === 'attachment') {
+      const reader = new FileReader();
+      reader.onload = async (e: any) => {
+        const base64Content = e.target.result;
+        
+        const updatedAttachment = {
+          ...event.file,
+          nomeArquivo: file.name,
+          tipoArquivo: file.type,
+          conteudoArquivo: base64Content
+        };
+        
+        await db.anexos.put(updatedAttachment);
+        
+        const firebaseUid = auth.currentUser?.uid;
+        if (firebaseUid) {
+          await syncService.saveToCloud(firebaseUid, 'anexos', updatedAttachment);
+        }
+        
+        loadTimeline(selectedPatient.id);
+        alert('Arquivo do documento importado e substituído com sucesso!');
+        if (selectedEvent && selectedEvent.file?.id === event.file.id) {
+          setSelectedEvent({ ...selectedEvent, file: updatedAttachment });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditAttachmentName = async (attachment: any, newName: string) => {
+    if (!selectedPatient || !newName.trim()) return;
+    try {
+      const updated = { ...attachment, nomeArquivo: newName.trim() };
+      await db.anexos.put(updated);
+      
+      const firebaseUid = auth.currentUser?.uid;
+      if (firebaseUid) {
+        await syncService.saveToCloud(firebaseUid, 'anexos', updated);
+      }
+      
+      loadTimeline(selectedPatient.id);
+      if (selectedEvent && selectedEvent.file?.id === attachment.id) {
+        setSelectedEvent({ ...selectedEvent, title: `Upload: ${newName.trim()}`, file: updated });
+      }
+      alert("Nome do documento atualizado com sucesso!");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const triggerEditAttachmentName = (event: any) => {
+    const newName = prompt("Digite o novo nome para o documento:", event.file.nomeArquivo);
+    if (newName) {
+      handleEditAttachmentName(event.file, newName);
+    }
+  };
+
+  const triggerSingleFileImport = (event: any) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    if (event.type === 'evolution') {
+      input.accept = '.txt,.html,.json';
+    } else {
+      input.accept = '*/*';
+    }
+    input.onchange = async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      await handleImportSingleEvent(event, file);
+    };
+    input.click();
+  };
+
+
   const handleExportRecordJson = () => {
     if (!selectedPatient || !record) return;
     const dataStr = JSON.stringify({
@@ -1201,6 +1382,30 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                             >
                               <Activity size={11} />
                               Usar IHP
+                            </button>
+                            <button
+                              onClick={() => openTool('linha-vida', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir Linha da Vida na tela"
+                            >
+                              <TrendingUp size={11} />
+                              Usar Linha da Vida
+                            </button>
+                            <button
+                              onClick={() => openTool('psidiagnostic-pro', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir Psidiagnostic Pro na tela"
+                            >
+                              <FileSpreadsheet size={11} />
+                              Usar Psidiagnostic
+                            </button>
+                            <button
+                              onClick={() => openTool('dfc-assistido', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir DFC Assistido na tela"
+                            >
+                              <Layers size={11} />
+                              Usar DFC
                             </button>
                           </>
                         )}
@@ -1873,16 +2078,75 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                   </button>
                 </div>
               ) : (
-                 selectedEvent.type === 'evolution' && (
-                   <div className="p-8 border-t border-border-subtle bg-bg-sidebar/50 flex justify-end gap-4 shrink-0 font-sans">
+                (selectedEvent.type === 'evolution' || selectedEvent.type === 'attachment') && (
+                  <div className="p-8 border-t border-border-subtle bg-bg-sidebar/50 flex justify-between items-center gap-4 shrink-0 font-sans">
+                    {/* Left: Delete */}
+                    <div>
                       <button 
-                        onClick={() => setIsEditingEvent(true)}
-                        className="flex items-center gap-3 px-10 py-4 bg-amber-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-600 transition-all shadow-xl shadow-amber-500/25"
+                        onClick={() => {
+                          if (window.confirm("Deseja realmente excluir este item permanentemente?")) {
+                            if (selectedEvent.type === 'evolution') {
+                              handleDeleteEntry(selectedEvent.timestamp);
+                            } else {
+                              handleDeleteAttachment(selectedEvent.file.id);
+                            }
+                            setSelectedEvent(null);
+                          }
+                        }}
+                        className="flex items-center gap-2 px-6 py-3.5 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md"
                       >
-                        <Edit size={18} /> Editar Evolução
+                        <Trash2 size={14} /> Excluir
                       </button>
-                   </div>
-                 )
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-3">
+                      {selectedEvent.type === 'evolution' ? (
+                        <>
+                          <button 
+                            onClick={() => triggerSingleFileImport(selectedEvent)}
+                            className="flex items-center gap-2 px-6 py-3.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-bg-deep border border-emerald-500/25 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md"
+                          >
+                            <Upload size={14} /> Importar Texto
+                          </button>
+                          <button 
+                            onClick={() => handleExportSingleEvent(selectedEvent)}
+                            className="flex items-center gap-2 px-6 py-3.5 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/25 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md"
+                          >
+                            <Download size={14} /> Exportar HTML
+                          </button>
+                          <button 
+                            onClick={() => setIsEditingEvent(true)}
+                            className="flex items-center gap-2 px-6 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md"
+                          >
+                            <Edit size={14} /> Editar Evolução
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => triggerSingleFileImport(selectedEvent)}
+                            className="flex items-center gap-2 px-6 py-3.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-bg-deep border border-emerald-500/25 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md"
+                          >
+                            <Upload size={14} /> Substituir Arquivo
+                          </button>
+                          <button 
+                            onClick={() => handleExportSingleEvent(selectedEvent)}
+                            className="flex items-center gap-2 px-6 py-3.5 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/25 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md"
+                          >
+                            <Download size={14} /> Baixar
+                          </button>
+                          <button 
+                            onClick={() => triggerEditAttachmentName(selectedEvent)}
+                            className="flex items-center gap-2 px-6 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-md"
+                          >
+                            <Edit size={14} /> Renomear
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
               )}
             </motion.div>
           </div>

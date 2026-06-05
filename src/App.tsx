@@ -20,6 +20,9 @@ import YsqSmartAiApp from './components/YsqSmartAi/YsqSmartAiApp';
 import RegistroAtendimentoApp from './components/RegistroAtendimento/RegistroAtendimentoApp';
 import PlanoClinicoIntegradoApp from './components/PlanoClinicoIntegrado/PlanoClinicoIntegradoApp';
 import IhpPrDigitalApp from './components/IhpPrDigital/IhpPrDigitalApp';
+import LinhaVidaApp from './components/LinhaVida/LinhaVidaApp';
+import PsidiagnosticProApp from './components/PsidiagnosticPro/PsidiagnosticProApp';
+import DfcAssistidoApp from './components/DfcAssistido/DfcAssistidoApp';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import { Window } from './components/ui/Window';
 import { Brain } from 'lucide-react';
@@ -66,6 +69,9 @@ export default function App() {
       'registro-atendimento': 'Registro de Atendimento',
       'plano-clinico-integrado': 'Plano Clínico Integrado',
       'ihp-pr-digital': 'IHP-PR Digital',
+      'linha-vida': 'Linha da Vida',
+      'psidiagnostic-pro': 'Psidiagnostic Pro',
+      'dfc-assistido': 'DFC Assistido',
     };
 
     const nextZ = maxZIndex + 1;
@@ -313,6 +319,27 @@ export default function App() {
           )}
           {win.id === 'ihp-pr-digital' && (
             <IhpPrDigitalApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'linha-vida' && (
+            <LinhaVidaApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'psidiagnostic-pro' && (
+            <PsidiagnosticProApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'dfc-assistido' && (
+            <DfcAssistidoApp 
               activePatientId={win.patientId || selectedPatientId || undefined} 
               lockPatient={false} 
               userId={currentUser?.id}

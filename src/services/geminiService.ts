@@ -361,6 +361,132 @@ ${rawAnswersSummary}
   return response.text || "Erro ao gerar laudo do IHP-PR.";
 }
 
+export async function analyzeLinhaVidaAssessment(
+  patient: { name: string; age: string },
+  eventsText: string
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Tarefa: Analisar a Linha da Vida de um paciente sob a perspectiva clínica e estruturar um Relatório Clínico de Avaliação Autobiográfica.
+
+Dados do Paciente:
+Nome: ${patient.name}
+Idade: ${patient.age} Anos
+
+Cronologia de Eventos Cadastrados (Histórico de Vida):
+${eventsText}
+
+ESTRUTURA DO RELATÓRIO:
+1. IDENTIFICAÇÃO (Nome e idade)
+2. SÍNTESE DO HISTÓRICO DE VIDA (Análise geral da distribuição de eventos positivos, negativos e neutros ao longo do ciclo vital - infância, adolescência e fase adulta)
+3. ANÁLISE DE PICOS E VALES EMOCIONAIS (Mapeamento dos pontos de maior impacto emocional positivo e dos vales de maior impacto negativo ou traumático, explorando as dinâmicas associadas)
+4. INTERPRETAÇÃO PSICOLÓGICA E ABORDAGEM DOS ESQUEMAS/CRENÇAS (Análise qualitativa de como estes eventos podem ter moldado crenças centrais, esquemas cognitivos iniciais desadaptativos ou padrões de enfrentamento/coping recorrentes no paciente)
+5. RECURSOS DE RESILIÊNCIA E FORÇA PESSOAL (Identificação de recursos de enfretamento saudáveis e momentos de superação observados na história)
+6. RECOMENDAÇÕES TERAPÊUTICAS (Diretrizes para o manejo clínico, intervenções cognitivas e emocionais direcionadas)
+
+Instruções importantes:
+- Tom estritamente ético, profissional, analítico e empático.
+- Evite determinismos. Use expressões como "indica tendência a", "pode sugerir a formação de", "correlaciona-se com".
+- Formate em Markdown com títulos em negrito.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados automaticamente pelo sistema no cabeçalho e rodapé do documento de exportação.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+
+  return response.text || "Erro ao gerar análise da linha da vida.";
+}
+
+export async function analyzePsidiagnosticAssessment(
+  patient: { name: string; age: string },
+  prontuarioText: string,
+  filesText: string
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Tarefa: Realizar uma análise psicodiagnóstica clínica e elaborar um Relatório de Laudo Técnico Psicológico.
+
+Dados do Paciente:
+Nome: ${patient.name}
+Idade: ${patient.age} Anos
+
+FONTES DE INFORMAÇÃO ANALISADAS:
+
+${prontuarioText ? `--- HISTÓRICO DE PRONTUÁRIO CLÍNICO (Sessões e Evoluções): ---\n${prontuarioText}\n` : ''}
+
+${filesText ? `--- DOCUMENTOS ANEXOS (Laudos, Exames e Triagens): ---\n${filesText}\n` : ''}
+
+ESTRUTURA DO RELATÓRIO:
+1. IDENTIFICAÇÃO (Nome e idade do paciente)
+2. DESCRIÇÃO DA DEMANDA (Principais queixas, sintomas, motivos da consulta e demandas observadas nas fontes)
+3. ANÁLISE INTEGRATIVA DAS FONTES (Cruzamento de dados entre o histórico clínico e documentos externos para fundamentar a avaliação)
+4. EXAME DE FUNÇÕES PSÍQUICAS E ASPECTOS COGNITIVOS (Sintetizar as manifestações emocionais, cognitivas, dinâmicas de humor e esquemas cognitivos)
+5. DIAGNÓSTICO E ENQUADRAMENTO (Formular hipóteses diagnósticas com referências ao DSM-5 ou CID-11 de forma não-determinista, correlacionando os sintomas observados)
+6. PLANEJAMENTO DE DIRETRIZES TERAPÊUTICAS (Sugestão de condutas, focos de intervenção e eventuais encaminhamentos a outros especialistas)
+
+Instruções importantes:
+- Tom estritamente profissional, ético, analítico, acadêmico e empático.
+- Evite determinismos diagnósticos. Use termos como "corresponde a um perfil de", "sugere forte ativação de", "indica compatibilidade com".
+- Formate em Markdown com títulos em negrito.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados de forma automática no cabeçalho e rodapé do documento de exportação.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+
+  return response.text || "Erro ao gerar laudo psicodiagnóstico.";
+}
+
+export async function analyzeDfcAssessment(
+  patient: { name: string; age: string },
+  dfcText: string
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Tarefa: Realizar uma supervisão clínica e elaboração de laudo com base no Diagrama de Funcionamento Cognitivo (DFC / DCC) preenchido sob os preceitos da Terapia Cognitivo-Comportamental (TCC).
+
+Dados do Paciente:
+Nome: ${patient.name}
+Idade: ${patient.age} Anos
+
+DIAGRAMA COGNITIVO PREENCHIDO:
+${dfcText}
+
+ESTRUTURA DO RELATÓRIO CLÍNICO:
+1. IDENTIFICAÇÃO E SUMÁRIO DE CASO (Identificação e breve resumo estrutural)
+2. ANÁLISE DE HISTÓRICO DE DESENVOLVIMENTO (Foco em como as experiências relevantes da infância geraram as crenças centrais identificadas)
+3. CORRELAÇÕES ENTRE REGRAS E ESTRATÉGIAS DE ENFRENTAMENTO (Explicação de como as regras condicionais 'Se... então...' determinam as estratégias compensatórias utilizadas para proteger o paciente da ativação das crenças nucleares)
+4. DINÂMICA DAS SITUAÇÕES MAPEADAS (Análise funcional de como as situações típicas desencadeiam os pensamentos automáticos, significados pessoais, emoções associadas e comportamentos de esquiva/reação)
+5. DIRETRIZES DE REESTRUTURAÇÃO E EXPERIMENTOS COMPORTAMENTAIS (Sugestão de intervenções específicas baseadas em TCC, técnicas de conceituação, questionamento socrático e delineamento de experimentos comportamentais para testar as regras condicionais)
+
+Instruções importantes:
+- Tom clínico qualificado, empático, analítico e profissional.
+- Evite determinismos diagnósticos. Use expressões como "sugere um padrão de", "indica reatividade a", "correlaciona-se com".
+- Formate em Markdown com títulos em negrito.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados de forma automática no cabeçalho e rodapé do documento de exportação.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+
+  return response.text || "Erro ao gerar análise da conceituação cognitiva.";
+}
+
+
+
+
 
 
 
