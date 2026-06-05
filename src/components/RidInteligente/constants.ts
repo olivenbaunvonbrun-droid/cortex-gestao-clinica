@@ -57,15 +57,64 @@ export const SCHEMAS_DATA = [
 export const NEEDS_DATA = [
   {
     category: "Necessidades Infantis",
-    needs: ["Atenção", "Carinho", "Admiração", "Vínculo", "Proteção", "Cuidado", "Autonomia", "Sociabilidade", "Conversação", "Instrução", "Diversão", "Responsabilidade", "Gregariedade", "Identidade", "Compreensão"]
+    needs: [
+      "Atenção", "Carinho", "Reconhecimento", "Vinculação", "Proteção", 
+      "Cuidado", "Autonomia", "Socialização", "Conversação", "Instrução", 
+      "Brincar", "Limites", "Gregária", "Autoconceito", "Compreensão"
+    ]
   },
   {
-    category: "Necessidades Adultas (Individuais)",
-    needs: ["Reconhecimento", "Autoestima", "Confiança", "Atratividade", "Realização", "Asserção", "Liberdade", "Aprovação", "Otimismo", "Reflexão", "Controle", "Coragem", "Intimidade", "Dignidade"]
+    category: "Estilos Parentais",
+    needs: ["Negligente", "Permissivo", "Autoritário", "Participativo"]
   },
   {
-    category: "Necessidades na Conjugalidade",
-    needs: ["Conversa Íntima", "Atração Física", "Sexo", "Romantismo", "Apoio Doméstico", "Apoio Financeiro", "Lazer", "Individualidade"]
+    category: "Necessidades Parentais",
+    needs: [
+      "Honra", "Respeito", "Carinho", "Reconhecimento", "Vinculação", 
+      "Autoridade", "Autonomia", "Conversação", "Compreensão", "Sabedoria"
+    ]
+  },
+  {
+    category: "Necessidades Conjugais",
+    needs: [
+      "Atenção", "Admiração", "Conversa íntima", "Carinho", "Atração física", 
+      "Sexo", "Romantismo", "Apoio doméstico", "Apoio financeiro", "Lazer", "Individualidade"
+    ]
+  },
+  {
+    category: "Necessidades Adultas",
+    needs: [
+      "Atenção", "Carinho", "Reconhecimento", "Autoestima", "Vínculo", 
+      "Confiança", "Socialização", "Desejabilidade", "Realização", "Autonomia", 
+      "Proteção", "Asserção", "Gregária", "Compreensão", "Responsabilidade", 
+      "Liberdade e poder", "Aprovação", "Otimismo", "Reflexividade", "Controle", 
+      "Recreatividade", "Enfrentamento", "Intimidade", "Correspondência", "Feedback", "Merecimento"
+    ]
+  },
+  {
+    category: "Esquemas Desadaptativos",
+    needs: [
+      "Privação emocional", "Abandono", "Desconfiança", "Defectividade", 
+      "Indesejabilidade social", "Fracasso", "Dependência/incompetência", 
+      "Vulnerabilidade", "Emaranhamento", "Subjugação", "Autossacrifício", 
+      "Inibição emocional", "Padrões inflexíveis", "Grandiosidade", "Autocontrole insuficiente"
+    ]
+  },
+  {
+    category: "Habilidades Psicológicas",
+    needs: [
+      "Autoconhecimento", "Autorregulação emocional", "Raciocínio Realisticamente Otimista", 
+      "Autoestima", "Resolutividade e Enfrentamento", "Autocontrole", "Sociabilidade", 
+      "Imunidade Social", "Sensibilidade Social", "Hedonismo Responsável"
+    ]
+  },
+  {
+    category: "Dimensões da Vida",
+    needs: ["Pessoal", "Interpessoal", "Ocupacional", "Material", "Recreativa", "Existencial"]
+  },
+  {
+    category: "P's da Felicidade",
+    needs: ["Prazer", "Paz", "Pertencimento", "Propósito", "Positividade"]
   }
 ];
 

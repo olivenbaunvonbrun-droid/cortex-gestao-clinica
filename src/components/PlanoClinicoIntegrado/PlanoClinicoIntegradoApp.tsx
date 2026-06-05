@@ -778,8 +778,15 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
                               label="Necessidades Identificadas (Não Satisfeitas)" 
                               value={formState.necessidadesIdentificadas} 
                               onChange={v => setFormState(p => ({ ...p, necessidadesIdentificadas: v }))} 
-                              suggestions={TCC_CONCEPTS.NecessidadesInfantis}
-                              placeholder="Selecione as necessidades infantis cronicamente insatisfeitas..."
+                              suggestions={[
+                                ...TCC_CONCEPTS.NecessidadesInfantis,
+                                ...TCC_CONCEPTS.NecessidadesParentais,
+                                ...TCC_CONCEPTS.NecessidadesConjugais,
+                                ...TCC_CONCEPTS.NecessidadesAdultas,
+                                ...TCC_CONCEPTS.DimensoesVida,
+                                ...TCC_CONCEPTS.PsFelicidade
+                              ]}
+                              placeholder="Selecione as necessidades infantis, parentais, conjugais ou adultas insatisfeitas..."
                             />
                           </div>
                             <SuggestionTextArea 
