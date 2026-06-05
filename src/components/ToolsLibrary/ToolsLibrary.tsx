@@ -1,5 +1,5 @@
 import React from 'react';
-import { Brain, Users, ClipboardList, Sparkles, BookOpen, ExternalLink } from 'lucide-react';
+import { Brain, Users, ClipboardList, Sparkles, BookOpen, ExternalLink, Layers } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface ToolItem {
@@ -39,7 +39,7 @@ export default function ToolsLibrary({ onOpenTool, openWindows }: ToolsLibraryPr
       title: 'YSQ-Smart AI',
       description: 'Questionário de Esquemas de Young (YSQ-S3) com cruzamento de dados sintomáticos e geração de gráficos de domínios desadaptativos.',
       icon: Sparkles,
-      status: 'soon',
+      status: 'active',
       category: 'Terapia do Esquema',
     },
     {
@@ -55,8 +55,24 @@ export default function ToolsLibrary({ onOpenTool, openWindows }: ToolsLibraryPr
       title: 'Registro de Atendimento',
       description: 'Estruturação simplificada e ágil de anamneses e relatórios evolutivos com exportação rápida em lote.',
       icon: ClipboardList,
-      status: 'soon',
+      status: 'active',
       category: 'Administração Clínica',
+    },
+    {
+      id: 'plano-clinico-integrado',
+      title: 'Plano Clínico Integrado (PCI)',
+      description: 'Estruturação de planos de tratamento integrados, metas terapêuticas (curto, médio e longo prazo) e cronogramas de intervenção com suporte de IA.',
+      icon: Layers,
+      status: 'active',
+      category: 'Planejamento Clínico',
+    },
+    {
+      id: 'ihp-pr-digital',
+      title: 'IHP-PR Digital',
+      description: 'Inventário de Habilidades Psicológicas (Poubel & Rodrigues) com cálculo automático, mapeamento em gráfico de radar e geração de laudos por IA.',
+      icon: Brain,
+      status: 'active',
+      category: 'Avaliação Psicológica',
     }
   ];
 

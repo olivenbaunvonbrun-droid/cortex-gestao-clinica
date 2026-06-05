@@ -16,6 +16,10 @@ import Settings from './components/Settings/Settings';
 import Dashboard from './components/Dashboard/Dashboard';
 import RidInteligenteApp from './components/RidInteligente/RidInteligenteApp';
 import IhsDigitalApp from './components/IhsDigital/IhsDigitalApp';
+import YsqSmartAiApp from './components/YsqSmartAi/YsqSmartAiApp';
+import RegistroAtendimentoApp from './components/RegistroAtendimento/RegistroAtendimentoApp';
+import PlanoClinicoIntegradoApp from './components/PlanoClinicoIntegrado/PlanoClinicoIntegradoApp';
+import IhpPrDigitalApp from './components/IhpPrDigital/IhpPrDigitalApp';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import { Window } from './components/ui/Window';
 import { Brain } from 'lucide-react';
@@ -60,6 +64,8 @@ export default function App() {
       'ysq-smart-ai': 'YSQ-Smart AI',
       'neurolitera': 'NeuroLitera',
       'registro-atendimento': 'Registro de Atendimento',
+      'plano-clinico-integrado': 'Plano Clínico Integrado',
+      'ihp-pr-digital': 'IHP-PR Digital',
     };
 
     const nextZ = maxZIndex + 1;
@@ -279,6 +285,34 @@ export default function App() {
           )}
           {win.id === 'ihs-digital' && (
             <IhsDigitalApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'ysq-smart-ai' && (
+            <YsqSmartAiApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'registro-atendimento' && (
+            <RegistroAtendimentoApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'plano-clinico-integrado' && (
+            <PlanoClinicoIntegradoApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'ihp-pr-digital' && (
+            <IhpPrDigitalApp 
               activePatientId={win.patientId || selectedPatientId || undefined} 
               lockPatient={false} 
               userId={currentUser?.id}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck } from 'lucide-react';
+import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck, ClipboardList, Layers, Activity } from 'lucide-react';
 import { db, type Patient, type MedicalRecord, type MedicalRecordEntry, logAction, type Attachment } from '../../lib/db';
 import { cn, formatDate } from '../../lib/utils';
 import { syncService } from '../../lib/syncService';
@@ -1169,6 +1169,38 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                             >
                               <ClipboardCheck size={11} />
                               Usar IHS
+                            </button>
+                            <button
+                              onClick={() => openTool('ysq-smart-ai', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir YSQ-Smart AI na tela"
+                            >
+                              <Sparkles size={11} />
+                              Usar YSQ
+                            </button>
+                            <button
+                              onClick={() => openTool('registro-atendimento', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir Registro de Atendimento na tela"
+                            >
+                              <ClipboardList size={11} />
+                              Usar Registro
+                            </button>
+                            <button
+                              onClick={() => openTool('plano-clinico-integrado', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir Plano Clínico Integrado na tela"
+                            >
+                              <Layers size={11} />
+                              Usar PCI
+                            </button>
+                            <button
+                              onClick={() => openTool('ihp-pr-digital', selectedPatient?.id)}
+                              className="flex items-center gap-2 py-1.5 px-3.5 bg-primary/10 border border-primary/25 hover:bg-primary hover:text-bg-deep text-[9px] font-black uppercase tracking-widest text-primary rounded-xl transition-all cursor-pointer shadow-sm"
+                              title="Abrir IHP-PR Digital na tela"
+                            >
+                              <Activity size={11} />
+                              Usar IHP
                             </button>
                           </>
                         )}
