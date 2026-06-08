@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Layout from './components/Layout';
 import Auth from './components/Auth';
 import { db, logAction } from './lib/db';
@@ -27,7 +27,7 @@ import ThpTrainingApp from './components/ThpTraining/ThpTrainingApp';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import BibliotecaAvaliacaoApp from './components/BibliotecaAvaliacao/BibliotecaAvaliacaoApp';
 import { Window } from './components/ui/Window';
-import { Brain } from 'lucide-react';
+import { Brain, Cloud } from 'lucide-react';
 import { cn } from './lib/utils';
 import LGPDNotice from './components/LGPDNotice';
 import { useFirebase } from './hooks/useFirebase';
@@ -48,19 +48,35 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // === WINDOW MANAGER FOR TOOLS ===
+  // === UNIFIED WINDOW MANAGER ===
   interface ToolWindow {
     id: string;
+    type: 'section' | 'tool';
     title: string;
     isMinimized: boolean;
     isMaximized: boolean;
+    snapState?: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null;
     zIndex: number;
     patientId?: string | null;
+    width?: number;
+    height?: number;
+    x?: number;
+    y?: number;
   }
 
   const [openWindows, setOpenWindows] = useState<ToolWindow[]>([]);
   const [maxZIndex, setMaxZIndex] = useState(60);
+  const [syncState, setSyncState] = useState<any>(syncService.getSyncState());
+
+  // Live clock timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleOpenTool = (toolId: string, patientId?: string | null) => {
     const titleMap: Record<string, string> = {
@@ -92,11 +108,59 @@ export default function App() {
       }
       return [...prev, {
         id: toolId,
+        type: 'tool',
         title: titleMap[toolId] || 'Ferramenta',
         isMinimized: false,
         isMaximized: false,
+        snapState: null,
         zIndex: nextZ,
-        patientId: patientId
+        patientId: patientId,
+        width: 850,
+        height: 650,
+        x: 150 + (prev.length * 30) % 200,
+        y: 120 + (prev.length * 30) % 200
+      }];
+    });
+  };
+
+  const handleOpenSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+
+    const titleMap: Record<string, string> = {
+      'dashboard': 'Dashboard',
+      'pacientes': 'Gestão de Pacientes',
+      'agenda': 'Agenda de Consultas',
+      'prontuarios': 'Prontuários e Linha do Tempo',
+      'financeiro': 'Controle Financeiro',
+      'relatorios': 'Relatórios Clínicos',
+      'ferramentas': 'Biblioteca de Ferramentas',
+      'settings': 'Configurações'
+    };
+
+    const nextZ = maxZIndex + 1;
+    setMaxZIndex(nextZ);
+
+    setOpenWindows(prev => {
+      const existing = prev.find(w => w.id === `section-${sectionId}`);
+      if (existing) {
+        return prev.map(w => 
+          w.id === `section-${sectionId}`
+            ? { ...w, isMinimized: false, zIndex: nextZ }
+            : w
+        );
+      }
+      return [...prev, {
+        id: `section-${sectionId}`,
+        type: 'section',
+        title: titleMap[sectionId] || 'Painel',
+        isMinimized: false,
+        isMaximized: false,
+        snapState: null,
+        zIndex: nextZ,
+        width: 1000,
+        height: 700,
+        x: 80 + (prev.length * 30) % 200,
+        y: 80 + (prev.length * 30) % 200
       }];
     });
   };
@@ -120,12 +184,6 @@ export default function App() {
     }));
   };
 
-  const handleMinimizeTool = (toolId: string) => {
-    setOpenWindows(prev => prev.map(w => 
-      w.id === toolId ? { ...w, isMinimized: true } : w
-    ));
-  };
-
   const handleMaximizeTool = (toolId: string) => {
     setOpenWindows(prev => prev.map(w => 
       w.id === toolId ? { ...w, isMaximized: !w.isMaximized } : w
@@ -138,11 +196,75 @@ export default function App() {
     setOpenWindows(prev => prev.map(w => 
       w.id === toolId ? { ...w, zIndex: nextZ } : w
     ));
+
+    if (toolId.startsWith('section-')) {
+      const sectionId = toolId.replace('section-', '');
+      setActiveSection(sectionId);
+    }
   };
+
+  const handleSnapWindow = (toolId: string, snap: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null) => {
+    setOpenWindows(prev => prev.map(w => 
+      w.id === toolId ? { ...w, snapState: snap, isMaximized: snap === null ? w.isMaximized : false } : w
+    ));
+  };
+
+  // Keyboard shortcut Alt+Tab
+  const [isAltTabOpen, setIsAltTabOpen] = useState(false);
+  const [altTabSelectionIndex, setAltTabSelectionIndex] = useState(0);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 'Tab') {
+        e.preventDefault();
+        if (openWindows.length === 0) return;
+
+        setIsAltTabOpen(prevOpen => {
+          if (!prevOpen) {
+            setAltTabSelectionIndex(0);
+            return true;
+          } else {
+            setAltTabSelectionIndex(prevIndex => (prevIndex + 1) % openWindows.length);
+            return true;
+          }
+        });
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Alt') {
+        setIsAltTabOpen(prevOpen => {
+          if (prevOpen) {
+            const targetWin = openWindows[altTabSelectionIndex];
+            if (targetWin) {
+              handleFocusTool(targetWin.id);
+              if (targetWin.isMinimized) {
+                handleToggleMinimize(targetWin.id);
+              }
+            }
+          }
+          return false;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [openWindows, altTabSelectionIndex]);
+
+  // Open dashboard window by default when loaded
+  useEffect(() => {
+    if (currentUser) {
+      handleOpenSection('dashboard');
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const init = async () => {
-      // Check for saved session if no firebase user
       if (!firebaseUser) {
         const lastUser = localStorage.getItem('psiCurrentUsername_v9');
         if (lastUser) {
@@ -152,7 +274,6 @@ export default function App() {
           }
         }
       } else {
-        // Map Firebase user to app user
         setCurrentUser({
           id: firebaseUser.uid,
           username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Profissional',
@@ -160,7 +281,6 @@ export default function App() {
         });
       }
 
-      // Load settings
       const items = await db.settings.toArray();
       const s = { ...settings };
       items.forEach(item => {
@@ -177,6 +297,17 @@ export default function App() {
     }
   }, [firebaseUser, firebaseLoading]);
 
+  const isGoogleUser = !!(currentUser && currentUser.id && currentUser.id.length > 20);
+
+  useEffect(() => {
+    if (isGoogleUser) {
+      const unsubscribe = syncService.subscribe((state) => {
+        setSyncState(state);
+      });
+      return unsubscribe;
+    }
+  }, [isGoogleUser]);
+
   useEffect(() => {
     const scale = settings.layoutScale || 'large';
     document.documentElement.classList.remove('layout-scale-small', 'layout-scale-medium', 'layout-scale-large');
@@ -185,14 +316,10 @@ export default function App() {
 
   useEffect(() => {
     if (firebaseUser) {
-      // Immediate sync
       syncService.syncAll(firebaseUser.uid);
-
-      // Recursive background sync every 30 seconds
       const syncInterval = setInterval(() => {
         syncService.syncAll(firebaseUser.uid);
       }, 30000);
-
       return () => clearInterval(syncInterval);
     }
   }, [firebaseUser]);
@@ -245,151 +372,264 @@ export default function App() {
       <Layout
         currentUser={currentUser}
         activeSection={activeSection}
-        onSectionChange={setActiveSection}
+        onSectionChange={handleOpenSection}
         onLogout={handleLogout}
         appTitle={settings.appTitle}
         appLogo={settings.appLogo}
       >
-        {activeSection === 'dashboard' && <Dashboard onSectionChange={setActiveSection} />}
-        {activeSection === 'pacientes' && (
-          <Patients 
-            onOpenProntuario={(patientId) => {
-              setSelectedPatientId(patientId);
-              setActiveSection('prontuarios');
-            }} 
-          />
-        )}
-        {activeSection === 'agenda' && <Agenda />}
-        {activeSection === 'prontuarios' && (
-          <Records 
-            preSelectedPatientId={selectedPatientId} 
-            onPatientSelected={setSelectedPatientId}
-            openTool={handleOpenTool}
-          />
-        )}
-        {activeSection === 'financeiro' && <Finance />}
-        {activeSection === 'relatorios' && <Reports />}
-        {activeSection === 'ferramentas' && <ToolsLibrary onOpenTool={handleOpenTool} openWindows={openWindows.map(w => w.id)} />}
-        {activeSection === 'settings' && <Settings onUpdateSettings={(newS) => setSettings({ ...settings, ...newS })} />}
+        {/* Workspace background desktop wallpaper */}
+        <div className="relative w-full h-full overflow-hidden rounded-3xl bg-[#08090c]/45 border border-border-subtle/30 shadow-inner flex flex-col items-center justify-center p-8 select-none">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full filter blur-[100px] animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full filter blur-[100px] animate-pulse" />
+          
+          <div className="text-center z-10 space-y-4 max-w-md">
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-lg">
+              <Brain size={32} className="text-primary animate-pulse" />
+            </div>
+            <h2 className="text-lg font-display font-black text-text-main tracking-[0.2em] uppercase">Área de Trabalho</h2>
+            <p className="text-[10px] font-black text-text-dim/60 uppercase tracking-widest leading-relaxed">
+              Bem-vindo ao Cortex, {currentUser?.username.replace(/^Dr\.\s?/, '')}. Selecione uma aba no menu superior ou abra uma ferramenta para começar.
+            </p>
+          </div>
+        </div>
       </Layout>
  
-      {/* FLOATING TOOL WINDOWS */}
+      {/* FLOATING WINDOWS (SECTIONS & TOOLS) */}
       {openWindows.map(win => (
         <Window
           key={`win-instance-${win.id}`}
           title={win.title}
           isMinimized={win.isMinimized}
           isMaximized={win.isMaximized}
+          snapState={win.snapState}
+          onSnapChange={(snap) => handleSnapWindow(win.id, snap)}
           zIndex={win.zIndex}
           onClose={() => handleCloseTool(win.id)}
           onMinimize={() => handleToggleMinimize(win.id)}
           onMaximize={() => handleMaximizeTool(win.id)}
           onFocus={() => handleFocusTool(win.id)}
         >
-          {win.id === 'rid-inteligente' && (
-            <RidInteligenteApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
+          {win.type === 'section' && (
+            <div className="w-full h-full overflow-y-auto p-6 scrollbar-thin">
+              {win.id === 'section-dashboard' && <Dashboard onSectionChange={handleOpenSection} />}
+              {win.id === 'section-pacientes' && (
+                <Patients 
+                  onOpenProntuario={(patientId) => {
+                    setSelectedPatientId(patientId);
+                    handleOpenSection('prontuarios');
+                  }} 
+                />
+              )}
+              {win.id === 'section-agenda' && <Agenda />}
+              {win.id === 'section-prontuarios' && (
+                <Records 
+                  preSelectedPatientId={selectedPatientId} 
+                  onPatientSelected={setSelectedPatientId}
+                  openTool={handleOpenTool}
+                />
+              )}
+              {win.id === 'section-financeiro' && <Finance />}
+              {win.id === 'section-relatorios' && <Reports />}
+              {win.id === 'section-ferramentas' && (
+                <ToolsLibrary 
+                  onOpenTool={handleOpenTool} 
+                  openWindows={openWindows.filter(w => w.type === 'tool').map(w => w.id)} 
+                />
+              )}
+              {win.id === 'section-settings' && <Settings onUpdateSettings={(newS) => setSettings({ ...settings, ...newS })} />}
+            </div>
           )}
-          {win.id === 'ihs-digital' && (
-            <IhsDigitalApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'ysq-smart-ai' && (
-            <YsqSmartAiApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'registro-atendimento' && (
-            <RegistroAtendimentoApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'plano-clinico-integrado' && (
-            <PlanoClinicoIntegradoApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'ihp-pr-digital' && (
-            <IhpPrDigitalApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'linha-vida' && (
-            <LinhaVidaApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'psidiagnostic-pro' && (
-            <PsidiagnosticProApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'dfc-assistido' && (
-            <DfcAssistidoApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'thp-training' && (
-            <ThpTrainingApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
-          )}
-          {win.id === 'biblioteca-avaliacao' && (
-            <BibliotecaAvaliacaoApp 
-              activePatientId={win.patientId || selectedPatientId || undefined} 
-              lockPatient={false} 
-              userId={currentUser?.id}
-            />
+
+          {win.type === 'tool' && (
+            <>
+              {win.id === 'rid-inteligente' && (
+                <RidInteligenteApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'ihs-digital' && (
+                <IhsDigitalApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'ysq-smart-ai' && (
+                <YsqSmartAiApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'registro-atendimento' && (
+                <RegistroAtendimentoApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'plano-clinico-integrado' && (
+                <PlanoClinicoIntegradoApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'ihp-pr-digital' && (
+                <IhpPrDigitalApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'linha-vida' && (
+                <LinhaVidaApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'psidiagnostic-pro' && (
+                <PsidiagnosticProApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'dfc-assistido' && (
+                <DfcAssistidoApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'thp-training' && (
+                <ThpTrainingApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'biblioteca-avaliacao' && (
+                <BibliotecaAvaliacaoApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                />
+              )}
+            </>
           )}
         </Window>
       ))}
 
-      {/* FLOATING WINDOWS DOCK */}
-      {openWindows.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-bg-sidebar/85 backdrop-blur-xl border border-border-subtle/60 px-6 py-3 rounded-full flex items-center gap-4 shadow-2xl z-[100] animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <span className="text-[9px] font-black text-text-dim/60 uppercase tracking-widest border-r border-border-subtle/50 pr-4">Ferramentas Ativas</span>
-          <div className="flex items-center gap-2">
-            {openWindows.map(win => (
-              <button
-                key={`dock-win-${win.id}`}
-                onClick={() => handleToggleMinimize(win.id)}
-                className={cn(
-                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2 cursor-pointer",
-                  win.isMinimized
-                    ? "bg-bg-card border-border-subtle text-text-dim hover:text-text-main"
-                    : "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
-                )}
-              >
-                <Brain size={12} className={cn(!win.isMinimized && "text-primary")} />
-                {win.title}
-                <span className={cn(
-                  "w-1.5 h-1.5 rounded-full",
-                  win.isMinimized ? "bg-text-dim/40" : "bg-emerald-500 animate-pulse"
-                )} />
-              </button>
-            ))}
+      {/* WINDOWS BOTTOM TASKBAR */}
+      <div className="fixed bottom-0 left-0 right-0 h-14 bg-bg-sidebar/90 backdrop-blur-xl border-t border-border-subtle/80 flex items-center justify-between px-6 z-[9999] select-none no-print">
+        <div className="flex items-center gap-3">
+          {/* Logo brand / start button */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-mono font-black text-primary tracking-wider shadow-inner">
+            <Brain size={14} className="animate-pulse" />
+            CORTEX
+          </div>
+          
+          <div className="w-px h-6 bg-border-subtle/50 mx-1" />
+          
+          {/* Taskbar items */}
+          <div className="flex items-center gap-2 overflow-x-auto max-w-[60vw] scrollbar-none">
+            {openWindows.map(win => {
+              const isActive = !win.isMinimized && win.zIndex === maxZIndex;
+              return (
+                <button
+                  key={`taskbar-${win.id}`}
+                  onClick={() => {
+                    if (isActive) {
+                      handleToggleMinimize(win.id);
+                    } else {
+                      handleFocusTool(win.id);
+                      if (win.isMinimized) {
+                        handleToggleMinimize(win.id);
+                      }
+                    }
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-3.5 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all duration-200 cursor-pointer shrink-0",
+                    isActive 
+                      ? 'bg-primary/10 text-primary border-primary/30 shadow-lg' 
+                      : 'bg-bg-card/45 border-border-subtle/50 text-text-dim hover:text-text-main hover:bg-bg-card/85'
+                  )}
+                >
+                  <Brain size={12} className={cn(isActive ? "text-primary animate-pulse" : "text-text-dim")} />
+                  <span className="max-w-[120px] truncate">{win.title}</span>
+                  <span className={cn(
+                    "w-1.5 h-1.5 rounded-full ml-1",
+                    win.isMinimized ? 'bg-text-dim/40' : 'bg-emerald-500 animate-pulse'
+                  )} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right side: Clock, sync, status */}
+        <div className="flex items-center gap-4 text-[10px] font-mono font-black text-text-dim/80">
+          {isGoogleUser && syncState && (
+            <div className={cn(
+              "hidden sm:flex items-center gap-1.5 py-1.5 px-3 rounded-xl border text-[9px] uppercase tracking-wider font-mono",
+              syncState.status === 'synced' ? "bg-green-500/5 border-green-500/20 text-green-500" :
+              syncState.status === 'syncing' ? "bg-primary/5 border-primary/30 text-primary animate-pulse" :
+              "bg-red-500/5 border-red-500/20 text-red-500"
+            )}>
+              <Cloud size={10} />
+              <span>Nuvem</span>
+            </div>
+          )}
+
+          <div className="bg-bg-card/60 border border-border-subtle/40 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-inner">
+            <span>{currentTime.toLocaleDateString('pt-BR')}</span>
+            <span className="text-text-main">{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Alt+Tab Overlay */}
+      {isAltTabOpen && openWindows.length > 0 && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] flex items-center justify-center">
+          <div className="bg-bg-sidebar/95 backdrop-blur-xl border border-border-subtle p-6 rounded-[2rem] shadow-2xl w-[550px] max-w-full">
+            <div className="text-center mb-6">
+              <h3 className="text-xs font-black text-text-main uppercase tracking-widest flex items-center justify-center gap-2">
+                <Brain size={14} className="text-primary animate-pulse" /> Alternar Janelas (Alt + Tab)
+              </h3>
+              <p className="text-[9px] font-black text-text-dim/40 uppercase tracking-widest mt-1">Pressione Tab para navegar e solte Alt para selecionar</p>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              {openWindows.map((win, idx) => {
+                const isSelected = idx === altTabSelectionIndex;
+                return (
+                  <div
+                    key={`alt-tab-${win.id}`}
+                    className={cn(
+                      "p-4 rounded-2xl border transition-all flex flex-col items-center justify-center text-center gap-3",
+                      isSelected
+                        ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(56,189,248,0.25)] text-text-main scale-105"
+                        : "bg-bg-card/40 border-border-subtle/50 text-text-dim opacity-70"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center border",
+                      isSelected ? "bg-primary/20 border-primary/45" : "bg-bg-sidebar border-border-subtle/60"
+                    )}>
+                      <Brain size={20} className={cn(isSelected ? "text-primary animate-pulse" : "text-text-dim")} />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider line-clamp-1 w-full">
+                      {win.title}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

@@ -444,18 +444,11 @@ export default function Layout({
         </div>
       </nav>
 
-      <main className="mt-[135px] flex-grow p-6">
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <main className="mt-[135px] h-[calc(100vh-135px-56px)] overflow-hidden p-6 relative">
+        <div className="w-full h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
           {children}
         </div>
       </main>
-
-      <footer className="bg-bg-sidebar border-t border-border-subtle py-8 px-6 mt-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-text-dim font-medium uppercase tracking-widest">
-          <p>&copy; {new Date().getFullYear()} {appTitle}</p>
-          <p className="opacity-50">ψ PSI.CORE v2.0</p>
-        </div>
-      </footer>
     </div>
   );
 }
