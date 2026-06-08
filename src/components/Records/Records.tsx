@@ -12,6 +12,10 @@ import { exportToHtml as exportLinhaVida } from '../LinhaVida/utils/export';
 import { exportToHtml as exportDfc } from '../DfcAssistido/utils/export';
 import { exportThpToHtml as exportThp } from '../ThpTraining/utils/export';
 import { motion, AnimatePresence } from 'motion/react';
+import { renderMarkdown } from '../BibliotecaAvaliacao/utils/markdown';
+import { SCHEMA_DETAILS, YSQ_QUESTIONS } from '../YsqSmartAi/types';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { IhsResultViewer, YsqResultViewer, RidResultViewer, ThpResultViewer } from './ResultViewers';
 
 interface RecordsProps {
   preSelectedPatientId?: string | null;
@@ -45,6 +49,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [editEventContent, setEditEventContent] = useState('');
+  const [modalTab, setModalTab] = useState<'simplified' | 'original'>('original');
   const { confirm, isOpen, options, handleConfirm, close } = useConfirm();
 
   useEffect(() => {
@@ -83,13 +88,34 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
 
     // Map entries
     entries.forEach(e => {
+      let type = 'evolution';
+      let title = 'Evolução Clínica';
+      if (e.tipo === 'rid' || e.metadata?.type === 'rid') {
+        type = 'rid';
+        title = 'Registro de Informações Diárias (RID)';
+      } else if (e.tipo === 'ihs' || e.metadata?.type === 'ihs') {
+        type = 'ihs';
+        title = 'Inventário de Habilidades Sociais (IHS)';
+      } else if (e.tipo === 'ysq' || e.metadata?.type === 'ysq') {
+        type = 'ysq';
+        title = 'Questionário de Esquemas de Young (YSQ)';
+      } else if (e.tipo === 'thp' || e.metadata?.type === 'thp') {
+        type = 'thp';
+        title = 'Treinamento de Habilidade Psicológica (THP)';
+      } else if (e.tipo === 'psicometrik' || e.metadata?.type === 'psicometrik') {
+        type = 'psicometrik';
+        const toolTitle = e.metadata?.psicometrikData?.toolTitle || 'Avaliação Psicometrik';
+        title = `Biblioteca Psicometrik - ${toolTitle}`;
+      }
+
       events.push({
-        type: 'evolution',
+        type,
         timestamp: e.timestamp,
         data: e.data,
-        title: 'Evolução Clínica',
+        title,
         content: e.textoHtml,
-        icon: 'evolution'
+        icon: type === 'evolution' ? 'evolution' : 'document',
+        rawEntry: e
       });
     });
 
@@ -150,6 +176,11 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                   "absolute left-0 top-1 w-6 h-6 rounded-lg flex items-center justify-center border shadow-lg z-10 transition-all group-hover:scale-110",
                   event.type === 'evolution' ? "bg-primary text-bg-deep border-primary" :
                   event.type === 'appointment' ? "bg-amber-500/20 text-amber-500 border-amber-500/30" :
+                  event.type === 'rid' ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" :
+                  event.type === 'ihs' ? "bg-[#4dabf7]/20 text-[#4dabf7] border-[#4dabf7]/30" :
+                  event.type === 'ysq' ? "bg-purple-500/20 text-purple-400 border-purple-500/30" :
+                  event.type === 'thp' ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
+                  event.type === 'psicometrik' ? "bg-[#00A3FF]/20 text-[#00A3FF] border-[#00A3FF]/30" :
                   "bg-blue-500/20 text-blue-500 border-blue-500/30"
                 )}>
                   {event.type === 'evolution' ? <Clock size={12} /> :
@@ -159,7 +190,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
 
                 <div 
                   onClick={() => {
-                    if (event.type === 'evolution' || event.type === 'attachment') {
+                    if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(event.type)) {
                       setSelectedEvent(event);
                       setEditEventContent(event.content || '');
                       setIsEditingEvent(false);
@@ -177,11 +208,21 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                           "px-2.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border",
                           event.type === 'evolution' ? "bg-primary/10 text-primary border-primary/20" :
                           event.type === 'appointment' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                          event.type === 'rid' ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" :
+                          event.type === 'ihs' ? "bg-[#4dabf7]/10 text-[#4dabf7] border-[#4dabf7]/20" :
+                          event.type === 'ysq' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
+                          event.type === 'thp' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                          event.type === 'psicometrik' ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/20" :
                           "bg-blue-500/10 text-blue-500 border-blue-500/30",
                           event.isAlert && "bg-red-500 text-white border-red-400"
                         )}>
                           {event.type === 'evolution' ? 'Evolução' :
-                           event.type === 'appointment' ? 'Agenda' : 'Arquivo'}
+                           event.type === 'appointment' ? 'Agenda' :
+                           event.type === 'rid' ? 'RID' :
+                           event.type === 'ihs' ? 'IHS' :
+                           event.type === 'ysq' ? 'YSQ' :
+                           event.type === 'thp' ? 'THP' :
+                           event.type === 'psicometrik' ? 'PsicoMetrik' : 'Arquivo'}
                         </span>
                         <h5 className={cn(
                           "text-[11px] font-bold uppercase tracking-widest",
@@ -201,7 +242,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {(event.type === 'evolution' || event.type === 'attachment') && (
+                      {['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(event.type) && (
                         <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
                           <button 
                             onClick={(e) => {
@@ -215,32 +256,36 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                           >
                             <Eye size={11} />
                           </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (event.type === 'evolution') {
-                                setSelectedEvent(event);
-                                setEditEventContent(event.content || '');
-                                setIsEditingEvent(true);
-                              } else {
-                                triggerEditAttachmentName(event);
-                              }
-                            }}
-                            className="p-1.5 bg-amber-500/10 text-amber-500 rounded-lg hover:bg-amber-500 hover:text-white transition-all"
-                            title={event.type === 'evolution' ? "Editar" : "Renomear"}
-                          >
-                            <Edit size={11} />
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerSingleFileImport(event);
-                            }}
-                            className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-bg-deep transition-all"
-                            title="Importar / Substituir"
-                          >
-                            <Upload size={11} />
-                          </button>
+                          {['evolution', 'attachment'].includes(event.type) && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (event.type === 'evolution') {
+                                  setSelectedEvent(event);
+                                  setEditEventContent(event.content || '');
+                                  setIsEditingEvent(true);
+                                } else {
+                                  triggerEditAttachmentName(event);
+                                }
+                              }}
+                              className="p-1.5 bg-amber-500/10 text-amber-500 rounded-lg hover:bg-amber-500 hover:text-white transition-all"
+                              title={event.type === 'evolution' ? "Editar" : "Renomear"}
+                            >
+                              <Edit size={11} />
+                            </button>
+                          )}
+                          {['evolution', 'attachment'].includes(event.type) && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                triggerSingleFileImport(event);
+                              }}
+                              className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-bg-deep transition-all"
+                              title="Importar / Substituir"
+                            >
+                              <Upload size={11} />
+                            </button>
+                          )}
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
@@ -255,10 +300,10 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                             onClick={(e) => {
                               e.stopPropagation();
                               if (window.confirm("Deseja realmente excluir este item?")) {
-                                if (event.type === 'evolution') {
-                                  handleDeleteEntry(event.timestamp);
-                                } else {
+                                if (event.type === 'attachment') {
                                   handleDeleteAttachment(event.file.id);
+                                } else {
+                                  handleDeleteEntry(event.timestamp);
                                 }
                               }
                             }}
@@ -332,7 +377,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                         {isTop && (
                           <div 
                             onClick={() => {
-                              if (event.type === 'evolution' || event.type === 'attachment') {
+                              if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(event.type)) {
                                 setSelectedEvent(event);
                                 setEditEventContent(event.content || '');
                                 setIsEditingEvent(false);
@@ -349,9 +394,20 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                   "px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border shrink-0",
                                   event.type === 'evolution' ? "bg-primary/10 text-primary border-primary/25" :
                                   event.type === 'appointment' ? "bg-amber-500/10 text-amber-500 border-amber-500/25" :
+                                  event.type === 'rid' ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/25" :
+                                  event.type === 'ihs' ? "bg-[#4dabf7]/10 text-[#4dabf7] border-[#4dabf7]/25" :
+                                  event.type === 'ysq' ? "bg-purple-500/10 text-purple-400 border-purple-500/25" :
+                                  event.type === 'thp' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" :
+                                  event.type === 'psicometrik' ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/25" :
                                   "bg-blue-500/10 text-blue-500 border-blue-500/25"
                                 )}>
-                                  {event.type === 'evolution' ? 'Evolução' : event.type === 'appointment' ? 'Agendamento' : 'Documento'}
+                                  {event.type === 'evolution' ? 'Evolução' : 
+                                   event.type === 'appointment' ? 'Agenda' : 
+                                   event.type === 'rid' ? 'RID' :
+                                   event.type === 'ihs' ? 'IHS' :
+                                   event.type === 'ysq' ? 'YSQ' :
+                                   event.type === 'thp' ? 'THP' :
+                                   event.type === 'psicometrik' ? 'PsicoMetrik' : 'Documento'}
                                 </span>
                                 <span className="text-[8px] font-mono text-text-dim">{event.data}</span>
                               </div>
@@ -370,6 +426,11 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                             "w-7 h-7 rounded-full border-4 border-bg-deep flex items-center justify-center shadow-lg transition-transform hover:scale-110",
                             event.type === 'evolution' ? "bg-primary text-bg-deep" :
                             event.type === 'appointment' ? "bg-amber-500 text-bg-deep" :
+                            event.type === 'rid' ? "bg-indigo-500 text-white" :
+                            event.type === 'ihs' ? "bg-[#4dabf7] text-bg-deep" :
+                            event.type === 'ysq' ? "bg-purple-500 text-white" :
+                            event.type === 'thp' ? "bg-emerald-500 text-bg-deep" :
+                            event.type === 'psicometrik' ? "bg-[#00A3FF] text-bg-deep" :
                             "bg-blue-500 text-white"
                           )}>
                             {event.type === 'evolution' ? <Clock size={10} /> :
@@ -382,7 +443,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                         {!isTop && (
                           <div 
                             onClick={() => {
-                              if (event.type === 'evolution' || event.type === 'attachment') {
+                              if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(event.type)) {
                                 setSelectedEvent(event);
                                 setEditEventContent(event.content || '');
                                 setIsEditingEvent(false);
@@ -399,9 +460,20 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                   "px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border shrink-0",
                                   event.type === 'evolution' ? "bg-primary/10 text-primary border-primary/25" :
                                   event.type === 'appointment' ? "bg-amber-500/10 text-amber-500 border-amber-500/25" :
+                                  event.type === 'rid' ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/25" :
+                                  event.type === 'ihs' ? "bg-[#4dabf7]/10 text-[#4dabf7] border-[#4dabf7]/25" :
+                                  event.type === 'ysq' ? "bg-purple-500/10 text-purple-400 border-purple-500/25" :
+                                  event.type === 'thp' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" :
+                                  event.type === 'psicometrik' ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/25" :
                                   "bg-blue-500/10 text-blue-500 border-blue-500/25"
                                 )}>
-                                  {event.type === 'evolution' ? 'Evolução' : event.type === 'appointment' ? 'Agendamento' : 'Documento'}
+                                  {event.type === 'evolution' ? 'Evolução' : 
+                                   event.type === 'appointment' ? 'Agenda' : 
+                                   event.type === 'rid' ? 'RID' :
+                                   event.type === 'ihs' ? 'IHS' :
+                                   event.type === 'ysq' ? 'YSQ' :
+                                   event.type === 'thp' ? 'THP' :
+                                   event.type === 'psicometrik' ? 'PsicoMetrik' : 'Documento'}
                                 </span>
                                 <span className="text-[8px] font-mono text-text-dim">{event.data}</span>
                               </div>
@@ -2009,7 +2081,32 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
               </div>
 
               <div className="flex-grow overflow-y-auto p-10 scroller-hide">
-                {selectedEvent.type === 'evolution' ? (
+                {/* Modal Tabs for Clinical Tests */}
+                {['rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(selectedEvent.type) && (
+                  <div className="flex justify-center mb-8 no-print">
+                    <div className="flex gap-1 bg-bg-sidebar p-1 rounded-xl border border-border-subtle/50">
+                      {[
+                        { id: 'original', label: 'Formatação Original' },
+                        { id: 'simplified', label: 'Visualização Simplificada' }
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setModalTab(tab.id as any)}
+                          className={cn(
+                            "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer",
+                            modalTab === tab.id
+                              ? "bg-bg-card text-primary border border-border-subtle shadow-sm" 
+                              : "text-text-dim hover:text-text-main"
+                          )}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedEvent.type === 'evolution' || modalTab === 'simplified' ? (
                   isEditingEvent ? (
                     <div className="space-y-6">
                       <RichTextEditor value={editEventContent} onChange={setEditEventContent} />
@@ -2023,6 +2120,73 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                     </div>
                   )
                 ) : (
+                  <>
+                    <div className="w-full">
+                    {selectedEvent.type === 'psicometrik' && (
+                      <div className="bg-white text-gray-900 p-8 rounded-lg border border-gray-200 print-card prose prose-sm max-w-none text-left max-h-[500px] overflow-y-auto">
+                        {/* Printable header info */}
+                        <div className="border-b border-gray-300 pb-3 mb-4 flex justify-between items-end">
+                          <div>
+                            <h4 className="text-md font-bold text-[#00A3FF] uppercase tracking-tight">Laudo Psicológico Clínico (PsicoMetrik)</h4>
+                            <span className="text-[10px] text-gray-500 font-mono block">Data de Emissão: {selectedEvent.rawEntry?.metadata?.psicometrikData?.evaluationDate}</span>
+                          </div>
+                          <div className="text-right text-[10px] text-gray-500 font-mono">
+                            REGISTRO: #{selectedEvent.rawEntry?.metadata?.psicometrikData?.id}
+                          </div>
+                        </div>
+
+                        {/* Diagnostic badges */}
+                        <div className="bg-gray-50 border border-gray-200 rounded p-3 mb-4 text-xs flex justify-between items-center flex-wrap gap-2">
+                          <div>
+                            <strong className="block text-gray-900">Paciente: {selectedEvent.rawEntry?.metadata?.psicometrikData?.patientName} ({selectedEvent.rawEntry?.metadata?.psicometrikData?.patientAge} anos)</strong>
+                            <span className="text-gray-500 block text-[10px]">Gênero: {selectedEvent.rawEntry?.metadata?.psicometrikData?.patientGender} • Instrumento: {selectedEvent.rawEntry?.metadata?.psicometrikData?.toolTitle}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[#00A3FF] font-bold block">{selectedEvent.rawEntry?.metadata?.psicometrikData?.calculatedScores?.score} pt</span>
+                            <span className="text-gray-500 font-mono text-[10px] block">{selectedEvent.rawEntry?.metadata?.psicometrikData?.calculatedScores?.classification}</span>
+                          </div>
+                        </div>
+
+                        {/* Display subscales */}
+                        <div className="border border-gray-200 bg-gray-50/50 rounded p-2 text-[11px] mb-6 font-mono space-y-1">
+                          <div className="font-bold border-b border-gray-200 pb-1 mb-1 text-gray-700 font-sans uppercase text-[9px] tracking-wide">Métricas Secundárias:</div>
+                          {Object.entries(selectedEvent.rawEntry?.metadata?.psicometrikData?.calculatedScores?.subscales || {}).map(([key, val]) => (
+                            <div key={key} className="flex justify-between items-center">
+                              <span>{key}:</span>
+                              <span className="font-bold text-gray-800">{String(val)}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Markdown body render */}
+                        <div className="text-sm text-gray-800 leading-relaxed font-sans mt-4">
+                          {selectedEvent.rawEntry?.metadata?.psicometrikData?.aiReportText ? (
+                            <div className="prose prose-sm max-w-none animate-in fade-in text-gray-800">
+                              {renderMarkdown(selectedEvent.rawEntry?.metadata?.psicometrikData?.aiReportText)}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic">Nenhum laudo IA gerado para este prontuário.</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedEvent.type === 'ihs' && (
+                      <IhsResultViewer assessment={selectedEvent.rawEntry?.metadata?.ihsData} />
+                    )}
+
+                    {selectedEvent.type === 'ysq' && (
+                      <YsqResultViewer assessment={selectedEvent.rawEntry?.metadata?.ysqData} />
+                    )}
+
+                    {selectedEvent.type === 'rid' && (
+                      <RidResultViewer entry={selectedEvent.rawEntry?.metadata?.ridData} />
+                    )}
+
+                    {selectedEvent.type === 'thp' && (
+                      <ThpResultViewer record={selectedEvent.rawEntry?.metadata?.thpData} />
+                    )}
+                  </div>
                   <div className="w-full">
                      {selectedEvent.file?.conteudoArquivo.includes('data:image') ? (
                        <div className="flex flex-col items-center justify-center min-h-[400px] bg-bg-sidebar/20 rounded-[2rem] border border-dashed border-border-subtle p-8">
@@ -2122,7 +2286,8 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                        </div>
                      )}
                   </div>
-                )}
+                </>
+              )}
               </div>
 
               {isEditingEvent ? (

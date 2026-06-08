@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, History, FileText, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Search, History, Users, SlidersHorizontal, Sparkles } from "lucide-react";
 
 interface HeaderProps {
   currentTab: 'catalog' | 'history';
@@ -9,6 +9,10 @@ interface HeaderProps {
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
   savedReportsCount: number;
+  patients: any[];
+  selectedPatientId: string;
+  setSelectedPatientId: (id: string) => void;
+  lockPatient: boolean;
 }
 
 export default function Header({
@@ -18,7 +22,11 @@ export default function Header({
   setSearchQuery,
   selectedCategory,
   setSelectedCategory,
-  savedReportsCount
+  savedReportsCount,
+  patients,
+  selectedPatientId,
+  setSelectedPatientId,
+  lockPatient
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-[#050505]/95 backdrop-blur border-b border-gray-900 px-4 md:px-10 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -72,9 +80,25 @@ export default function Header({
             </span>
           )}
         </button>
-
-
       </nav>
+
+      {/* Patient Selector */}
+      <div className="flex items-center gap-2" id="header-patient-selector">
+        <Users size={14} className="text-gray-400" />
+        <select
+          value={selectedPatientId}
+          onChange={(e) => setSelectedPatientId(e.target.value)}
+          disabled={lockPatient}
+          className="bg-gray-900 border border-gray-800 text-xs text-white rounded-md px-3 py-1.5 focus:outline-none focus:border-[#00A3FF] max-w-[200px] truncate disabled:opacity-50 cursor-pointer"
+        >
+          <option value="">-- Selecionar Paciente --</option>
+          {(patients || []).map(p => (
+            <option key={p.id} value={p.id} className="bg-[#141414]">
+              {p.nome}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Search and Filters, visible in catalog mode */}
       <div className="flex items-center gap-3 w-full md:w-auto" id="header-controls">

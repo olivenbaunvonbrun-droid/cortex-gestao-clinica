@@ -3,7 +3,7 @@ import { Report } from "../types";
 import { renderMarkdown } from "../utils/markdown";
 import { 
   Trash2, Edit3, Save, Download, Upload, Search, Calendar, 
-  User, Sparkles, FileText, Printer, CheckCircle, ChevronRight, X 
+  User, Sparkles, FileText, Printer, CheckCircle, ChevronRight, X, GitCompare 
 } from "lucide-react";
 
 interface HistoryPanelProps {
@@ -21,6 +21,16 @@ export default function HistoryPanel({
 }: HistoryPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeReport, setActiveReport] = useState<Report | null>(null);
+  const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+
+  const toggleSelectReport = (id: string) => {
+    setSelectedReportIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const selectedReportsForComparison = reports.filter(r => selectedReportIds.includes(r.id));
   
   // Edit mode inside details
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -194,6 +204,17 @@ export default function HistoryPanel({
             />
           </div>
 
+          {/* COMPARAR BUTTON */}
+          {selectedReportIds.length === 2 && (
+            <button
+              onClick={() => setIsComparisonOpen(true)}
+              className="bg-[#00A3FF]/15 hover:bg-[#00A3FF]/25 border border-[#00A3FF]/30 text-[#00A3FF] px-3 py-2 rounded text-xs transition-all flex items-center gap-1.5 font-bold uppercase tracking-wider animate-pulse-subtle"
+            >
+              <GitCompare className="w-3.5 h-3.5" />
+              Comparar ({selectedReportIds.length})
+            </button>
+          )}
+
           {/* EXPORT DATABASE TO JSON LINK */}
           <button
             onClick={handleExportDatabase}
@@ -249,16 +270,25 @@ export default function HistoryPanel({
                 <div
                   key={report.id}
                   onClick={() => handleOpenDetails(report)}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                  className={`p-4 rounded-xl border cursor-pointer transition-all flex items-start gap-3 relative ${
                     isActive 
                       ? "bg-[#00A3FF]/10 border-[#00A3FF] shadow-md shadow-[#00A3FF]/5 text-white" 
                       : "bg-[#111217]/80 border-gray-900 text-gray-300 hover:border-gray-800 hover:bg-[#111217]"
                   }`}
                   id={`history-item-row-${report.id}`}
                 >
-                  <div className="space-y-2">
+                  <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="checkbox"
+                      checked={selectedReportIds.includes(report.id)}
+                      onChange={() => toggleSelectReport(report.id)}
+                      className="w-4 h-4 rounded text-[#00A3FF] focus:ring-[#00A3FF] cursor-pointer border-gray-800 bg-gray-900"
+                    />
+                  </div>
+
+                  <div className="space-y-2 flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2">
-                      <div className="font-bold font-display text-sm truncate max-w-[170px]">
+                      <div className="font-bold font-display text-sm truncate max-w-[150px]">
                         {report.patientName}
                       </div>
                       <span className="text-[9px] text-gray-500 font-mono shrink-0 flex items-center gap-1">
@@ -273,7 +303,7 @@ export default function HistoryPanel({
 
                     <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono pt-1.5 border-t border-gray-950/60">
                       <span>Resultado: <strong>{report.calculatedScores.score} pt</strong></span>
-                      <span className="truncate max-w-[130px] font-bold">{report.calculatedScores.classification}</span>
+                      <span className="truncate max-w-[110px] font-bold">{report.calculatedScores.classification}</span>
                     </div>
                   </div>
                 </div>
@@ -433,6 +463,93 @@ export default function HistoryPanel({
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* COMPARISON MODAL */}
+      {isComparisonOpen && selectedReportsForComparison.length === 2 && (
+        <div className="fixed inset-0 z-[100] bg-[#0c0d10] overflow-y-auto animate-in fade-in duration-300 p-6 md:p-10 select-text text-text-main">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <header className="flex items-center justify-between border-b border-gray-900 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="bg-[#00A3FF]/15 p-3 rounded-2xl text-[#00A3FF] border border-[#00A3FF]/25">
+                  <GitCompare size={24} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white font-display uppercase tracking-wider">Comparação Evolutiva Psicometrik</h2>
+                  <p className="text-xs text-gray-500 font-mono">Análise comparativa de sessões e progressão clínica</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsComparisonOpen(false)}
+                className="p-3 bg-gray-900 hover:bg-gray-800 rounded-2xl transition-all text-gray-400 hover:text-white border border-gray-800"
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {selectedReportsForComparison.map((report, idx) => (
+                <div key={report.id} className="bg-[#111217] rounded-3xl border border-gray-900 overflow-hidden flex flex-col justify-between shadow-xl">
+                  {/* Header */}
+                  <div className="bg-gray-950/80 border-b border-gray-900 p-5 flex items-center justify-between">
+                    <span className="px-3 py-1 bg-[#00A3FF]/10 text-[#00A3FF] border border-[#00A3FF]/20 rounded-xl text-xs font-black uppercase tracking-wider">
+                      SESSÃO {idx === 0 ? 'ALFA (ANTERIOR)' : 'BETA (POSTERIOR)'}
+                    </span>
+                    <span className="text-xs font-mono text-gray-500">{report.evaluationDate}</span>
+                  </div>
+
+                  {/* Body details */}
+                  <div className="p-6 space-y-6 flex-1 max-h-[500px] overflow-y-auto">
+                    {/* Patient info */}
+                    <div className="bg-gray-950 p-4 rounded-2xl border border-gray-900 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-[10px] text-gray-500 font-mono block">Paciente</span>
+                        <strong className="text-gray-200">{report.patientName} ({report.patientAge} anos)</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-500 font-mono block">Instrumento</span>
+                        <strong className="text-[#00A3FF]">{report.toolTitle}</strong>
+                      </div>
+                    </div>
+
+                    {/* Scores card */}
+                    <div className="p-4 rounded-2xl bg-white text-gray-900 space-y-2 border border-gray-200">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500 font-bold uppercase tracking-wider">Pontuação Geral</span>
+                        <strong className="text-lg font-black text-[#00A3FF]">{report.calculatedScores.score} pts</strong>
+                      </div>
+                      <div className="flex justify-between items-center text-xs border-t border-gray-200 pt-2">
+                        <span className="text-gray-500 font-bold uppercase tracking-wider">Classificação</span>
+                        <strong className="font-mono text-gray-900 font-bold">{report.calculatedScores.classification}</strong>
+                      </div>
+                    </div>
+
+                    {/* Subscales */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] text-gray-500 font-mono font-bold uppercase tracking-wider block">Métricas Secundárias</span>
+                      <div className="border border-gray-900 bg-gray-950/40 rounded-2xl p-4 text-xs font-mono space-y-2">
+                        {Object.entries(report.calculatedScores.subscales || {}).map(([key, val]) => (
+                          <div key={key} className="flex justify-between items-center">
+                            <span className="text-gray-400">{key}:</span>
+                            <span className="font-bold text-gray-250">{val} pt</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* AI report */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] text-[#00A3FF] font-mono font-bold uppercase tracking-wider block">Análise Interpretativa por IA</span>
+                      <div className="p-5 bg-white text-gray-900 rounded-2xl border border-gray-200 text-xs leading-relaxed max-w-none text-left prose prose-sm">
+                        {report.aiReportText ? renderMarkdown(report.aiReportText) : <span className="text-gray-400 italic">Sem análise de IA.</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

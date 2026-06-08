@@ -7,8 +7,9 @@ import AssessmentWizard from "./components/AssessmentWizard";
 import HistoryPanel from "./components/HistoryPanel";
 import { Tool, Report, PatientInfo } from "./types";
 import { INITIAL_TOOLS } from "./data";
-import { FileDown, Sparkles, BookOpen, Clock, Activity, MessageSquare } from "lucide-react";
+import { FileDown, Sparkles, BookOpen, Clock, Activity, MessageSquare, History } from "lucide-react";
 import { db } from "../../lib/db";
+import { psicometrikDbWrapper } from "./lib/psicometrikDbWrapper";
 
 interface BibliotecaAvaliacaoAppProps {
   activePatientId?: string;
@@ -32,12 +33,30 @@ export default function App({ activePatientId, lockPatient, userId }: Biblioteca
     zIndex: number;
   }
 
+  const [patients, setPatients] = useState<any[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string>("");
   const [activePatient, setActivePatient] = useState<PatientInfo | null>(null);
 
-  // Load active patient from database if activePatientId changes
+  // Load all patients on mount
+  useEffect(() => {
+    db.pacientes.toArray().then(all => {
+      setPatients(all);
+    }).catch(err => {
+      console.error("Erro ao listar pacientes:", err);
+    });
+  }, []);
+
+  // Update selectedPatientId when activePatientId changes from props
   useEffect(() => {
     if (activePatientId) {
-      db.pacientes.get(activePatientId).then(p => {
+      setSelectedPatientId(String(activePatientId));
+    }
+  }, [activePatientId]);
+
+  // Load patient details & history when selectedPatientId changes
+  useEffect(() => {
+    if (selectedPatientId) {
+      db.pacientes.get(selectedPatientId).then(p => {
         if (p) {
           let age = 30;
           if (p.nascimento) {
@@ -53,10 +72,18 @@ export default function App({ activePatientId, lockPatient, userId }: Biblioteca
       }).catch(err => {
         console.error("Erro ao carregar paciente para BibliotecaAvaliacao:", err);
       });
+
+      // Load database history instead of LocalStorage
+      psicometrikDbWrapper.getHistory(selectedPatientId).then(loadedReports => {
+        setReports(loadedReports);
+      }).catch(err => {
+        console.error("Erro ao carregar histórico do banco:", err);
+      });
     } else {
       setActivePatient(null);
+      setReports([]);
     }
-  }, [activePatientId]);
+  }, [selectedPatientId]);
   
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,17 +103,8 @@ export default function App({ activePatientId, lockPatient, userId }: Biblioteca
   // Store the active window ID for highlighting in taskbar
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
 
-  // Load history & pinned tools from LocalStorage on mount
+  // Load pinned tools from LocalStorage on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("psicometrik_saved_reports");
-      if (stored) {
-        setReports(JSON.parse(stored));
-      }
-    } catch (err) {
-      console.error("Erro ao carregar dados do LocalStorage:", err);
-    }
-
     try {
       const storedPins = localStorage.getItem("psicometrik_pinned_tools");
       if (storedPins) {
@@ -111,41 +129,51 @@ export default function App({ activePatientId, lockPatient, userId }: Biblioteca
     });
   };
 
-  // Save history helper
-  const updateSavedReports = (newReports: Report[]) => {
-    setReports(newReports);
+  // Add report to dossier
+  const handleSaveReport = async (report: Report) => {
+    if (!selectedPatientId) return;
     try {
-      localStorage.setItem("psicometrik_saved_reports", JSON.stringify(newReports));
+      const updated = await psicometrikDbWrapper.saveEntry(report, selectedPatientId, userId);
+      setReports(updated);
     } catch (err) {
-      console.error("Erro ao salvar dados no LocalStorage:", err);
+      console.error("Erro ao salvar relatório no banco:", err);
     }
   };
 
-  // Add report to dossier
-  const handleSaveReport = (report: Report) => {
-    const updated = [report, ...reports];
-    updateSavedReports(updated);
-  };
-
   // Delete report
-  const handleDeleteReport = (id: string) => {
-    const updated = reports.filter(r => r.id !== id);
-    updateSavedReports(updated);
+  const handleDeleteReport = async (id: string) => {
+    if (!selectedPatientId) return;
+    try {
+      const updated = await psicometrikDbWrapper.deleteEntry(id, selectedPatientId, userId);
+      setReports(updated);
+    } catch (err) {
+      console.error("Erro ao deletar relatório:", err);
+    }
   };
 
   // Edit or update existing report (therapist reviews)
-  const handleUpdateReport = (updatedReport: Report) => {
-    const updated = reports.map(r => r.id === updatedReport.id ? updatedReport : r);
-    updateSavedReports(updated);
+  const handleUpdateReport = async (updatedReport: Report) => {
+    if (!selectedPatientId) return;
+    try {
+      const updated = await psicometrikDbWrapper.saveEntry(updatedReport, selectedPatientId, userId);
+      setReports(updated);
+    } catch (err) {
+      console.error("Erro ao atualizar relatório:", err);
+    }
   };
 
   // Import full database
-  const handleImportReports = (imported: Report[]) => {
-    // Merge or replace. Let's merge unique IDs, prioritizing imported
-    const currentMap = new Map<string, Report>(reports.map(r => [r.id, r]));
-    imported.forEach(r => currentMap.set(r.id, r));
-    const merged = Array.from(currentMap.values()).sort((a,b) => b.createdAt.localeCompare(a.createdAt));
-    updateSavedReports(merged);
+  const handleImportReports = async (imported: Report[]) => {
+    if (!selectedPatientId) return;
+    try {
+      let current = [...reports];
+      for (const r of imported) {
+        current = await psicometrikDbWrapper.saveEntry(r, selectedPatientId, userId);
+      }
+      setReports(current);
+    } catch (err) {
+      console.error("Erro ao importar relatórios:", err);
+    }
   };
 
   const handleSelectTool = (tool: Tool | null) => {
@@ -289,42 +317,66 @@ export default function App({ activePatientId, lockPatient, userId }: Biblioteca
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         savedReportsCount={reports.length}
+        patients={patients}
+        selectedPatientId={selectedPatientId}
+        setSelectedPatientId={setSelectedPatientId}
+        lockPatient={lockPatient}
       />
 
       {/* RENDER ACTIVE TAB VIEW */}
       {currentTab === 'catalog' && (
-        <main className="animate-fadeIn">
-          {/* Billboard movie cover standard Netflix */}
-          <NetflixHero />
+        !selectedPatientId ? (
+          <div className="flex-1 min-h-[400px] flex flex-col items-center justify-center text-center opacity-70 p-12 bg-[#0c0d10] text-[#f3f4f6]">
+            <BookOpen size={48} className="text-[#00A3FF] mb-4 animate-pulse" />
+            <h3 className="text-sm font-black uppercase tracking-widest text-[#f3f4f6]">Nenhum Paciente Selecionado</h3>
+            <p className="text-[11px] font-black uppercase tracking-widest text-gray-500 mt-2 max-w-sm leading-relaxed">
+              Por favor, selecione um paciente no menu suspenso superior para visualizar o catálogo de testes e iniciar as avaliações.
+            </p>
+          </div>
+        ) : (
+          <main className="animate-fadeIn">
+            {/* Billboard movie cover standard Netflix */}
+            <NetflixHero />
 
-          {/* Quick Access Icon Shortcut Menu */}
-          <QuickAccess 
-            tools={tools}
-            pinnedToolIds={pinnedToolIds}
-            onSelectTool={handleSelectTool}
-            onTogglePin={handleTogglePin}
-          />
+            {/* Quick Access Icon Shortcut Menu */}
+            <QuickAccess 
+              tools={tools}
+              pinnedToolIds={pinnedToolIds}
+              onSelectTool={handleSelectTool}
+              onTogglePin={handleTogglePin}
+            />
 
-          {/* Catalog grid rows */}
-          <ToolGrid 
-            tools={tools}
-            onSelectTool={handleSelectTool}
-            searchQuery={searchQuery}
-            pinnedToolIds={pinnedToolIds}
-            onTogglePin={handleTogglePin}
-          />
-        </main>
+            {/* Catalog grid rows */}
+            <ToolGrid 
+              tools={tools}
+              onSelectTool={handleSelectTool}
+              searchQuery={searchQuery}
+              pinnedToolIds={pinnedToolIds}
+              onTogglePin={handleTogglePin}
+            />
+          </main>
+        )
       )}
 
       {currentTab === 'history' && (
-        <main className="py-8 animate-fadeIn">
-          <HistoryPanel 
-            reports={reports}
-            onDeleteReport={handleDeleteReport}
-            onUpdateReport={handleUpdateReport}
-            onImportReports={handleImportReports}
-          />
-        </main>
+        !selectedPatientId ? (
+          <div className="flex-1 min-h-[400px] flex flex-col items-center justify-center text-center opacity-70 p-12 bg-[#0c0d10] text-[#f3f4f6]">
+            <History size={48} className="text-[#00A3FF] mb-4 animate-pulse" />
+            <h3 className="text-sm font-black uppercase tracking-widest text-[#f3f4f6]">Nenhum Paciente Selecionado</h3>
+            <p className="text-[11px] font-black uppercase tracking-widest text-gray-500 mt-2 max-w-sm leading-relaxed">
+              Por favor, selecione um paciente no menu suspenso superior para visualizar seu histórico de laudos psicométricos.
+            </p>
+          </div>
+        ) : (
+          <main className="py-8 animate-fadeIn">
+            <HistoryPanel 
+              reports={reports}
+              onDeleteReport={handleDeleteReport}
+              onUpdateReport={handleUpdateReport}
+              onImportReports={handleImportReports}
+            />
+          </main>
+        )
       )}
 
       {/* WINDOWED INSTRUMENT WORKFLOWS (WINDOWS WORKSPACE) */}
