@@ -209,13 +209,13 @@ export default function App() {
     ));
   };
 
-  // Keyboard shortcut Alt+Tab
+  // Keyboard shortcut Alt+\
   const [isAltTabOpen, setIsAltTabOpen] = useState(false);
   const [altTabSelectionIndex, setAltTabSelectionIndex] = useState(0);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.altKey && e.key === 'Tab') {
+      if (e.altKey && e.key === '\\') {
         e.preventDefault();
         if (openWindows.length === 0) return;
 
@@ -599,9 +599,9 @@ export default function App() {
           <div className="bg-bg-sidebar/95 backdrop-blur-xl border border-border-subtle p-6 rounded-[2rem] shadow-2xl w-[550px] max-w-full">
             <div className="text-center mb-6">
               <h3 className="text-xs font-black text-text-main uppercase tracking-widest flex items-center justify-center gap-2">
-                <Brain size={14} className="text-primary animate-pulse" /> Alternar Janelas (Alt + Tab)
+                <Brain size={14} className="text-primary animate-pulse" /> Alternar Janelas (Alt + \)
               </h3>
-              <p className="text-[9px] font-black text-text-dim/40 uppercase tracking-widest mt-1">Pressione Tab para navegar e solte Alt para selecionar</p>
+              <p className="text-[9px] font-black text-text-dim/40 uppercase tracking-widest mt-1">Pressione \ para navegar e solte Alt para selecionar</p>
             </div>
             
             <div className="grid grid-cols-3 gap-4">
