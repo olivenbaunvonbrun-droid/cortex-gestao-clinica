@@ -66,7 +66,7 @@ export default function App({ activePatientId, lockPatient, userId }: Biblioteca
             name: p.nome,
             age: age,
             gender: "Masculino", // Default
-            clinicalContext: p.historicoHtml ? p.historicoHtml.replace(/<[^>]*>/g, '') : "" // strip HTML tags
+            clinicalContext: p.historicoHtml ? p.historicoHtml.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() : "" // strip HTML tags & entities
           });
         }
       }).catch(err => {

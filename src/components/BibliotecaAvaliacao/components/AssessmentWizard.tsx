@@ -132,7 +132,9 @@ export default function AssessmentWizard({
   onMaximize
 }: AssessmentWizardProps) {
   // Wizard Steps: 'patient' | 'evaluation' | 'results' | 'report'
-  const [step, setStep] = useState<'patient' | 'evaluation' | 'results' | 'report'>('patient');
+  const [step, setStep] = useState<'patient' | 'evaluation' | 'results' | 'report'>(
+    prefilledPatient ? 'evaluation' : 'patient'
+  );
 
   // Dragging event handlers for the title bar
   const startDrag = (e: React.MouseEvent) => {
@@ -228,6 +230,7 @@ export default function AssessmentWizard({
   useEffect(() => {
     if (prefilledPatient) {
       setPatient(prefilledPatient);
+      setStep('evaluation');
     }
   }, [prefilledPatient]);
 
@@ -3371,10 +3374,11 @@ export default function AssessmentWizard({
                   <input
                     type="text"
                     required
+                    disabled
+                    readOnly
                     placeholder="Ex: João da Silva Santos"
                     value={patient.name}
-                    onChange={(e) => setPatient(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full bg-gray-950 text-sm text-gray-200 px-4 py-2.5 rounded border border-gray-800 focus:outline-none focus:border-[#00A3FF] transition-colors"
+                    className="w-full bg-gray-900/50 text-sm text-gray-400 px-4 py-2.5 rounded border border-gray-800 cursor-not-allowed focus:outline-none"
                   />
                 </div>
 
@@ -3385,9 +3389,10 @@ export default function AssessmentWizard({
                       type="number"
                       min="1"
                       max="120"
+                      disabled
+                      readOnly
                       value={patient.age}
-                      onChange={(e) => setPatient(prev => ({ ...prev, age: parseInt(e.target.value) || 0 }))}
-                      className="w-full bg-gray-950 text-sm text-gray-200 px-4 py-2.5 rounded border border-gray-800 focus:outline-none focus:border-[#00A3FF] transition-colors"
+                      className="w-full bg-gray-900/50 text-sm text-gray-400 px-4 py-2.5 rounded border border-gray-800 cursor-not-allowed focus:outline-none"
                     />
                   </div>
 
@@ -3395,8 +3400,8 @@ export default function AssessmentWizard({
                     <label className="text-xs text-gray-400 font-bold uppercase font-mono">Gênero Identificado</label>
                     <select
                       value={patient.gender}
-                      onChange={(e) => setPatient(prev => ({ ...prev, gender: e.target.value }))}
-                      className="w-full bg-gray-950 text-sm text-gray-200 px-4 py-2.5 rounded border border-gray-800 focus:outline-none focus:border-[#00A3FF] transition-colors"
+                      disabled
+                      className="w-full bg-gray-900/50 text-sm text-gray-400 px-4 py-2.5 rounded border border-gray-800 cursor-not-allowed focus:outline-none"
                     >
                       <option value="Masculino">Masculino</option>
                       <option value="Feminino">Feminino</option>
@@ -3409,10 +3414,11 @@ export default function AssessmentWizard({
                   <label className="text-xs text-gray-400 font-bold uppercase font-mono">Queixa Principal / Histórico de Encaminhamento</label>
                   <textarea
                     rows={4}
+                    disabled
+                    readOnly
                     placeholder="Relate brevemente o contexto clínico, sintomas declarados pela pessoa e objetivos na consulta terapêutica..."
                     value={patient.clinicalContext}
-                    onChange={(e) => setPatient(prev => ({ ...prev, clinicalContext: e.target.value }))}
-                    className="w-full bg-gray-950 text-sm text-gray-200 px-4 py-2.5 rounded border border-gray-800 focus:outline-none focus:border-[#00A3FF] transition-colors resize-none"
+                    className="w-full bg-gray-900/50 text-sm text-gray-400 px-4 py-2.5 rounded border border-gray-800 cursor-not-allowed focus:outline-none resize-none"
                   />
                 </div>
               </div>
