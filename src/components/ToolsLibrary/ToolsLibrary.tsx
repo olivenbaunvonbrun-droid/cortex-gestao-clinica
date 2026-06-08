@@ -119,6 +119,14 @@ const DEFAULT_TOOLS: ToolItem[] = [
     icon: Brain,
     status: 'active',
     category: 'Avaliação Psicológica',
+  },
+  {
+    id: 'biblioteca-avaliacao',
+    title: 'Biblioteca de Avaliação',
+    description: 'Plataforma integrada de avaliação e testes psicológicos (PsicoMetrik), contendo múltiplos instrumentos, escalas e inventários clínicos.',
+    icon: BookOpen,
+    status: 'active',
+    category: 'Avaliação Psicológica',
   }
 ];
 

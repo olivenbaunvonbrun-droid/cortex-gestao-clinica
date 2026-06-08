@@ -647,3 +647,58 @@ Retorne os dados em formato JSON estrito conforme o schema especificado. Seja pr
 
   return JSON.parse(response.text || "{}");
 }
+
+export async function generatePsicometrikReport(
+  patientInfo: { name: string; age: number; gender: string; clinicalContext?: string },
+  toolInfo: { title: string; description: string; skillsEvaluated: string[] },
+  scores: { totalScore: number; classification: string; subscales: Record<string, any> },
+  rawAnswers: any
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Você é um neurocientista clínico sênior e psicoterapeuta ph.D especialista em Terapia Cognitivo-Comportamental de 4ª Geração (ACT, DBT, Mindfulness, Autocompaixão, etc). Visando emitir um laudo técnico extremamente aprofundado, de alta qualidade acadêmica e clínica, analise os seguintes dados fornecidos da avaliação psicológica digital do paciente.
+
+--- DADOS DO PACIENTE ---
+Nome: ${patientInfo.name}
+Idade: ${patientInfo.age} anos
+Gênero: ${patientInfo.gender}
+Contexto Clínico/Queixas Declaradas: ${patientInfo.clinicalContext || "Não declarado."}
+
+--- FERRAMENTA DE AVALIAÇÃO ---
+Título da Ferramenta: ${toolInfo.title}
+Descrição: ${toolInfo.description}
+Habilidades Avaliadas: ${toolInfo.skillsEvaluated.join(", ")}
+
+--- RESULTADOS PSICOMÉTRICOS & CÁLCULOS AUTOMATIZADOS ---
+Pontuação Total Calculada: ${scores.totalScore}
+Classificação Clínica: ${scores.classification}
+Subescalas / Indicadores Detalhados: ${JSON.stringify(scores.subscales || {}, null, 2)}
+Respostas aos Itens Relevantes: ${JSON.stringify(rawAnswers || {}, null, 2)}
+
+Sua tarefa é redigir um Relatório de Avaliação Clínica/Intervenção de ponta, estruturado exatamente nos seguintes tópicos em formato Markdown profissional e termos técnicos adequados:
+
+1. **Sumário Executivo & Perfil Psicométrico**: Apresente uma análise objetiva das pontuações obtidas na ferramenta, explicando detalhadamente o perfil do paciente e o significado das pontuações globais e subescalas. 
+
+2. **Análise de Flexibilidade Psicológica (TCC de 4ª Geração)**: Interprete o comportamento do paciente sob a luz da TCC de 4ª Geração (ex: processos do hexaflex da ACT como fusão cognitiva, esquiva experiencial, deficit de autocompaixão, clareza sobre valores ou déficit de regulação na DBT). Explique como esse perfil de sintomas do teste retroalimenta os padrões de sofrimento psíquico.
+
+3. **Mecanismos Neurobiológicos & Neurociência Clínica**: Explique os sistemas neurais provavelmente implicados nesse padrão psicopatológico ou cognitivo (ex: atividade da amígdala versus controle inibitório pelo córtex pré-frontal dorsolateral/ventromedial, vias de regulação de neurotransmissores como serotonina, dopamina ou cortisol sob estresse crônico). Relacione os dados do teste à biologia do sistema nervoso.
+
+4. **Prognóstico Estatístico-Clínico & Reserva de Resiliência**: Com base na idade, histórico e resultados, forneça uma análise prognóstica qualitativa sobre a evolução do quadro clínico. Destaque quais fatores representam potencial de reserva cognitiva e de resiliência neurológica que atuarão positivamente no tratamento.
+
+5. **Diretrizes e Protocolo de Intervenção Personalizada**: Apresente propostas práticas de intervenção. Inclua estratégias específicas de TCC de 4ª Geração (exercícios de mindfulness, desfusão cognitiva baseada na ACT, estratégias de efetividade interpessoal ou tolerância ao mal-estar da DBT, treinos de reestruturação ativa) ou exercícios práticos de treinamento cognitivo/neuropsicológico específicos ao déficit avaliado.
+
+6. **Orientações e Conduta Multidisciplinar**: Detalhe recomendações de higiene neurobiológica (adequação de cronobiologia, higiene do sono, estimulação física e alimentação), bem como possíveis encaminhamentos e necessidades de exames médicos adicionais (Ex: polissonografia, painel metabólico, avaliação com psiquiatra ou exames de imagem se necessário).
+
+Por favor, escreva de maneira compassiva, ética, com jargão técnico refinado e rigor acadêmico, mas mantendo a utilidade prática para o terapeuta. Use o idioma português do Brasil. O relatório deve ser rico e conter análises densas e detalhadas.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+  });
+
+  return response.text;
+}
+

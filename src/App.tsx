@@ -25,6 +25,7 @@ import PsidiagnosticProApp from './components/PsidiagnosticPro/PsidiagnosticProA
 import DfcAssistidoApp from './components/DfcAssistido/DfcAssistidoApp';
 import ThpTrainingApp from './components/ThpTraining/ThpTrainingApp';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
+import BibliotecaAvaliacaoApp from './components/BibliotecaAvaliacao/BibliotecaAvaliacaoApp';
 import { Window } from './components/ui/Window';
 import { Brain } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -74,6 +75,7 @@ export default function App() {
       'psidiagnostic-pro': 'Psidiagnostic Pro',
       'dfc-assistido': 'DFC Assistido',
       'thp-training': 'Treinamento THP',
+      'biblioteca-avaliacao': 'Biblioteca de Avaliação',
     };
 
     const nextZ = maxZIndex + 1;
@@ -349,6 +351,13 @@ export default function App() {
           )}
           {win.id === 'thp-training' && (
             <ThpTrainingApp 
+              activePatientId={win.patientId || selectedPatientId || undefined} 
+              lockPatient={false} 
+              userId={currentUser?.id}
+            />
+          )}
+          {win.id === 'biblioteca-avaliacao' && (
+            <BibliotecaAvaliacaoApp 
               activePatientId={win.patientId || selectedPatientId || undefined} 
               lockPatient={false} 
               userId={currentUser?.id}
