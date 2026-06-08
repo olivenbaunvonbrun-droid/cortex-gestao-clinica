@@ -278,7 +278,7 @@ export default function App({ activePatientId, lockPatient, userId }: Biblioteca
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0d10] text-[#f3f4f6]" id="app-root-view">
+    <div className="absolute inset-0 overflow-y-auto bg-[#0c0d10] text-[#f3f4f6]" id="app-root-view">
       
       {/* Header bar */}
       <Header
