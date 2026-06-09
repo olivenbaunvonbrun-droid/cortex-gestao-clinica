@@ -347,9 +347,9 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-bg-deep relative select-none">
+    <div className="flex-1 flex overflow-auto bg-bg-deep relative select-none">
       {/* LEFT PANEL: INPUT FORM */}
-      <section className="w-full lg:w-[640px] border-r border-border-subtle flex flex-col overflow-hidden bg-bg-sidebar">
+      <section className="w-full lg:w-[640px] border-r border-border-subtle flex flex-col overflow-auto bg-bg-sidebar">
         <div className="p-4 border-b border-border-subtle flex justify-between items-center bg-bg-card/50">
           <h2 className="font-bold text-text-main flex items-center gap-2 text-xs uppercase tracking-wider">
             <span className="text-primary">🔍</span> Registro de Interação
@@ -832,7 +832,7 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
       </section>
 
       {/* RIGHT PANEL: INSIGHTS & ANALYSIS */}
-      <section className="hidden lg:flex flex-1 flex-col bg-bg-deep overflow-hidden">
+      <section className="hidden lg:flex flex-1 flex-col bg-bg-deep overflow-auto">
         <AnimatePresence mode="wait">
           {!analysis ? (
             <motion.div 

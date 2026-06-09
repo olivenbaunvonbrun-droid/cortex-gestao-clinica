@@ -935,7 +935,7 @@ export default function ThpTrainingApp({ activePatientId, lockPatient = false, u
   };
 
   return (
-    <div className="h-full w-full flex bg-bg-deep text-text-main font-sans overflow-hidden select-none relative">
+    <div className="min-h-[calc(100vh-191px)] w-full flex bg-bg-deep text-text-main font-sans overflow-auto select-none relative">
       {thpPatient ? (
         <>
           {/* Left Sidebar */}
@@ -949,7 +949,7 @@ export default function ThpTrainingApp({ activePatientId, lockPatient = false, u
           />
 
           {/* Right tab content area */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-bg-card border-l border-border-subtle">
+          <div className="flex-1 flex flex-col overflow-auto bg-bg-card border-l border-border-subtle">
             <header className="h-14 bg-bg-card/90 backdrop-blur border-b border-border-subtle px-6 flex items-center justify-between shrink-0 z-50">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-black text-text-dim uppercase tracking-widest">

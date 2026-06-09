@@ -444,8 +444,8 @@ export default function Layout({
         </div>
       </nav>
 
-      <main className="mt-[135px] h-[calc(100vh-135px-56px)] overflow-hidden p-6 relative">
-        <div className="w-full h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <main className="mt-[135px] min-h-[calc(100vh-135px-56px)] overflow-auto p-6 relative">
+        <div className="w-full min-h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
           {children}
         </div>
       </main>

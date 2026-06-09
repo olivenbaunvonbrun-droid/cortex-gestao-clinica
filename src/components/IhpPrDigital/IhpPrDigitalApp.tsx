@@ -187,7 +187,7 @@ export default function IhpPrDigitalApp({ activePatientId, lockPatient = false, 
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-hidden select-none relative">
+    <div className="min-h-[calc(100vh-191px)] w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-auto select-none relative">
       {/* HEADER COMPONENT */}
       <header className="h-14 bg-bg-card border-b border-border-subtle px-6 flex items-center justify-between shrink-0 relative z-50">
         <div className="flex items-center gap-3">
@@ -275,7 +275,7 @@ export default function IhpPrDigitalApp({ activePatientId, lockPatient = false, 
       </header>
       
       {/* MAIN CONTAINER */}
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="flex-1 flex overflow-auto relative">
         {!selectedPatientId ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40 p-12 bg-bg-deep">
             <Brain size={48} className="text-primary mb-4 animate-pulse" />
@@ -285,10 +285,10 @@ export default function IhpPrDigitalApp({ activePatientId, lockPatient = false, 
             </p>
           </div>
         ) : (
-          <div className="w-full h-full flex flex-col overflow-hidden">
+          <div className="w-full flex-1 flex flex-col overflow-auto">
             {/* Form Tab Panel */}
-            <div className={cn("w-full h-full flex flex-col overflow-hidden", (activeTab === 'test' && !currentResult) ? "block" : "hidden")}>
-              <div className="flex flex-1 overflow-hidden w-full relative h-full">
+            <div className={cn("w-full flex-1 flex flex-col overflow-auto", (activeTab === 'test' && !currentResult) ? "block" : "hidden")}>
+              <div className="flex flex-1 overflow-auto w-full relative">
                   {/* Left panel info */}
                   <aside className="w-64 border-r border-border-subtle bg-bg-sidebar/30 p-6 flex flex-col gap-6 overflow-y-auto scroller-hide shrink-0 hidden md:flex">
                     <div>

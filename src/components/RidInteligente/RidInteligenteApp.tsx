@@ -148,7 +148,7 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-hidden select-none">
+    <div className="min-h-[calc(100vh-191px)] w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-auto select-none">
       <Header 
         activeTab={activeTab} 
         setActiveTab={(tab) => {
@@ -161,7 +161,7 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
         lockPatient={!!activePatientId}
       />
       
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="flex-1 flex overflow-auto relative">
         {!selectedPatientId ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40 p-12 bg-bg-deep">
             <Brain size={48} className="text-primary mb-4 animate-pulse" />
