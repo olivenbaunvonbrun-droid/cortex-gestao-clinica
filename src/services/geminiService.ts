@@ -702,3 +702,180 @@ Por favor, escreva de maneira compassiva, ética, com jargão técnico refinado 
   return response.text;
 }
 
+export async function extractRidFromText(text: string) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+    Você é um psicólogo clínico experiente especializado em Terapia Cognitivo-Comportamental (TCC) e Terapia do Esquema.
+    Sua tarefa é ler as notas de atendimento ou relatos clínicos a seguir e extrair os dados estruturados para preencher um Registro Dialético-Cognitivo (RID).
+    
+    TEXTO PARA ANÁLISE:
+    """
+    ${text}
+    """
+    
+    Por favor, extraia de forma precisa e retorne o JSON com as seguintes propriedades:
+    1. situacao: A situação/contexto gatilho (onde, quando, o que aconteceu).
+    2. pensamento: Os pensamentos automáticos disfuncionais que passaram pela mente do paciente.
+    3. necessidade: Lista de necessidades emocionais básicas insatisfeitas (ex: aceitação, validação, competência, conexão, segurança, etc.).
+    4. esquema: Lista de esquemas cognitivos disfuncionais ativados (ex: fracasso, defectividade, abandono, isolamento social, padrões inflexíveis, etc.).
+    5. emocao: A emoção principal com seu nome e intensidade (0 a 100).
+    6. comportamento: O comportamento ou reação motora diante do gatilho (evitação, fuga, confronto, etc.).
+    7. consequenciasCurtoPrazo: As consequências imediatas do comportamento (geralmente alívio temporário).
+    8. consequenciasLongoPrazo: Os prejuízos ou consequências a longo prazo.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          situacao: { type: Type.STRING },
+          pensamento: { type: Type.STRING },
+          necessidade: { type: Type.ARRAY, items: { type: Type.STRING } },
+          esquema: { type: Type.ARRAY, items: { type: Type.STRING } },
+          emocao: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              intensity: { type: Type.INTEGER }
+            },
+            required: ["name", "intensity"]
+          },
+          comportamento: { type: Type.STRING },
+          consequenciasCurtoPrazo: { type: Type.STRING },
+          consequenciasLongoPrazo: { type: Type.STRING }
+        },
+        required: [
+          "situacao",
+          "pensamento",
+          "necessidade",
+          "esquema",
+          "emocao",
+          "comportamento",
+          "consequenciasCurtoPrazo",
+          "consequenciasLongoPrazo"
+        ]
+      }
+    }
+  });
+
+  return JSON.parse(response.text || "{}");
+}
+
+export async function extractPciFromText(text: string) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+    Você é um psicólogo clínico supervisor experiente em Terapia Cognitivo-Comportamental (TCC).
+    Sua tarefa é ler as notas de atendimento ou relatos clínicos a seguir e extrair os dados estruturados para preencher um Plano Clínico Integrado (PCI).
+    
+    TEXTO PARA ANÁLISE:
+    """
+    ${text}
+    """
+    
+    Por favor, extraia de forma precisa e retorne o JSON com as seguintes propriedades:
+    1. approach: Abordagem teórica (ex: "Terapia Cognitivo-Comportamental (TCC)").
+    2. phase: Fase atual da terapia ("triagem", "intervencao", "alta", "recaida").
+    3. idade: Idade aproximada ou citada.
+    4. escolaridade: Escolaridade ou profissão do paciente.
+    5. estadoCivil: Estado civil ("Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável").
+    6. familiaOrigem: Contexto familiar e histórico da família de origem.
+    7. rotina: Hábitos de rotina, sono, lazer, exercícios, etc.
+    8. eventoQueixas: A queixa principal ou evento precipitador do sofrimento.
+    9. ridSituacao: Situação-gatilho típica descrita.
+    10. ridPensamento: Pensamentos automáticos associados.
+    11. ridEmocao: Emoções e sentimentos corporais.
+    12. ridEmocaoIntensidade: Intensidade da emoção de 0 a 100.
+    13. ridComportamento: Comportamento ou reação demonstrada.
+    14. ridConsequencias: Consequência de curto prazo.
+    15. ridConsequenciasLP: Consequência de longo prazo.
+    16. satisfacaoPessoal: Nível de satisfação Pessoal de 0 a 100.
+    17. satisfacaoInterpessoal: Nível de satisfação Interpessoal de 0 a 100.
+    18. satisfacaoOcupacional: Nível de satisfação Ocupacional de 0 a 100.
+    19. satisfacaoMaterial: Nível de satisfação Material de 0 a 100.
+    20. satisfacaoRecreativa: Nível de satisfação Recreativa de 0 a 100.
+    21. satisfacaoExistencial: Nível de satisfação Existencial de 0 a 100.
+    22. necessidadesIdentificadas: Necessidades emocionais básicas insatisfeitas (separadas por "; ").
+    23. esquemasCognitivos: Esquemas iniciais desadaptativos (separados por "; ").
+    24. crencasCentrais: Crenças centrais/nucleares (separadas por "; ").
+    25. crencasPerifericas: Regras condicionais e crenças intermediárias (separadas por "; ").
+    26. excessosComp: Comportamentos em excesso (separados por "; ").
+    27. deficitsHab: Déficits de habilidades (separados por "; ").
+    28. historicoFormativo: Histórico de infância/formação das crenças (separado por "; ").
+    29. instrumentos: Instrumentos de avaliação e testes citados.
+    30. diagTopo: Diagnósticos topográficos DSM-5/CID-11 (ex: depressão, ansiedade, etc.).
+    31. diagFunc: Diagnóstico funcional clínico (manutenção).
+    32. projetoTerap: Intervenções planejadas (separadas por "; ").
+    33. relacionamentoTerap: Postura terapêutica indicada.
+    34. evolucao: Resumo da evolução e andamento do caso.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          approach: { type: Type.STRING },
+          phase: { type: Type.STRING },
+          idade: { type: Type.STRING },
+          escolaridade: { type: Type.STRING },
+          estadoCivil: { type: Type.STRING },
+          familiaOrigem: { type: Type.STRING },
+          rotina: { type: Type.STRING },
+          eventoQueixas: { type: Type.STRING },
+          ridSituacao: { type: Type.STRING },
+          ridPensamento: { type: Type.STRING },
+          ridEmocao: { type: Type.STRING },
+          ridEmocaoIntensidade: { type: Type.INTEGER },
+          ridComportamento: { type: Type.STRING },
+          ridConsequencias: { type: Type.STRING },
+          ridConsequenciasLP: { type: Type.STRING },
+          satisfacaoPessoal: { type: Type.INTEGER },
+          satisfacaoInterpessoal: { type: Type.INTEGER },
+          satisfacaoOcupacional: { type: Type.INTEGER },
+          satisfacaoMaterial: { type: Type.INTEGER },
+          satisfacaoRecreativa: { type: Type.INTEGER },
+          satisfacaoExistencial: { type: Type.INTEGER },
+          necessidadesIdentificadas: { type: Type.STRING },
+          esquemasCognitivos: { type: Type.STRING },
+          crencasCentrais: { type: Type.STRING },
+          crencasPerifericas: { type: Type.STRING },
+          excessosComp: { type: Type.STRING },
+          deficitsHab: { type: Type.STRING },
+          historicoFormativo: { type: Type.STRING },
+          instrumentos: { type: Type.STRING },
+          diagTopo: { type: Type.STRING },
+          diagFunc: { type: Type.STRING },
+          projetoTerap: { type: Type.STRING },
+          relacionamentoTerap: { type: Type.STRING },
+          evolucao: { type: Type.STRING }
+        },
+        required: [
+          "approach", "phase", "idade", "escolaridade", "estadoCivil",
+          "familiaOrigem", "rotina", "eventoQueixas", "ridSituacao",
+          "ridPensamento", "ridEmocao", "ridEmocaoIntensidade", "ridComportamento",
+          "ridConsequencias", "ridConsequenciasLP", "satisfacaoPessoal",
+          "satisfacaoInterpessoal", "satisfacaoOcupacional", "satisfacaoMaterial",
+          "satisfacaoRecreativa", "satisfacaoExistencial", "necessidadesIdentificadas",
+          "esquemasCognitivos", "crencasCentrais", "crencasPerifericas",
+          "excessosComp", "deficitsHab", "historicoFormativo", "instrumentos",
+          "diagTopo", "diagFunc", "projetoTerap", "relacionamentoTerap", "evolucao"
+        ]
+      }
+    }
+  });
+
+  return JSON.parse(response.text || "{}");
+}
+
+

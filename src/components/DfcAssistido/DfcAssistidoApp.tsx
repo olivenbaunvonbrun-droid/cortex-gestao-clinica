@@ -242,7 +242,14 @@ Situação ${idx + 1}: ${s.situation}
 `).join('\n')}
       `.trim();
 
-      const analysis = await analyzeDfcAssessment({ name: pData.name, age: pData.age }, dfcText);
+      let analysis = '';
+      try {
+        analysis = await analyzeDfcAssessment({ name: pData.name, age: pData.age }, dfcText);
+      } catch (err: any) {
+        console.error("Erro ao gerar análise DFC via IA:", err);
+        toast.error('Não foi possível gerar a análise da IA, mas o diagrama foi salvo localmente.');
+        analysis = 'Não foi possível gerar a análise técnica de IA no momento do salvamento.';
+      }
 
       const newRecord: DfcRecord = {
         id: Date.now().toString(),
@@ -391,18 +398,9 @@ Situação ${idx + 1}: ${s.situation}
           </div>
         ) : (
           <div className="w-full h-full flex flex-col overflow-hidden">
-            <AnimatePresence mode="wait">
-              {currentResult ? (
-                <div className="flex-1 overflow-y-auto p-6 bg-bg-deep w-full scroller-hide select-text">
-                  <ResultView 
-                    key="result"
-                    assessment={currentResult} 
-                    onBack={() => setCurrentResult(null)} 
-                    onExport={() => handleExport(currentResult)}
-                  />
-                </div>
-              ) : activeTab === 'test' ? (
-                <div className="flex flex-1 overflow-hidden w-full relative">
+            {/* Form Tab Panel */}
+            <div className={cn("w-full h-full flex flex-col overflow-hidden", (activeTab === 'test' && !currentResult) ? "block" : "hidden")}>
+              <div className="flex flex-1 overflow-hidden w-full relative h-full">
                   {/* Left panel info & stats */}
                   <aside className="w-64 border-r border-border-subtle bg-bg-sidebar/30 p-6 flex flex-col gap-6 overflow-y-auto scroller-hide shrink-0 hidden md:flex">
                     <div>
@@ -666,17 +664,29 @@ Situação ${idx + 1}: ${s.situation}
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto p-6 bg-bg-deep scroller-hide select-text">
-                  <HistoryView 
-                    key="history"
-                    assessments={assessments} 
-                    onView={setCurrentResult} 
-                    onDelete={handleDeleteAssessment}
-                  />
-                </div>
-              )}
-            </AnimatePresence>
+              </div>
+
+            {/* History Tab Panel */}
+            <div className={cn("flex-grow overflow-y-auto p-6 bg-bg-deep scroller-hide select-text", (activeTab === 'history' && !currentResult) ? "block" : "hidden")}>
+              <HistoryView 
+                key="history"
+                assessments={assessments} 
+                onView={setCurrentResult} 
+                onDelete={handleDeleteAssessment}
+              />
+            </div>
+
+            {/* Result View Container */}
+            {currentResult && (
+              <div className="flex-grow overflow-y-auto p-6 bg-bg-deep w-full scroller-hide select-text">
+                <ResultView 
+                  key="result"
+                  assessment={currentResult} 
+                  onBack={() => setCurrentResult(null)} 
+                  onExport={() => handleExport(currentResult)}
+                />
+              </div>
+            )}
           </div>
         )}
       </main>

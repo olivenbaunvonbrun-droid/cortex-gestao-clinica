@@ -16,7 +16,10 @@ import {
   Heart,
   Activity,
   Eraser,
-  HelpCircle
+  HelpCircle,
+  Upload,
+  X,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PatientData, PciRecord, PciPhase } from './types';
@@ -93,6 +96,12 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
   const [records, setRecords] = useState<PciRecord[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentResult, setCurrentResult] = useState<PciRecord | null>(null);
+
+  // Import Modal States
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [pastedText, setPastedText] = useState('');
+  const [importFiles, setImportFiles] = useState<File[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   const [settings, setSettings] = useState({
     professionalName: 'Psicólogo(a)',
@@ -269,6 +278,104 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
     toast.success('Dados clínicos simulados!');
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files).slice(0, 4);
+      setImportFiles(selectedFiles);
+    }
+  };
+
+  const handleProcessImport = async () => {
+    let combinedText = pastedText.trim();
+
+    if (importFiles.length > 0) {
+      setIsImporting(true);
+      try {
+        const filesTextPromises = importFiles.map(file => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const htmlContent = event.target?.result as string;
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(htmlContent, 'text/html');
+              resolve(doc.body.textContent || '');
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsText(file);
+          });
+        });
+
+        const filesTexts = await Promise.all(filesTextPromises);
+        combinedText += "\n" + filesTexts.join("\n");
+      } catch (err) {
+        console.error("Erro ao ler arquivos:", err);
+        toast.error("Erro ao ler um ou mais arquivos.");
+        setIsImporting(false);
+        return;
+      }
+    }
+
+    if (!combinedText.trim()) {
+      toast.error("Por favor, digite algum texto ou anexe pelo menos um arquivo.");
+      setIsImporting(false);
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const { extractPciFromText } = await import('../../services/geminiService');
+      const data = await extractPciFromText(combinedText);
+      
+      setFormState(prev => ({
+        ...prev,
+        approach: data.approach || prev.approach,
+        phase: data.phase || prev.phase,
+        idade: data.idade || prev.idade,
+        escolaridade: data.escolaridade || prev.escolaridade,
+        estadoCivil: data.estadoCivil || prev.estadoCivil,
+        familiaOrigem: data.familiaOrigem || prev.familiaOrigem,
+        rotina: data.rotina || prev.rotina,
+        eventoQueixas: data.eventoQueixas || prev.eventoQueixas,
+        ridSituacao: data.ridSituacao || prev.ridSituacao,
+        ridPensamento: data.ridPensamento || prev.ridPensamento,
+        ridEmocao: data.ridEmocao || prev.ridEmocao,
+        ridEmocaoIntensidade: data.ridEmocaoIntensidade !== undefined ? data.ridEmocaoIntensidade : prev.ridEmocaoIntensidade,
+        ridComportamento: data.ridComportamento || prev.ridComportamento,
+        ridConsequencias: data.ridConsequencias || prev.ridConsequencias,
+        ridConsequenciasLP: data.ridConsequenciasLP || prev.ridConsequenciasLP,
+        satisfacaoPessoal: data.satisfacaoPessoal !== undefined ? data.satisfacaoPessoal : prev.satisfacaoPessoal,
+        satisfacaoInterpessoal: data.satisfacaoInterpessoal !== undefined ? data.satisfacaoInterpessoal : prev.satisfacaoInterpessoal,
+        satisfacaoOcupacional: data.satisfacaoOcupacional !== undefined ? data.satisfacaoOcupacional : prev.satisfacaoOcupacional,
+        satisfacaoMaterial: data.satisfacaoMaterial !== undefined ? data.satisfacaoMaterial : prev.satisfacaoMaterial,
+        satisfacaoRecreativa: data.satisfacaoRecreativa !== undefined ? data.satisfacaoRecreativa : prev.satisfacaoRecreativa,
+        satisfacaoExistencial: data.satisfacaoExistencial !== undefined ? data.satisfacaoExistencial : prev.satisfacaoExistencial,
+        necessidadesIdentificadas: data.necessidadesIdentificadas || prev.necessidadesIdentificadas,
+        esquemasCognitivos: data.esquemasCognitivos || prev.esquemasCognitivos,
+        crencasCentrais: data.crencasCentrais || prev.crencasCentrais,
+        crencasPerifericas: data.crencasPerifericas || prev.crencasPerifericas,
+        excessosComp: data.excessosComp || prev.excessosComp,
+        deficitsHab: data.deficitsHab || prev.deficitsHab,
+        historicoFormativo: data.historicoFormativo || prev.historicoFormativo,
+        instrumentos: data.instrumentos || prev.instrumentos,
+        diagTopo: data.diagTopo || prev.diagTopo,
+        diagFunc: data.diagFunc || prev.diagFunc,
+        projetoTerap: data.projetoTerap || prev.projetoTerap,
+        relacionamentoTerap: data.relacionamentoTerap || prev.relacionamentoTerap,
+        evolucao: data.evolucao || prev.evolucao
+      }));
+
+      toast.success("Dados extraídos e preenchidos com sucesso!");
+      setIsImportModalOpen(false);
+      setPastedText('');
+      setImportFiles([]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Falha ao extrair dados clínicos com IA: " + (err.message || err));
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleGenerateAiPlan = async () => {
     if (!selectedPatientId) {
       toast.error('Selecione um paciente para acionar a IA!');
@@ -283,8 +390,20 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
     setIsAnalyzing(true);
     try {
       const analysis = await analyzePciAssessment(formState);
-      setFormState(prev => ({ ...prev, aiAnalysis: analysis }));
-      toast.success('Insights clínicos da IA elaborados com sucesso!');
+      const updatedFormState = { ...formState, aiAnalysis: analysis };
+      setFormState(updatedFormState);
+
+      const newRecord: PciRecord = {
+        ...updatedFormState,
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
+
+      const updated = await dbWrapper.saveEntry(newRecord, selectedPatientId, userId);
+      setRecords(updated);
+      toast.success('Insights elaborados e salvos no prontuário!');
+      setActiveTab('history');
     } catch (err) {
       console.error(err);
       toast.error('Erro na análise da IA. Verifique as configurações.');
@@ -501,6 +620,14 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
               </button>
 
               <button 
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/45 rounded-xl text-[9px] font-black uppercase tracking-widest text-primary transition-all cursor-pointer animate-pulse-subtle"
+                title="Importar de arquivos HTML/TXT ou texto"
+              >
+                <Upload size={11} /> Importar
+              </button>
+
+              <button 
                 onClick={handleClear}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sidebar hover:bg-bg-sidebar-hover border border-border-subtle hover:border-text-dim/30 rounded-xl text-[9px] font-black uppercase tracking-widest text-text-dim transition-all cursor-pointer"
               >
@@ -566,18 +693,9 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
           </div>
         ) : (
           <div className="w-full h-full flex flex-col overflow-hidden">
-            <AnimatePresence mode="wait">
-              {currentResult ? (
-                <div className="flex-1 overflow-y-auto p-6 bg-bg-deep w-full scroller-hide select-text">
-                  <ResultView 
-                    key="result"
-                    record={currentResult} 
-                    onBack={() => setCurrentResult(null)} 
-                    onExport={() => handleExport(currentResult)}
-                  />
-                </div>
-              ) : activeTab === 'test' ? (
-                <div className="flex flex-1 overflow-hidden w-full relative">
+            {/* Form Tab Panel */}
+            <div className={cn("w-full h-full flex flex-col overflow-hidden", (activeTab === 'test' && !currentResult) ? "block" : "hidden")}>
+              <div className="flex flex-1 overflow-hidden w-full relative h-full">
                   {/* LEFT SCROLLABLE FORM COLUMN */}
                   <div className="flex-1 overflow-y-auto bg-bg-deep p-6 md:p-8 scroller-hide select-text">
                     <div className="max-w-4xl mx-auto space-y-12 pb-24">
@@ -980,20 +1098,123 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
                   </aside>
 
                 </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto p-6 bg-bg-deep scroller-hide select-text">
-                  <HistoryView 
-                    key="history"
-                    records={records} 
-                    onView={setCurrentResult} 
-                    onDelete={handleDeleteRecord}
+              </div>
+
+              {/* History Tab Panel */}
+              <div className={cn("flex-grow overflow-y-auto p-6 bg-bg-deep scroller-hide select-text", (activeTab === 'history' && !currentResult) ? "block" : "hidden")}>
+                <HistoryView 
+                  key="history"
+                  records={records} 
+                  onView={setCurrentResult} 
+                  onDelete={handleDeleteRecord}
+                />
+              </div>
+
+              {/* Result View Container */}
+              {currentResult && (
+                <div className="flex-grow overflow-y-auto p-6 bg-bg-deep w-full scroller-hide select-text">
+                  <ResultView 
+                    key="result"
+                    record={currentResult} 
+                    onBack={() => setCurrentResult(null)} 
+                    onExport={() => handleExport(currentResult)}
                   />
                 </div>
               )}
-            </AnimatePresence>
-          </div>
-        )}
+            </div>
+          )}
       </main>
+
+      {/* IMPORT MODAL */}
+      {isImportModalOpen && (
+        <div className="absolute inset-0 bg-bg-deep/80 backdrop-blur-md z-[100] flex items-center justify-center p-6 select-text">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-xl bg-bg-card border border-border-subtle rounded-[2rem] shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
+          >
+            <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-bg-card/50">
+              <h3 className="font-bold text-text-main flex items-center gap-2 text-sm uppercase tracking-wider">
+                <Sparkles className="text-primary w-4 h-4 animate-pulse" /> Importador Inteligente PCI
+              </h3>
+              <button 
+                onClick={() => setIsImportModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-white/5 text-text-dim hover:text-text-main transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6 scroller-hide flex-1">
+              <p className="text-[10px] text-text-dim font-bold uppercase tracking-wide leading-relaxed">
+                Importe até 4 arquivos HTML de prontuário antigo ou cole o relato do caso. A inteligência artificial irá ler o texto e preencher automaticamente todos os campos do Plano Clínico Integrado.
+              </p>
+
+              {/* HTML/TXT File Upload Dropzone */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-text-dim uppercase tracking-wider block">1. Enviar Arquivos Clínicos (Máx 4, formato .html, .txt)</label>
+                <label className="flex flex-col items-center justify-center p-6 border border-border-subtle border-dashed rounded-[2rem] bg-bg-deep hover:bg-bg-sidebar/45 hover:border-primary/30 cursor-pointer transition-all group text-center">
+                  <Upload className="text-text-dim/40 group-hover:text-primary mb-3 transition-colors" size={24} />
+                  <span className="text-[9px] font-black text-text-dim uppercase tracking-widest">Selecionar arquivos HTML/TXT</span>
+                  <input 
+                    type="file" 
+                    multiple 
+                    className="hidden" 
+                    onChange={handleFileChange} 
+                    accept=".html,.htm,.txt" 
+                  />
+                </label>
+                {importFiles.length > 0 && (
+                  <div className="bg-bg-deep border border-border-subtle rounded-xl p-3 space-y-1">
+                    <span className="text-[9px] font-black text-text-dim uppercase tracking-wider block">Arquivos Selecionados:</span>
+                    {importFiles.map((file, idx) => (
+                      <div key={idx} className="text-[10px] text-text-main font-semibold truncate">
+                        • {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pasted Text Editor area */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-text-dim uppercase tracking-wider block">2. Ou digite/cole o relato da evolução/sessões do paciente</label>
+                <textarea
+                  rows={6}
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder="Cole aqui a evolução, anotações de sessões anteriores ou histórico clínico..."
+                  className="w-full bg-bg-deep border border-border-subtle text-text-main text-xs font-semibold rounded-2xl p-4 focus:border-primary outline-none transition-all shadow-sm resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-bg-card border-t border-border-subtle flex gap-3 justify-end">
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="px-5 py-2 border border-border-subtle text-text-dim hover:text-text-main font-black rounded-xl hover:bg-white/5 transition-all text-xs uppercase tracking-widest cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleProcessImport}
+                disabled={isImporting}
+                className="px-5 py-2 bg-primary hover:bg-primary/90 text-bg-deep font-black rounded-xl transition-all disabled:opacity-50 flex items-center gap-2 text-xs uppercase tracking-widest cursor-pointer"
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" /> Extrair e Preencher
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       <Toaster 
         position="bottom-right"

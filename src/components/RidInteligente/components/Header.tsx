@@ -20,7 +20,7 @@ export function Header({
   lockPatient = false
 }: HeaderProps) {
   const tabs = [
-    { id: 'new', label: 'Nova Sessão', icon: ClipboardPen },
+    { id: 'new', label: 'Novo Registro', icon: ClipboardPen },
     { id: 'history', label: 'Histórico', icon: History },
   ];
 

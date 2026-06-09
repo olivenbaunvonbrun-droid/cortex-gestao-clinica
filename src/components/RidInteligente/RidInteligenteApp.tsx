@@ -10,6 +10,8 @@ import { db } from '../../lib/db';
 import { Toaster, toast } from 'react-hot-toast';
 import { Brain, Sparkles } from 'lucide-react';
 
+import { cn } from '../../lib/utils';
+
 interface RidInteligenteAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
@@ -170,35 +172,61 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
           </div>
         ) : (
           <div className="w-full flex">
-            {activeTab === 'new' && (() => {
-              const selectedPatient = patients.find(p => String(p.id) === String(selectedPatientId));
-              const pName = selectedPatient?.nome || '';
-              const pAge = selectedPatient?.nascimento 
-                ? String(new Date().getFullYear() - new Date(selectedPatient.nascimento).getFullYear()) 
-                : '';
-              return (
-                <RidForm 
-                  onSave={handleSaveEntry} 
-                  initialData={editingEntry} 
-                  settings={settings}
-                  patientName={pName}
-                  patientAge={pAge}
-                />
-              );
-            })()}
-            
-            {activeTab === 'history' && (
-              <div className="flex-1 overflow-y-auto p-6 bg-bg-deep">
-                <div className="max-w-4xl mx-auto">
-                  <HistoryList 
-                    entries={history}
-                    onDelete={handleDeleteEntry}
-                    onView={handleViewEntry}
-                    onCompare={handleCompare}
+            {/* Draft Form Container */}
+            <div className={cn("w-full flex-grow flex", (activeTab === 'new' && !editingEntry) ? 'block' : 'hidden')}>
+              {(() => {
+                const selectedPatient = patients.find(p => String(p.id) === String(selectedPatientId));
+                const pName = selectedPatient?.nome || '';
+                const pAge = selectedPatient?.nascimento 
+                  ? String(new Date().getFullYear() - new Date(selectedPatient.nascimento).getFullYear()) 
+                  : '';
+                return (
+                  <RidForm 
+                    key="draft"
+                    onSave={handleSaveEntry} 
+                    settings={settings}
+                    patientName={pName}
+                    patientAge={pAge}
                   />
-                </div>
+                );
+              })()}
+            </div>
+
+            {/* Edit/View Form Container */}
+            {editingEntry && (
+              <div className="w-full flex-grow flex">
+                {(() => {
+                  const selectedPatient = patients.find(p => String(p.id) === String(selectedPatientId));
+                  const pName = selectedPatient?.nome || '';
+                  const pAge = selectedPatient?.nascimento 
+                    ? String(new Date().getFullYear() - new Date(selectedPatient.nascimento).getFullYear()) 
+                    : '';
+                  return (
+                    <RidForm 
+                      key={editingEntry.id}
+                      onSave={handleSaveEntry} 
+                      onCancel={() => setEditingEntry(undefined)}
+                      initialData={editingEntry} 
+                      settings={settings}
+                      patientName={pName}
+                      patientAge={pAge}
+                    />
+                  );
+                })()}
               </div>
             )}
+            
+            {/* History List Container */}
+            <div className={cn("flex-1 overflow-y-auto p-6 bg-bg-deep", (activeTab === 'history' && !editingEntry) ? 'block' : 'hidden')}>
+              <div className="max-w-4xl mx-auto">
+                <HistoryList 
+                  entries={history}
+                  onDelete={handleDeleteEntry}
+                  onView={handleViewEntry}
+                  onCompare={handleCompare}
+                />
+              </div>
+            </div>
           </div>
         )}
       </main>

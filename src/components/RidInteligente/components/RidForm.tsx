@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Wand2, Save, AlertCircle, Loader2, BrainCircuit, Activity, BookOpen, Search, X, Printer } from 'lucide-react';
+import { Wand2, Save, AlertCircle, Loader2, BrainCircuit, Activity, BookOpen, Search, X, Printer, Upload, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-hot-toast';
 import { RidEntry, AppSettings } from '../types';
@@ -24,13 +24,14 @@ import { ConfirmationModal } from './ConfirmationModal';
 
 interface RidFormProps {
   onSave: (entry: RidEntry) => void;
+  onCancel?: () => void;
   initialData?: RidEntry;
   settings: AppSettings;
   patientName?: string;
   patientAge?: string;
 }
 
-export function RidForm({ onSave, initialData, settings, patientName, patientAge }: RidFormProps) {
+export function RidForm({ onSave, onCancel, initialData, settings, patientName, patientAge }: RidFormProps) {
   const [formData, setFormData] = useState<Omit<RidEntry, 'id' | 'date' | 'analysis'>>(() => {
     if (initialData) {
       return {
@@ -69,6 +70,87 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
   const [lastGeneratedReport, setLastGeneratedReport] = useState<string | null>(null);
+
+  // Import Modal States
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [pastedText, setPastedText] = useState('');
+  const [importFiles, setImportFiles] = useState<File[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files).slice(0, 4);
+      setImportFiles(selectedFiles);
+    }
+  };
+
+  const handleProcessImport = async () => {
+    let combinedText = pastedText.trim();
+
+    if (importFiles.length > 0) {
+      setIsImporting(true);
+      try {
+        const filesTextPromises = importFiles.map(file => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const htmlContent = event.target?.result as string;
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(htmlContent, 'text/html');
+              resolve(doc.body.textContent || '');
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsText(file);
+          });
+        });
+
+        const filesTexts = await Promise.all(filesTextPromises);
+        combinedText += "\n" + filesTexts.join("\n");
+      } catch (err) {
+        console.error("Erro ao ler arquivos:", err);
+        toast.error("Erro ao ler um ou mais arquivos.");
+        setIsImporting(false);
+        return;
+      }
+    }
+
+    if (!combinedText.trim()) {
+      toast.error("Por favor, digite algum texto ou anexe pelo menos um arquivo.");
+      setIsImporting(false);
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const { extractRidFromText } = await import('../../../services/geminiService');
+      const data = await extractRidFromText(combinedText);
+      
+      setFormData(prev => ({
+        ...prev,
+        situacao: data.situacao || prev.situacao,
+        pensamento: data.pensamento || prev.pensamento,
+        comportamento: data.comportamento || prev.comportamento,
+        consequenciasCurtoPrazo: data.consequenciasCurtoPrazo || prev.consequenciasCurtoPrazo,
+        consequenciasLongoPrazo: data.consequenciasLongoPrazo || prev.consequenciasLongoPrazo,
+        emocao: data.emocao ? {
+          name: data.emocao.name || prev.emocao.name,
+          intensity: data.emocao.intensity !== undefined ? data.emocao.intensity : prev.emocao.intensity
+        } : prev.emocao,
+        necessidade: Array.isArray(data.necessidade) && data.necessidade.length > 0 ? data.necessidade : prev.necessidade,
+        esquema: Array.isArray(data.esquema) && data.esquema.length > 0 ? data.esquema : prev.esquema
+      }));
+
+      toast.success("Dados extraídos e preenchidos com sucesso!");
+      setIsImportModalOpen(false);
+      setPastedText('');
+      setImportFiles([]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Falha ao extrair dados clínicos com IA: " + (err.message || err));
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const [activeSuggestionField, setActiveSuggestionField] = useState<'necessidade' | 'esquema' | 'pensamento' | 'emocao' | 'situacao' | 'comportamento' | 'consequenciasCurtoPrazo' | 'consequenciasLongoPrazo' | null>(null);
 
@@ -145,8 +227,31 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
     try {
       const result = await analyzeRid(formData);
       setAnalysis(result);
+      // Automatically save after successful analysis!
+      const newEntry: RidEntry = {
+        ...formData,
+        patientName: patientName || formData.patientName || 'Paciente',
+        patientAge: patientAge || formData.patientAge || '',
+        id: initialData?.id || Date.now().toString(),
+        date: initialData?.date || new Date().toISOString(),
+        analysis: result,
+      };
+      onSave(newEntry);
+      toast.success('Análise de IA concluída e salva no prontuário!');
     } catch (err: any) {
       setError(err.message);
+      toast.error('Erro na IA, mas salvando o registro localmente...');
+      const fallbackAnalysis = 'Não foi possível gerar a análise técnica de IA no momento.';
+      setAnalysis(fallbackAnalysis);
+      const newEntry: RidEntry = {
+        ...formData,
+        patientName: patientName || formData.patientName || 'Paciente',
+        patientAge: patientAge || formData.patientAge || '',
+        id: initialData?.id || Date.now().toString(),
+        date: initialData?.date || new Date().toISOString(),
+        analysis: fallbackAnalysis,
+      };
+      onSave(newEntry);
     } finally {
       setIsAnalyzing(false);
     }
@@ -250,6 +355,12 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
             <span className="text-primary">🔍</span> Registro de Interação
           </h2>
           <div className="flex gap-4 items-center">
+            <button 
+              onClick={() => setIsImportModalOpen(true)}
+              className="text-[10px] font-black text-primary hover:text-primary-hover uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer animate-pulse-subtle"
+            >
+              <Upload size={12} /> Importar Registros
+            </button>
             <button 
               onClick={() => setShowLibrary(true)}
               className="text-[10px] font-black text-primary hover:text-primary-hover uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer"
@@ -694,6 +805,14 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
         </div>
 
         <div className="p-4 bg-bg-card border-t border-border-subtle flex gap-3 h-20 shrink-0">
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              className="px-6 py-2 bg-bg-sidebar border border-border-subtle text-text-dim font-black rounded-xl hover:bg-white/5 transition-all text-xs uppercase tracking-widest cursor-pointer"
+            >
+              VOLTAR
+            </button>
+          )}
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing}
@@ -704,7 +823,7 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
           </button>
           <button
             onClick={handleSave}
-            disabled={!analysis || isAnalyzing}
+            disabled={isAnalyzing || !formData.situacao || !formData.pensamento}
             className="px-6 py-2 bg-bg-sidebar border border-border-subtle text-text-main font-black rounded-xl hover:bg-white/5 transition-all text-xs uppercase tracking-widest disabled:opacity-40 disabled:hover:bg-bg-sidebar cursor-pointer"
           >
             SALVAR
@@ -813,6 +932,97 @@ export function RidForm({ onSave, initialData, settings, patientName, patientAge
         cancelLabel="Fechar"
         variant="info"
       />
+
+      {/* IMPORT MODAL */}
+      {isImportModalOpen && (
+        <div className="absolute inset-0 bg-bg-deep/80 backdrop-blur-md z-[100] flex items-center justify-center p-6 select-text">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-xl bg-bg-card border border-border-subtle rounded-[2rem] shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
+          >
+            <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-bg-card/50">
+              <h3 className="font-bold text-text-main flex items-center gap-2 text-sm uppercase tracking-wider">
+                <Sparkles className="text-primary w-4 h-4 animate-pulse" /> Importador Inteligente RID
+              </h3>
+              <button 
+                onClick={() => setIsImportModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-white/5 text-text-dim hover:text-text-main transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6 scroller-hide flex-1">
+              <p className="text-[10px] text-text-dim font-bold uppercase tracking-wide leading-relaxed">
+                Importe até 4 arquivos HTML de prontuário antigo ou cole o relato da sessão. A inteligência artificial irá ler o texto e preencher automaticamente todos os campos do RID.
+              </p>
+
+              {/* HTML/TXT File Upload Dropzone */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-text-dim uppercase tracking-wider block">1. Enviar Arquivos Clínicos (Máx 4, formato .html, .txt)</label>
+                <label className="flex flex-col items-center justify-center p-6 border border-border-subtle border-dashed rounded-[2rem] bg-bg-deep hover:bg-bg-sidebar/45 hover:border-primary/30 cursor-pointer transition-all group text-center">
+                  <Upload className="text-text-dim/40 group-hover:text-primary mb-3 transition-colors" size={24} />
+                  <span className="text-[9px] font-black text-text-dim uppercase tracking-widest">Selecionar arquivos HTML/TXT</span>
+                  <input 
+                    type="file" 
+                    multiple 
+                    className="hidden" 
+                    onChange={handleFileChange} 
+                    accept=".html,.htm,.txt" 
+                  />
+                </label>
+                {importFiles.length > 0 && (
+                  <div className="bg-bg-deep border border-border-subtle rounded-xl p-3 space-y-1">
+                    <span className="text-[9px] font-black text-text-dim uppercase tracking-wider block">Arquivos Selecionados:</span>
+                    {importFiles.map((file, idx) => (
+                      <div key={idx} className="text-[10px] text-text-main font-semibold truncate">
+                        • {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pasted Text Editor area */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-text-dim uppercase tracking-wider block">2. Ou digite/cole o relato da sessão/atendimento</label>
+                <textarea
+                  rows={6}
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder="Cole aqui a conversa, anotações de evolução ou resumo do paciente..."
+                  className="w-full bg-bg-deep border border-border-subtle text-text-main text-xs font-semibold rounded-2xl p-4 focus:border-primary outline-none transition-all shadow-sm resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-bg-card border-t border-border-subtle flex gap-3 justify-end">
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="px-5 py-2 border border-border-subtle text-text-dim hover:text-text-main font-black rounded-xl hover:bg-white/5 transition-all text-xs uppercase tracking-widest cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleProcessImport}
+                disabled={isImporting}
+                className="px-5 py-2 bg-primary hover:bg-primary/90 text-bg-deep font-black rounded-xl transition-all disabled:opacity-50 flex items-center gap-2 text-xs uppercase tracking-widest cursor-pointer"
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" /> Extrair e Preencher
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

@@ -137,7 +137,30 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
         recordText
       );
       setAiSummary(summary);
-      toast.success('Resumo clínico elaborado pela IA com sucesso!');
+
+      // Auto-save instantly after generating
+      const pData: PatientData = {
+        name: patientObj?.nome || 'Paciente',
+        age,
+        psychologistName: settings.professionalName,
+        crp: settings.professionalCRP,
+        logoUrl: settings.professionalLogo,
+        signatureUrl: settings.professionalSignature
+      };
+
+      const newRecord: AttendanceRecord = {
+        id: Date.now().toString(),
+        patient: pData,
+        template: selectedTemplateId,
+        fields: { ...fields },
+        aiAnalysis: summary,
+        createdAt: new Date().toISOString()
+      };
+
+      const updated = await dbWrapper.saveEntry(newRecord, selectedPatientId, userId);
+      setRecords(updated);
+      toast.success('Resumo clínico elaborado e salvo no prontuário!');
+      setActiveTab('history');
     } catch (err) {
       console.error(err);
       toast.error('Erro na análise da IA. Verifique se a chave API está configurada.');
@@ -317,18 +340,9 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
           </div>
         ) : (
           <div className="w-full h-full flex flex-col overflow-hidden">
-            <AnimatePresence mode="wait">
-              {currentResult ? (
-                <div className="flex-1 overflow-y-auto p-6 bg-bg-deep w-full scroller-hide select-text">
-                  <ResultView 
-                    key="result"
-                    record={currentResult} 
-                    onBack={() => setCurrentResult(null)} 
-                    onExport={() => handleExport(currentResult)}
-                  />
-                </div>
-              ) : activeTab === 'test' ? (
-                <div className="flex flex-1 overflow-hidden w-full relative">
+            {/* Form Tab Panel */}
+            <div className={cn("w-full h-full flex flex-col overflow-hidden", (activeTab === 'test' && !currentResult) ? "block" : "hidden")}>
+              <div className="flex flex-1 overflow-hidden w-full relative h-full">
                   {/* Left panel template selector */}
                   <aside className="w-64 border-r border-border-subtle bg-bg-sidebar/30 p-6 flex flex-col gap-6 overflow-y-auto scroller-hide shrink-0 hidden md:flex">
                     <div>
@@ -424,18 +438,30 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto p-6 bg-bg-deep scroller-hide select-text">
-                  <HistoryView 
-                    key="history"
-                    records={records} 
-                    onView={setCurrentResult} 
-                    onDelete={handleDeleteRecord}
-                    onExport={handleExport}
-                  />
-                </div>
-              )}
-            </AnimatePresence>
+              </div>
+
+            {/* History Tab Panel */}
+            <div className={cn("flex-grow overflow-y-auto p-6 bg-bg-deep scroller-hide select-text", (activeTab === 'history' && !currentResult) ? "block" : "hidden")}>
+              <HistoryView 
+                key="history"
+                records={records} 
+                onView={setCurrentResult} 
+                onDelete={handleDeleteRecord}
+                onExport={handleExport}
+              />
+            </div>
+
+            {/* Result View Container */}
+            {currentResult && (
+              <div className="flex-grow overflow-y-auto p-6 bg-bg-deep w-full scroller-hide select-text">
+                <ResultView 
+                  key="result"
+                  record={currentResult} 
+                  onBack={() => setCurrentResult(null)} 
+                  onExport={() => handleExport(currentResult)}
+                />
+              </div>
+            )}
           </div>
         )}
       </main>
