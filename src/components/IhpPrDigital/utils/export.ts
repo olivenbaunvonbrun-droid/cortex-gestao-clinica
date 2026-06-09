@@ -1,5 +1,6 @@
 import { Assessment } from '../types';
 import { calculateAssessment } from '../lib/scoring';
+import { db } from '../../../lib/db';
 
 function formatClinicalContent(markdown: string): string {
   return markdown
@@ -17,7 +18,31 @@ function formatClinicalContent(markdown: string): string {
     }).join('\n');
 }
 
-export function exportToHtml(assessment: Assessment) {
+export async function exportToHtml(assessment: Assessment) {
+  let professionalName = '';
+  let professionalCRP = '';
+  let professionalLogo = '';
+  let professionalSignature = '';
+
+  try {
+    const items = await db.settings.toArray();
+    const s: Record<string, any> = {};
+    items.forEach(item => {
+      s[item.key] = item.value;
+    });
+    professionalName = s.appTitle && s.appTitle !== 'Sistema de Gestão para Psicólogos' ? s.appTitle : '';
+    professionalCRP = s.psychCrp || '';
+    professionalLogo = s.appLogo || '';
+    professionalSignature = s.psychSignature || '';
+  } catch (err) {
+    console.error("Failed to load settings in export:", err);
+  }
+
+  const logoUrl = professionalLogo || assessment.patient.logoUrl || '';
+  const signatureUrl = professionalSignature || assessment.patient.signatureUrl || '';
+  const psychologistName = professionalName || assessment.patient.psychologistName || 'Psicólogo(a)';
+  const crp = professionalCRP || assessment.patient.crp || '';
+
   const date = new Date(assessment.createdAt);
   const formattedDate = date.toLocaleDateString('pt-BR').replace(/\//g, '-');
   const formattedTime = date.getHours().toString().padStart(2, '0') + '-' + date.getMinutes().toString().padStart(2, '0');
@@ -221,7 +246,7 @@ export function exportToHtml(assessment: Assessment) {
 <body>
     <div class="paper">
         <header>
-            ${assessment.patient.logoUrl ? `<img src="${assessment.patient.logoUrl}" style="max-height: 80px; max-width: 200px; margin-bottom: 15px; object-fit: contain;" alt="Logo">` : `<div class="logo-box">IHP-PR DIGITAL</div>`}
+            ${logoUrl ? `<img src="${logoUrl}" style="max-height: 80px; max-width: 200px; margin-bottom: 15px; object-fit: contain;" alt="Logo">` : `<div class="logo-box">IHP-PR DIGITAL</div>`}
             <h1 class="main-title">Inventário de Habilidades Psicológicas (IHP-PR)</h1>
         </header>
 
@@ -242,7 +267,7 @@ export function exportToHtml(assessment: Assessment) {
                 </div>
                 <div class="info-field">
                     <span class="info-label">Psicólogo(a) Responsável</span>
-                    <span class="info-value">${assessment.patient.psychologistName} • CRP ${assessment.patient.crp}</span>
+                    <span class="info-value">${psychologistName} • CRP ${crp}</span>
                 </div>
             </div>
         </div>
@@ -274,10 +299,10 @@ export function exportToHtml(assessment: Assessment) {
 
         <footer>
             <div style="display: inline-block; text-align: center; position: relative;">
-                ${assessment.patient.signatureUrl ? `<img src="${assessment.patient.signatureUrl}" style="max-width: 200px; max-height: 80px; margin-bottom: -15px; mix-blend-mode: multiply;" alt="Assinatura">` : ''}
+                ${signatureUrl ? `<img src="${signatureUrl}" style="max-width: 200px; max-height: 80px; margin-bottom: -15px; mix-blend-mode: multiply;" alt="Assinatura">` : ''}
                 <div class="signature-line"></div>
-                <p style="font-family: var(--sans); font-weight: 700; font-size: 14px; margin: 0; color: var(--primary); text-transform: uppercase;">${assessment.patient.psychologistName}</p>
-                <p style="font-family: var(--sans); font-size: 11px; color: #64748b; font-weight: 600; margin: 4px 0 0 0;">Psicólogo(a) Clínico(a) • CRP ${assessment.patient.crp}</p>
+                <p style="font-family: var(--sans); font-weight: 700; font-size: 14px; margin: 0; color: var(--primary); text-transform: uppercase;">${psychologistName}</p>
+                <p style="font-family: var(--sans); font-size: 11px; color: #64748b; font-weight: 600; margin: 4px 0 0 0;">Psicólogo(a) Clínico(a) • CRP ${crp}</p>
             </div>
         </footer>
     </div>

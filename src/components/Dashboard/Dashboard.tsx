@@ -39,7 +39,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { cn, formatDate } from '../../lib/utils';
+import { cn, formatDate, getLocalDateString } from '../../lib/utils';
 
 // Helper for countdown
 function getCountdownText(dataStr: string, horaStr: string): string {
@@ -165,12 +165,12 @@ export default function Dashboard({ onSectionChange }: DashboardProps = {}) {
 
   // Map upcoming appointments (from today onwards)
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getLocalDateString(today);
   const currentDay = today.getDay();
   const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
   const endOfWeek = new Date(today);
   endOfWeek.setDate(today.getDate() + daysUntilSunday);
-  const endOfWeekStr = endOfWeek.toISOString().split('T')[0];
+  const endOfWeekStr = getLocalDateString(endOfWeek);
 
   const upcomingAppointments = appointments
     .filter(a => a.data >= todayStr && a.data <= endOfWeekStr && a.status !== 'cancelled')

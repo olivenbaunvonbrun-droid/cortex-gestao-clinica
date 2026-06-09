@@ -1,4 +1,5 @@
 import { Assessment, LifeEvent } from "../types";
+import { db } from "../../../lib/db";
 
 function formatClinicalContent(markdown: string): string {
   if (!markdown) return '';
@@ -17,7 +18,31 @@ function formatClinicalContent(markdown: string): string {
     }).join('\n');
 }
 
-export function exportToHtml(assessment: Assessment) {
+export async function exportToHtml(assessment: Assessment) {
+  let professionalName = '';
+  let professionalCRP = '';
+  let professionalLogo = '';
+  let professionalSignature = '';
+
+  try {
+    const items = await db.settings.toArray();
+    const s: Record<string, any> = {};
+    items.forEach(item => {
+      s[item.key] = item.value;
+    });
+    professionalName = s.appTitle && s.appTitle !== 'Sistema de Gestão para Psicólogos' ? s.appTitle : '';
+    professionalCRP = s.psychCrp || '';
+    professionalLogo = s.appLogo || '';
+    professionalSignature = s.psychSignature || '';
+  } catch (err) {
+    console.error("Failed to load settings in export:", err);
+  }
+
+  const logoUrl = professionalLogo || assessment.patient.logoUrl || '';
+  const signatureUrl = professionalSignature || assessment.patient.signatureUrl || '';
+  const psychologistName = professionalName || assessment.patient.psychologistName || 'Psicólogo(a)';
+  const crp = professionalCRP || assessment.patient.crp || '';
+
   const date = new Date(assessment.createdAt);
   const formattedDate = date.toLocaleDateString('pt-BR').replace(/\//g, '-');
   const formattedTime = date.getHours().toString().padStart(2, '0') + '-' + date.getMinutes().toString().padStart(2, '0');
@@ -358,7 +383,7 @@ export function exportToHtml(assessment: Assessment) {
         <div class="watermark">LINHA DA VIDA</div>
         
         <header>
-            ${assessment.patient.logoUrl ? `<img src="${assessment.patient.logoUrl}" class="header-logo" alt="Logo Profissional">` : `<div class="logo-box">LINHA DA VIDA</div>`}
+            ${logoUrl ? `<img src="${logoUrl}" class="header-logo" alt="Logo Profissional">` : `<div class="logo-box">LINHA DA VIDA</div>`}
             <h1 class="main-title">Mapeamento da Linha da Vida</h1>
         </header>
 
@@ -375,7 +400,7 @@ export function exportToHtml(assessment: Assessment) {
                 </div>
                 <div class="info-field">
                     <span class="info-label">Psicólogo(a) Responsável</span>
-                    <span class="info-value">${assessment.patient.psychologistName}</span>
+                    <span class="info-value">${psychologistName}</span>
                 </div>
                 <div class="info-field">
                     <span class="info-label">Data de Elaboração</span>
@@ -457,10 +482,10 @@ export function exportToHtml(assessment: Assessment) {
 
         <footer>
             <div class="signature-block">
-                ${assessment.patient.signatureUrl ? `<img src="${assessment.patient.signatureUrl}" class="signature-image" alt="Assinatura">` : ''}
+                ${signatureUrl ? `<img src="${signatureUrl}" class="signature-image" alt="Assinatura">` : ''}
                 <div class="signature-line"></div>
-                <p class="signature-name">${assessment.patient.psychologistName}</p>
-                <p class="signature-title">Psicólogo(a) Clínico(a) • CRP ${assessment.patient.crp}</p>
+                <p class="signature-name">${psychologistName}</p>
+                <p class="signature-title">Psicólogo(a) Clínico(a) • CRP ${crp}</p>
             </div>
             
             <div class="legal-notice">

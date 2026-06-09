@@ -1,5 +1,6 @@
 import { AttendanceRecord, AttendanceTemplateType } from '../types';
 import { ATTENDANCE_TEMPLATES } from './templates';
+import { db } from '../../../lib/db';
 
 function formatMarkdown(markdown: string): string {
   return markdown
@@ -23,7 +24,7 @@ function getTemplateLabel(id: AttendanceTemplateType): string {
   return 'Ficha de Triagem / Anamnese Rápida';
 }
 
-function renderRecordContent(record: AttendanceRecord): string {
+function renderRecordContent(record: AttendanceRecord, logoUrl: string, signatureUrl: string, psychologistName: string, crp: string): string {
   const template = ATTENDANCE_TEMPLATES.find(t => t.id === record.template);
   const fieldsHtml = template?.fields.map(f => {
     const val = record.fields[f.id] || 'Não preenchido';
@@ -39,7 +40,7 @@ function renderRecordContent(record: AttendanceRecord): string {
     <div class="session-page" style="page-break-after: always; position: relative; min-height: 270mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 20px; margin-bottom: 50px; border-bottom: 1px dashed #cbd5e1;">
       <div>
         <header style="text-align: center; border-bottom: 2px solid #0f172a; margin-bottom: 40px; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center;">
-          ${record.patient.logoUrl ? `<img src="${record.patient.logoUrl}" style="max-height: 80px; max-width: 200px; margin-bottom: 15px; object-fit: contain;" alt="Logo Profissional">` : `<div style="font-family: 'Inter', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 5px; color: #10b981; text-transform: uppercase; margin-bottom: 15px;">REGISTRO DE ATENDIMENTO</div>`}
+          ${logoUrl ? `<img src="${logoUrl}" style="max-height: 80px; max-width: 200px; margin-bottom: 15px; object-fit: contain;" alt="Logo Profissional">` : `<div style="font-family: 'Inter', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 5px; color: #10b981; text-transform: uppercase; margin-bottom: 15px;">REGISTRO DE ATENDIMENTO</div>`}
           <h1 style="font-family: 'Inter', sans-serif; font-size: 18px; color: #0f172a; margin: 0; font-weight: 800; text-transform: uppercase;">${getTemplateLabel(record.template)}</h1>
         </header>
 
@@ -54,7 +55,7 @@ function renderRecordContent(record: AttendanceRecord): string {
           </div>
           <div style="display: flex; flex-direction: column;">
             <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 4px;">Psicólogo(a) Responsável</span>
-            <span style="font-size: 13px; font-weight: 600; color: #0f172a;">${record.patient.psychologistName}</span>
+            <span style="font-size: 13px; font-weight: 600; color: #0f172a;">${psychologistName}</span>
           </div>
           <div style="display: flex; flex-direction: column;">
             <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 4px;">Data de Emissão</span>
@@ -87,17 +88,36 @@ function renderRecordContent(record: AttendanceRecord): string {
 
       <footer style="margin-top: 50px; text-align: center; page-break-inside: avoid;">
         <div style="display: inline-block; text-align: center; position: relative;">
-          ${record.patient.signatureUrl ? `<img src="${record.patient.signatureUrl}" style="max-width: 200px; max-height: 80px; margin-bottom: -15px; mix-blend-mode: multiply;" alt="Assinatura">` : ''}
+          ${signatureUrl ? `<img src="${signatureUrl}" style="max-width: 200px; max-height: 80px; margin-bottom: -15px; mix-blend-mode: multiply;" alt="Assinatura">` : ''}
           <div style="width: 300px; height: 1.5px; background: #0f172a; margin: 0 auto 12px auto;"></div>
-          <p style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 13px; margin: 0; color: #0f172a; text-transform: uppercase;">${record.patient.psychologistName}</p>
-          <p style="font-family: 'Inter', sans-serif; font-size: 10px; color: #64748b; font-weight: 600; margin: 4px 0 0 0;">Psicólogo(a) Clínico(a) • CRP ${record.patient.crp}</p>
+          <p style="font-family: 'Inter', sans-serif; font-weight: 700; font-size: 13px; margin: 0; color: #0f172a; text-transform: uppercase;">${psychologistName}</p>
+          <p style="font-family: 'Inter', sans-serif; font-size: 10px; color: #64748b; font-weight: 600; margin: 4px 0 0 0;">Psicólogo(a) Clínico(a) • CRP ${crp}</p>
         </div>
       </footer>
     </div>
   `;
 }
 
-export function exportToHtml(records: AttendanceRecord | AttendanceRecord[]) {
+export async function exportToHtml(records: AttendanceRecord | AttendanceRecord[]) {
+  let professionalName = '';
+  let professionalCRP = '';
+  let professionalLogo = '';
+  let professionalSignature = '';
+
+  try {
+    const items = await db.settings.toArray();
+    const s: Record<string, any> = {};
+    items.forEach(item => {
+      s[item.key] = item.value;
+    });
+    professionalName = s.appTitle && s.appTitle !== 'Sistema de Gestão para Psicólogos' ? s.appTitle : '';
+    professionalCRP = s.psychCrp || '';
+    professionalLogo = s.appLogo || '';
+    professionalSignature = s.psychSignature || '';
+  } catch (err) {
+    console.error("Failed to load settings in export:", err);
+  }
+
   const isArray = Array.isArray(records);
   const recordList = isArray ? records : [records];
   if (recordList.length === 0) return;
@@ -112,7 +132,13 @@ export function exportToHtml(records: AttendanceRecord | AttendanceRecord[]) {
     fileName = `${primaryRecord.patient.name.replace(/\s+/g, '_')}_RegistroAtendimento_${formattedDate}.html`;
   }
 
-  const pagesHtml = recordList.map(r => renderRecordContent(r)).join('\n');
+  // Load patient fallback values if settings are not set
+  const logoUrl = professionalLogo || primaryRecord.patient.logoUrl || '';
+  const signatureUrl = professionalSignature || primaryRecord.patient.signatureUrl || '';
+  const psychologistName = professionalName || primaryRecord.patient.psychologistName || 'Psicólogo(a)';
+  const crp = professionalCRP || primaryRecord.patient.crp || '';
+
+  const pagesHtml = recordList.map(r => renderRecordContent(r, logoUrl, signatureUrl, psychologistName, crp)).join('\n');
 
   const htmlContent = `
 <!DOCTYPE html>

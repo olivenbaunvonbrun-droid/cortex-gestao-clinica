@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Clock, Calendar as CalendarIcon, Link as LinkIcon, Plus, Trash2, CalendarClock, Ban, User, MessageCircle, Shield } from 'lucide-react';
 import { db, type Appointment, type Patient, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../../lib/utils';
+import { cn, getLocalDateString } from '../../lib/utils';
 import { getHoliday } from '../../utils/holidays';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
@@ -31,7 +31,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
   const [showRecurrenceDocConfirm, setShowRecurrenceDocConfirm] = useState(false);
   const [formData, setFormData] = useState<Partial<Appointment>>({
     pacienteId: '',
-    data: initialDate.toISOString().split('T')[0],
+    data: getLocalDateString(initialDate),
     hora: '',
     tipo: 'individual',
     recorrencia: 'nao',
@@ -53,7 +53,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
     } else {
       setFormData({
         pacienteId: '',
-        data: initialDate.toISOString().split('T')[0],
+        data: getLocalDateString(initialDate),
         hora: '',
         tipo: 'individual',
         recorrencia: 'nao',
@@ -108,7 +108,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
       if (baseData.recorrencia === 'quinzenal') nextDate.setDate(startDate.getDate() + (14 * i));
       if (baseData.recorrencia === 'mensal_data') nextDate.setMonth(startDate.getMonth() + i);
 
-      const dateStr = nextDate.toISOString().split('T')[0];
+      const dateStr = getLocalDateString(nextDate);
       const overlap = await checkBookingOverlap(dateStr, baseData.hora!);
       if (!overlap) {
         await db.agendamentos.add({
@@ -207,7 +207,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
           for (const fApp of futureApps) {
             const fAppDate = new Date(fApp.data + 'T00:00:00');
             fAppDate.setDate(fAppDate.getDate() + diffDays);
-            const newFDateStr = fAppDate.toISOString().split('T')[0];
+            const newFDateStr = getLocalDateString(fAppDate);
 
             const hasFOverlap = await checkBookingOverlap(newFDateStr, formData.hora!, fApp.id);
             if (hasFOverlap) {

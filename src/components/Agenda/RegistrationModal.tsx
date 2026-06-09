@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Save, FileUp, Shield, CheckCircle2, AlertCircle, Trash2, FileText, ImageIcon, Globe, Mic, Square, Sparkles, MessageSquare, ListFilter, PlayCircle, Clock, ExternalLink } from 'lucide-react';
 import { db, type Appointment, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../../lib/utils';
+import { cn, getLocalDateString } from '../../lib/utils';
 import RichTextEditor from '../RichTextEditor';
 import { processClinicalAudio, clinicalInsight, charcotConsult, analyzeClinicalFiles } from '../../services/geminiService';
 
@@ -292,7 +292,7 @@ export default function RegistrationModal({ appointment, isOpen, onClose }: Regi
         if (record) {
           const newEntry = {
             timestamp: Date.now(),
-            data: new Date().toISOString().split('T')[0],
+            data: getLocalDateString(new Date()),
             textoHtml: `<p><strong>Arquivo Anexado:</strong> ${att.name}</p>`,
             tipo: 'arquivo' as const,
             metadata: { fileName: att.name, fileType: att.type }

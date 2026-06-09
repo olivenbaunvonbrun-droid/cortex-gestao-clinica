@@ -230,6 +230,8 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
     const clinicTitle = settings.appTitle || "Gestão Clínica Psicológica";
     const psychName = (!settings.appTitle || settings.appTitle === "Sistema de Gestão para Psicólogos") ? "Psicólogo(a)" : settings.appTitle;
     const psychCrp = settings.psychCrp || "_________________";
+    const logoUrl = settings.appLogo || '';
+    const signatureUrl = settings.psychSignature || '';
     const dateStr = new Date().toLocaleDateString('pt-BR');
 
     printWindow.document.write(`
@@ -258,6 +260,13 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
               margin-bottom: 30px; 
               border-bottom: 0.5pt solid #e2e8f0; 
               padding-bottom: 15px; 
+            }
+
+            .prof-logo {
+              max-height: 50px;
+              max-width: 150px;
+              margin-bottom: 10px;
+              object-fit: contain;
             }
 
             .document-title { 
@@ -309,6 +318,13 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
               text-align: center; 
             }
 
+            .signature-image {
+              max-height: 60px;
+              max-width: 150px;
+              margin-bottom: -15px;
+              mix-blend-mode: multiply;
+            }
+
             .signature-line { 
               border-top: 0.5pt solid #000; 
               margin-bottom: 6px; 
@@ -350,6 +366,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
         </head>
         <body>
           <div class="header">
+            ${logoUrl ? `<img src="${logoUrl}" class="prof-logo" alt="Logo"><br>` : ''}
             <div class="document-title">Contrato de Prestação de Serviços Psicológicos</div>
           </div>
 
@@ -363,6 +380,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
 
           <div class="signatures-container">
             <div class="signature-block">
+              <div style="height: 60px;"></div>
               <div class="signature-line"></div>
               <div class="signature-name">${formData.isMenor ? (formData.responsavelNome || '[Nome do Responsável]') : (formData.nome || '[Nome do Paciente]')}</div>
               <div class="signature-role">${formData.isMenor ? 'Contratante / Responsável Legal' : 'Contratante / Paciente'}</div>
@@ -370,6 +388,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
             </div>
 
             <div class="signature-block">
+              ${signatureUrl ? `<img src="${signatureUrl}" class="signature-image" alt="Assinatura">` : '<div style="height: 60px;"></div>'}
               <div class="signature-line"></div>
               <div class="signature-name">${psychName}</div>
               <div class="signature-role">Contratada / Psicólogo(a)</div>

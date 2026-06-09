@@ -28,6 +28,7 @@ import PdpMonitoringView from "./PdpMonitoringView";
 import PmeMonitoringView from "./PmeMonitoringView";
 import { ClinicalSuggestionsSidebar, ClinicalSuggestionsButton } from "./ClinicalSuggestionsHelper";
 import { generatePsicometrikReport } from "../../../services/geminiService";
+import { db } from "../../../lib/db";
 import { 
   ArrowLeft, BrainCircuit, Watch, Activity, User, Clipboard, 
   Sparkles, ShieldAlert, Cpu, Check, Play, Timer, CheckCircle, 
@@ -3089,9 +3090,34 @@ export default function AssessmentWizard({
   };
 
   // Export full Standalone report as styled HTML file
-  const handleDownloadHtml = () => {
+  const handleDownloadHtml = async () => {
+    let professionalName = '';
+    let professionalCRP = '';
+    let professionalLogo = '';
+    let professionalSignature = '';
+
+    try {
+      const items = await db.settings.toArray();
+      const s: Record<string, any> = {};
+      items.forEach(item => {
+        s[item.key] = item.value;
+      });
+      professionalName = s.appTitle && s.appTitle !== 'Sistema de Gestão para Psicólogos' ? s.appTitle : '';
+      professionalCRP = s.psychCrp || '';
+      professionalLogo = s.appLogo || '';
+      professionalSignature = s.psychSignature || '';
+    } catch (err) {
+      console.error("Failed to load settings in export:", err);
+    }
+
+    const logoUrl = professionalLogo || '';
+    const signatureUrl = professionalSignature || '';
+    const psychologistName = professionalName || 'Psicólogo(a)';
+    const crp = professionalCRP || '';
     const htmlStyles = `
       body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 40px 20px; background-color: #fafafa; }
+      .prof-header { text-align: center; border-bottom: 2px solid #111827; margin-bottom: 40px; padding-bottom: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .prof-logo { max-height: 80px; max-width: 200px; margin-bottom: 15px; object-fit: contain; }
       .header-box { background: linear-gradient(135deg, #111827, #1f2937); color: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
       .header-box h1 { margin: 0 0 10px 0; font-size: 24px; color: #00A3FF; }
       .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; font-size: 14px; border-top: 1px solid #374151; padding-top: 15px; }
@@ -3104,6 +3130,9 @@ export default function AssessmentWizard({
       p, li { color: #4b5563; font-size: 14.5px; }
       blockquote { border-left: 4px solid #4b5563; background: #f9fafb; padding: 10px 15px; margin: 15px 0; font-style: italic; color: #4b5563; }
       hr { border: 0; border-top: 1px solid #e5e7eb; margin: 30px 0; }
+      .signature-block { display: inline-block; text-align: center; position: relative; margin-top: 50px; }
+      .signature-image { max-width: 200px; max-height: 80px; margin-bottom: -15px; mix-blend-mode: multiply; }
+      .signature-line { width: 300px; height: 1.5px; background: #111827; margin: 0 auto 12px auto; }
       @media print { body { padding: 0; background: white; } .header-box { box-shadow: none; border: 1px solid #ddd; } }
     `;
 
@@ -3116,19 +3145,25 @@ export default function AssessmentWizard({
         <style>${htmlStyles}</style>
       </head>
       <body>
+        <header class="prof-header">
+            ${logoUrl ? `<img src="${logoUrl}" class="prof-logo" alt="Logo Profissional">` : `<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 5px; color: #00A3FF; text-transform: uppercase; margin-bottom: 15px;">PSICOMETRIK</div>`}
+            <h1 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 22px; color: #111827; margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Laudo Clínico Psicométrico</h1>
+        </header>
+
         <div class="header-box">
           <h1>LAUDO NEUROCLÍNICO & PSICOMÉTRICO AUTOMATIZADO</h1>
           <div>Emissão inteligente assistida por Inteligência Artificial (Modelo Gemini)</div>
           <div class="meta-grid">
             <div><strong>Paciente:</strong> ${patient.name}</div>
             <div><strong>Idade/Gênero:</strong> ${patient.age} anos | ${patient.gender}</div>
-            <div><strong>Instumento:</strong> ${tool.title}</div>
+            <div><strong>Instrumento:</strong> ${tool.title}</div>
             <div><strong>Data da Coleta:</strong> ${new Date().toLocaleDateString("pt-BR")}</div>
+            <div style="grid-column: span 2; border-top: 1px solid #374151; padding-top: 8px; margin-top: 8px;"><strong>Psicólogo(a) Responsável:</strong> ${psychologistName} ${crp ? `(CRP: ${crp})` : ''}</div>
           </div>
         </div>
 
         <h2>Resultados dos Cálculos Automatizados</h2>
-        <div class="score-badge">Classificação Clínica: ${currentScores.classification} | Score Total: ${currentScores.totalScore}</div>
+        <div class="score-badge">Classificação Clínico-Psicométrica: ${currentScores.classification} | Score Total: ${currentScores.totalScore}</div>
         
         <div class="subscale-card">
           <h4>Detalhamento das Subescalas</h4>
@@ -3153,9 +3188,18 @@ export default function AssessmentWizard({
           ${aiReportText ? aiReportText.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>").replace(/## (.*)/g, "<h2>$1</h2>").replace(/### (.*)/g, "<h3>$1</h3>") : "<p>Laudo IA não anexado.</p>"}
         </div>
         
-        <div style="margin-top: 40px; text-align: center; font-size: 11px; color: #9ca3af;">
-          Plataforma PsicoMetrik • Registro Digital Seguro
-        </div>
+        <footer style="margin-top: 60px; text-align: center; page-break-inside: avoid; padding-top: 30px; border-top: 1px solid #e5e7eb;">
+            <div class="signature-block">
+                ${signatureUrl ? `<img src="${signatureUrl}" class="signature-image" alt="Assinatura">` : ''}
+                <div class="signature-line"></div>
+                <p style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 700; font-size: 14px; margin: 0; color: #111827; text-transform: uppercase;">${psychologistName}</p>
+                <p style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 11px; color: #6b7280; font-weight: 600; margin: 4px 0 0 0;">Psicólogo(a) Clínico(a) ${crp ? `• CRP ${crp}` : ''}</p>
+            </div>
+            
+            <div style="margin-top: 40px; text-align: center; font-size: 11px; color: #9ca3af;">
+              Plataforma PsicoMetrik • Registro Digital Seguro
+            </div>
+        </footer>
       </body>
       </html>
     `;

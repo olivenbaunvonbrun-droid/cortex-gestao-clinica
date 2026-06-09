@@ -1,4 +1,5 @@
 import { DfcRecord } from "../types";
+import { db } from "../../../lib/db";
 
 function formatClinicalContent(markdown: string): string {
   if (!markdown) return '';
@@ -17,7 +18,31 @@ function formatClinicalContent(markdown: string): string {
     }).join('\n');
 }
 
-export function exportToHtml(record: DfcRecord) {
+export async function exportToHtml(record: DfcRecord) {
+  let professionalName = '';
+  let professionalCRP = '';
+  let professionalLogo = '';
+  let professionalSignature = '';
+
+  try {
+    const items = await db.settings.toArray();
+    const s: Record<string, any> = {};
+    items.forEach(item => {
+      s[item.key] = item.value;
+    });
+    professionalName = s.appTitle && s.appTitle !== 'Sistema de Gestão para Psicólogos' ? s.appTitle : '';
+    professionalCRP = s.psychCrp || '';
+    professionalLogo = s.appLogo || '';
+    professionalSignature = s.psychSignature || '';
+  } catch (err) {
+    console.error("Failed to load settings in export:", err);
+  }
+
+  const logoUrl = professionalLogo || record.patient.logoUrl || '';
+  const signatureUrl = professionalSignature || record.patient.signatureUrl || '';
+  const psychologistName = professionalName || record.patient.psychologistName || 'Psicólogo(a)';
+  const crp = professionalCRP || record.patient.crp || '';
+
   const date = new Date(record.createdAt);
   const formattedDate = date.toLocaleDateString('pt-BR').replace(/\//g, '-');
   const formattedTime = date.getHours().toString().padStart(2, '0') + '-' + date.getMinutes().toString().padStart(2, '0');
@@ -330,7 +355,7 @@ export function exportToHtml(record: DfcRecord) {
         <div class="watermark">DFC COGNITIVO</div>
         
         <header>
-            ${record.patient.logoUrl ? `<img src="${record.patient.logoUrl}" class="header-logo" alt="Logo Profissional">` : `<div class="logo-box">DFC ASSISTIDO</div>`}
+            ${logoUrl ? `<img src="${logoUrl}" class="header-logo" alt="Logo Profissional">` : `<div class="logo-box">DFC ASSISTIDO</div>`}
             <h1 class="main-title">Diagrama de Funcionamento Cognitivo (DFC)</h1>
         </header>
 
@@ -346,7 +371,7 @@ export function exportToHtml(record: DfcRecord) {
                 </div>
                 <div class="info-field">
                     <span class="info-label">Psicólogo(a) Responsável</span>
-                    <span class="info-value">${record.patient.psychologistName}</span>
+                    <span class="info-value">${psychologistName}</span>
                 </div>
                 <div class="info-field">
                     <span class="info-label">Data de Emissão</span>
@@ -415,10 +440,10 @@ export function exportToHtml(record: DfcRecord) {
 
         <footer>
             <div class="signature-block">
-                ${record.patient.signatureUrl ? `<img src="${record.patient.signatureUrl}" class="signature-image" alt="Assinatura">` : ''}
+                ${signatureUrl ? `<img src="${signatureUrl}" class="signature-image" alt="Assinatura">` : ''}
                 <div class="signature-line"></div>
-                <p class="signature-name">${record.patient.psychologistName}</p>
-                <p class="signature-title">Psicólogo(a) Clínico(a) • CRP ${record.patient.crp}</p>
+                <p class="signature-name">${psychologistName}</p>
+                <p class="signature-title">Psicólogo(a) Clínico(a) • CRP ${crp}</p>
             </div>
             
             <div class="legal-notice">

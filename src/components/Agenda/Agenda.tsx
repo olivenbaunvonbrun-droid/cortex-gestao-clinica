@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, User, MoreVertical, Trash2, Edit2, MessageCircle, Mail, Shield, BarChart3, Info } from 'lucide-react';
 import { db, type Appointment, type Patient, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn, formatDate } from '../../lib/utils';
+import { cn, formatDate, getLocalDateString } from '../../lib/utils';
 import AppointmentModal, { checkBookingOverlap } from './AppointmentModal';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
@@ -63,7 +63,7 @@ export default function Agenda() {
   const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
   
   const { isOpen, confirm, close, handleConfirm, options } = useConfirm();
-  const dayHoliday = getHoliday(currentDate.toISOString().split('T')[0], settings.ufState || 'SP');
+  const dayHoliday = getHoliday(getLocalDateString(currentDate), settings.ufState || 'SP');
   const isSunday = currentDate.getDay() === 0;
   const isSaturday = currentDate.getDay() === 6;
 
@@ -119,20 +119,20 @@ export default function Agenda() {
     let startStr, endStr;
     
     if (view === 'day') {
-      startStr = currentDate.toISOString().split('T')[0];
+      startStr = getLocalDateString(currentDate);
       endStr = startStr;
     } else if (view === 'week') {
       const start = new Date(currentDate);
       start.setDate(currentDate.getDate() - currentDate.getDay());
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
-      startStr = start.toISOString().split('T')[0];
-      endStr = end.toISOString().split('T')[0];
+      startStr = getLocalDateString(start);
+      endStr = getLocalDateString(end);
     } else {
       const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      startStr = startOfMonth.toISOString().split('T')[0];
-      endStr = endOfMonth.toISOString().split('T')[0];
+      startStr = getLocalDateString(startOfMonth);
+      endStr = getLocalDateString(endOfMonth);
     }
 
     const apps = await db.agendamentos
@@ -197,7 +197,7 @@ export default function Agenda() {
   };
 
   const getAppointmentsForDay = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date);
     return appointments.filter(app => app.data === dateStr);
   };
 
@@ -268,7 +268,7 @@ export default function Agenda() {
         for (const fApp of futureApps) {
           const fAppDate = new Date(fApp.data + 'T00:00:00');
           fAppDate.setDate(fAppDate.getDate() + diffDays);
-          const newFDateStr = fAppDate.toISOString().split('T')[0];
+          const newFDateStr = getLocalDateString(fAppDate);
 
           const hasFOverlap = await checkBookingOverlap(newFDateStr, fApp.hora, fApp.id);
           if (hasFOverlap) {
@@ -610,7 +610,7 @@ export default function Agenda() {
           {Array.from({ length: 7 }).map((_, i) => {
             const date = new Date(currentDate);
             date.setDate(currentDate.getDate() - currentDate.getDay() + i);
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = getLocalDateString(date);
             const dayApps = appointments.filter(app => app.data === dateStr);
             const isToday = date.toDateString() === new Date().toDateString();
             const weekHoliday = getHoliday(dateStr, settings.ufState || 'SP');
@@ -716,7 +716,7 @@ export default function Agenda() {
                const isToday = date && date.toDateString() === new Date().toDateString();
                const isSelected = date && date.toDateString() === currentDate.toDateString();
                const isHovered = hoveredDay && date && date.toDateString() === hoveredDay.toDateString();
-               const dateStr = date ? date.toISOString().split('T')[0] : '';
+               const dateStr = date ? getLocalDateString(date) : '';
                const monthHoliday = date ? getHoliday(dateStr, settings.ufState || 'SP') : null;
                const isSunday = date && date.getDay() === 0;
                const isSaturday = date && date.getDay() === 6;

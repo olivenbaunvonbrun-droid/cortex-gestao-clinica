@@ -1,6 +1,31 @@
 import { PciRecord } from '../types';
+import { db } from '../../../lib/db';
 
-export function exportToHtml(data: PciRecord) {
+export async function exportToHtml(data: PciRecord) {
+  let professionalName = '';
+  let professionalCRP = '';
+  let professionalLogo = '';
+  let professionalSignature = '';
+
+  try {
+    const items = await db.settings.toArray();
+    const s: Record<string, any> = {};
+    items.forEach(item => {
+      s[item.key] = item.value;
+    });
+    professionalName = s.appTitle && s.appTitle !== 'Sistema de Gestão para Psicólogos' ? s.appTitle : '';
+    professionalCRP = s.psychCrp || '';
+    professionalLogo = s.appLogo || '';
+    professionalSignature = s.psychSignature || '';
+  } catch (err) {
+    console.error("Failed to load settings in export:", err);
+  }
+
+  const logoUrl = professionalLogo || data.patient.logoUrl || '';
+  const signatureUrl = professionalSignature || data.patient.signatureUrl || '';
+  const psychologistName = professionalName || data.patient.psychologistName || 'Psicólogo(a)';
+  const crp = professionalCRP || data.patient.crp || '';
+
   const dateStr = new Date().toLocaleDateString('pt-BR');
   const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
   
@@ -161,7 +186,7 @@ export function exportToHtml(data: PciRecord) {
 <body>
     <div class="document-container">
         <header>
-            ${data.patient.logoUrl ? `<div class="logo-container"><img src="${data.patient.logoUrl}" alt="Logo"></div>` : ''}
+            ${logoUrl ? `<div class="logo-container"><img src="${logoUrl}" alt="Logo"></div>` : ''}
             <h1>Plano Clínico Integrado (PCI)</h1>
             <div class="header-meta">Documento Psicológico - Confidencial</div>
         </header>
@@ -169,8 +194,8 @@ export function exportToHtml(data: PciRecord) {
         <div class="info-grid">
             <div class="info-item"><b>Paciente</b> ${data.patient.name}</div>
             <div class="info-item"><b>Nascimento</b> ${data.patient.name ? 'Informado' : 'N/D'}</div>
-            <div class="info-item"><b>Psicólogo(a)</b> ${data.patient.psychologistName}</div>
-            <div class="info-item"><b>CRP</b> ${data.patient.crp}</div>
+            <div class="info-item"><b>Psicólogo(a)</b> ${psychologistName}</div>
+            <div class="info-item"><b>CRP</b> ${crp}</div>
             <div class="info-item"><b>Data do Plano</b> ${dateStr}</div>
             <div class="info-item"><b>Horário</b> ${timeStr.replace('h', ':')}</div>
         </div>
@@ -278,10 +303,10 @@ ${data.projetoTerap}
 
         <footer>
             <div class="signature">
-                ${data.patient.signatureUrl ? `<img src="${data.patient.signatureUrl}" alt="Assinatura">` : ''}
+                ${signatureUrl ? `<img src="${signatureUrl}" alt="Assinatura">` : ''}
                 <div class="signature-line"></div>
-                <b>${data.patient.psychologistName}</b><br>
-                Psicólogo(a) - CRP ${data.patient.crp}
+                <b>${psychologistName}</b><br>
+                Psicólogo(a) - CRP ${crp}
             </div>
         </footer>
 
