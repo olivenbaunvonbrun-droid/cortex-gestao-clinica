@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from "react-hot-toast";
 import { Tool, Report, PatientInfo, PmeState } from "../types";
 import { IDAI_QUESTIONS, EFCA_QUESTIONS } from "../data";
 import { renderMarkdown } from "../utils/markdown";
@@ -136,6 +137,7 @@ export default function AssessmentWizard({
   const [step, setStep] = useState<'patient' | 'evaluation' | 'results' | 'report'>(
     prefilledPatient ? 'evaluation' : 'patient'
   );
+  const [reportId] = useState(() => "rep_" + Math.random().toString(36).substring(2, 11));
 
   // Dragging event handlers for the title bar
   const startDrag = (e: React.MouseEvent) => {
@@ -2853,6 +2855,26 @@ export default function AssessmentWizard({
     }
   };
 
+  const handleHeaderBack = () => {
+    if (step === 'patient') {
+      if (window.confirm("Deseja fechar esta avaliação? Todo o progresso deste teste será perdido.")) {
+        onClose();
+      }
+    } else if (step === 'evaluation') {
+      if (prefilledPatient) {
+        if (window.confirm("Deseja fechar esta avaliação? Todo o progresso deste teste será perdido.")) {
+          onClose();
+        }
+      } else {
+        setStep('patient');
+      }
+    } else if (step === 'results') {
+      setStep('evaluation');
+    } else if (step === 'report') {
+      setStep('results');
+    }
+  };
+
   // --- API CALL FOR AI REPORT ---
   const handleGenerateAiReport = async () => {
     setIsGeneratingHtmlReport(true);
@@ -2977,6 +2999,28 @@ export default function AssessmentWizard({
       if (!reportText) throw new Error("Não foi possível obter a resposta do laudo.");
 
       setAiReportText(reportText);
+
+      // AUTO-SAVE INSTANTLY
+      const report: Report = {
+        id: reportId,
+        patientName: patient.name || "Paciente Anônimo",
+        patientAge: patient.age,
+        patientGender: patient.gender,
+        toolId: tool.id,
+        toolTitle: tool.title,
+        evaluationDate: new Date().toLocaleDateString("pt-BR"),
+        rawAnswers,
+        calculatedScores: {
+          score: scores.totalScore,
+          classification: scores.classification,
+          subscales: scores.subscales
+        },
+        aiReportText: reportText,
+        createdAt: new Date().toISOString()
+      };
+      onSaveReport(report);
+      toast.success("Laudo gerado e salvo automaticamente no prontuário!");
+
       setStep('report');
     } catch (err: any) {
       setAiError(err.message || "Erro desconhecido ao requisitar o laudo.");
@@ -2988,7 +3032,7 @@ export default function AssessmentWizard({
   // --- SAVE CLINICAL DOSSIER ---
   const handleSaveDossier = () => {
     const report: Report = {
-      id: "rep_" + Math.random().toString(36).substring(2, 11),
+      id: reportId,
       patientName: patient.name || "Paciente Anônimo",
       patientAge: patient.age,
       patientGender: patient.gender,
@@ -3255,7 +3299,7 @@ export default function AssessmentWizard({
         >
           <div className="flex items-center gap-3">
             <button 
-              onClick={onClose}
+              onClick={handleHeaderBack}
               className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-900 transition-colors"
               id="wizard-close-back-btn"
             >
@@ -3309,7 +3353,9 @@ export default function AssessmentWizard({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onClose();
+                    if (window.confirm("Deseja fechar esta avaliação? Todo o progresso de respostas deste teste será perdido.")) {
+                      onClose();
+                    }
                   }}
                   className="text-gray-500 hover:text-red-500 hover:bg-red-500/15 p-1 rounded transition-colors"
                   title="Fechar"
