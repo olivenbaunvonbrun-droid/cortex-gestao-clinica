@@ -4,6 +4,8 @@ import { db, type Patient, logAction } from '../../lib/db';
 import { cn } from '../../lib/utils';
 import RichTextEditor from '../RichTextEditor';
 import { CONTRACT_TEMPLATES, type ContractType } from '../../constants/contracts';
+import { syncService } from '../../lib/syncService';
+import { auth } from '../../lib/firebase';
 
 const BRAZILIAN_STATES = [
   { value: 'AC', label: 'Acre (AC)' },
@@ -148,6 +150,8 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
 
     try {
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
+      const firebaseUid = auth.currentUser?.uid;
+
       if (patient) {
         // Compare changes for timeline
         const changes: string[] = [];
@@ -160,6 +164,14 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
         await db.pacientes.update(patient.id, saveData);
         logAction(currentUser, `Editou paciente: ${formData.nome}`);
 
+        // Sync updated patient to cloud immediately
+        if (firebaseUid) {
+          const updatedPatient = await db.pacientes.get(patient.id);
+          if (updatedPatient) {
+            await syncService.saveToCloud(firebaseUid, 'pacientes', updatedPatient);
+          }
+        }
+
         if (changes.length > 0) {
           const record = await db.prontuarios.get(patient.id);
           if (record) {
@@ -169,9 +181,16 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
               textoHtml: `<p><strong>Atualização Cadastral:</strong></p><ul>${changes.map((c, cIdx) => `<li key="change-${cIdx}">${c}</li>`).join('')}</ul>`,
               tipo: 'sistema' as const
             };
-            await db.prontuarios.update(patient.id, {
-              entradas: [newEntry, ...record.entradas]
-            });
+            const updatedEntries = [newEntry, ...record.entradas];
+            await db.prontuarios.update(patient.id, { entradas: updatedEntries });
+
+            // Sync updated prontuario to cloud immediately
+            if (firebaseUid) {
+              const updatedRecord = await db.prontuarios.get(patient.id);
+              if (updatedRecord) {
+                await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+              }
+            }
           }
         }
       } else {
@@ -184,7 +203,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
         logAction(currentUser, `Cadastrou paciente: ${formData.nome}`);
 
         // Initial record entry for creation
-        await db.prontuarios.add({
+        const initialProntuario = {
           pacienteId: newPatient.id,
           entradas: [{
             timestamp: Date.now(),
@@ -193,7 +212,14 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
             tipo: 'sistema'
           }],
           anamneseData: {}
-        });
+        };
+        await db.prontuarios.add(initialProntuario);
+
+        // Sync new patient and prontuario to cloud immediately
+        if (firebaseUid) {
+          await syncService.saveToCloud(firebaseUid, 'pacientes', newPatient);
+          await syncService.saveToCloud(firebaseUid, 'prontuarios', initialProntuario);
+        }
       }
       onClose();
     } catch (error) {

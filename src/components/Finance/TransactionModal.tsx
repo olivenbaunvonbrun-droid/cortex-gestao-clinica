@@ -3,6 +3,8 @@ import { X, Save, DollarSign } from 'lucide-react';
 import { db, type Transaction, type Patient } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
+import { syncService } from '../../lib/syncService';
+import { auth } from '../../lib/firebase';
 
 interface TransactionModalProps {
   transaction: Transaction | null;
@@ -49,13 +51,22 @@ export default function TransactionModal({ transaction, isOpen, onClose }: Trans
     if (!formData.descricao || !formData.valor || !formData.data) return;
 
     try {
+      const firebaseUid = auth.currentUser?.uid;
       if (transaction) {
         await db.transacoes.update(transaction.id, formData);
+        if (firebaseUid) {
+          const updated = await db.transacoes.get(transaction.id);
+          if (updated) await syncService.saveToCloud(firebaseUid, 'transacoes', updated);
+        }
       } else {
-        await db.transacoes.add({
+        const newTransaction = {
           ...formData,
           id: crypto.randomUUID()
-        } as Transaction);
+        } as Transaction;
+        await db.transacoes.add(newTransaction);
+        if (firebaseUid) {
+          await syncService.saveToCloud(firebaseUid, 'transacoes', newTransaction);
+        }
       }
       onClose();
     } catch (error) {
