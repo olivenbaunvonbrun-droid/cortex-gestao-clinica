@@ -102,7 +102,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
     }
   };
 
-  const generateRecurrences = async (rootId: string, baseData: Partial<Appointment>) => {
+  const generateRecurrences = async (rootId: string, baseData: Partial<Appointment>, firebaseUid?: string) => {
     if (baseData.recorrencia === 'nao') return;
 
     const startDate = new Date(baseData.data + 'T00:00:00');
@@ -117,12 +117,17 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
       const dateStr = getLocalDateString(nextDate);
       const overlap = await checkBookingOverlap(dateStr, baseData.hora!);
       if (!overlap) {
-        await db.agendamentos.add({
+        const recApp = {
           ...baseData,
           id: `${rootId}_rec_${i}`,
           data: dateStr,
           recorrenciaPaiId: rootId
-        } as Appointment);
+        } as Appointment;
+        await db.agendamentos.add(recApp);
+        // Sync each recurring instance to cloud immediately
+        if (firebaseUid) {
+          await syncService.saveToCloud(firebaseUid, 'agendamentos', recApp);
+        }
       }
     }
   };
@@ -282,7 +287,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
             await generateRecurrences(appointment.id, {
               ...formData,
               recorrenciaPaiId: undefined
-            });
+            }, firebaseUid);
           } else {
             formData.recorrenciaPaiId = undefined; // clear old parent reference
           }
@@ -301,7 +306,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         if (firebaseUid) await syncService.saveToCloud(firebaseUid, 'agendamentos', newApp);
         
         if (formData.recorrencia && formData.recorrencia !== 'nao') {
-          await generateRecurrences(id, formData);
+          await generateRecurrences(id, formData, firebaseUid);
         }
         
         logAction(currentUser, `Criou agendamento para: ${formData.pacienteId}`);

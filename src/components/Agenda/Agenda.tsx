@@ -253,6 +253,7 @@ export default function Agenda() {
   const executeReschedule = async (app: Appointment, targetDateStr: string, updateSeries: boolean) => {
     try {
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
+      const firebaseUid = auth.currentUser?.uid;
 
       if (updateSeries) {
         const originalDate = new Date(app.data + 'T00:00:00');
@@ -275,11 +276,22 @@ export default function Agenda() {
             alert(`Aviso: O agendamento futuro do dia ${fApp.data} não pôde ser atualizado para ${newFDateStr} devido a um conflito com outro paciente.`);
           } else {
             await db.agendamentos.update(fApp.id, { data: newFDateStr });
+            // Sync future series instance to cloud immediately
+            if (firebaseUid) {
+              const updatedFApp = await db.agendamentos.get(fApp.id);
+              if (updatedFApp) await syncService.saveToCloud(firebaseUid, 'agendamentos', updatedFApp);
+            }
           }
         }
       }
 
       await db.agendamentos.update(app.id, { data: targetDateStr });
+      // Sync the main rescheduled appointment to cloud immediately
+      if (firebaseUid) {
+        const updatedApp = await db.agendamentos.get(app.id);
+        if (updatedApp) await syncService.saveToCloud(firebaseUid, 'agendamentos', updatedApp);
+      }
+
       logAction(currentUser, `Moveu agendamento ${app.id} para o dia ${targetDateStr}${updateSeries ? ' (e série futura)' : ''}`);
       
       setDragConfirmData(null);

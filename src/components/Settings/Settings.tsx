@@ -5,6 +5,8 @@ import { cn } from '../../lib/utils';
 import { encryptData, decryptData } from '../../lib/crypto';
 import ConfirmModal from '../ui/ConfirmModal';
 import useConfirm from '../../hooks/useConfirm';
+import { syncService } from '../../lib/syncService';
+import { auth } from '../../lib/firebase';
 
 const BRAZILIAN_STATES = [
   { value: 'AC', label: 'Acre (AC)' },
@@ -148,6 +150,32 @@ export default function Settings({ onUpdateSettings }: SettingsProps) {
     });
 
     onUpdateSettings({ appTitle, appLogo, layoutScale });
+
+    // Sync all clinic-wide settings to cloud immediately (gemini key excluded - device-specific)
+    const firebaseUid = auth.currentUser?.uid;
+    if (firebaseUid) {
+      const settingsToSync = [
+        { key: 'appTitle', value: appTitle },
+        { key: 'psychCrp', value: psychCrp },
+        { key: 'appLogo', value: appLogo },
+        { key: 'psychSignature', value: psychSignature },
+        { key: 'appointmentMessageTemplate', value: appointmentMessageTemplate },
+        { key: 'sessionDuration', value: sessionDuration },
+        { key: 'abordagens', value: abordagens },
+        { key: 'workDays', value: workDays },
+        { key: 'workStart', value: workStart },
+        { key: 'workEnd', value: workEnd },
+        { key: 'lunchStart', value: lunchStart },
+        { key: 'lunchEnd', value: lunchEnd },
+        { key: 'hasLunchBreak', value: hasLunchBreak },
+        { key: 'layoutScale', value: layoutScale },
+        { key: 'ufState', value: ufState },
+      ];
+      await Promise.all(
+        settingsToSync.map(s => syncService.saveToCloud(firebaseUid, 'settings', s))
+      );
+    }
+
     setCryptoStatus('');
     setSaveStatus('Configurações salvas e protegidas!');
     setShowSavedModal(true);

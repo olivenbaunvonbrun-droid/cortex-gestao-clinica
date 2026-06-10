@@ -45,7 +45,10 @@ export default function Finance() {
   };
 
   const saveGoal = async (val: number) => {
-    await db.settings.put({ key: 'revenueGoal', value: val });
+    const setting = { key: 'revenueGoal', value: val };
+    await db.settings.put(setting);
+    const firebaseUid = auth.currentUser?.uid;
+    if (firebaseUid) await syncService.saveToCloud(firebaseUid, 'settings', setting);
     setRevenueGoal(val);
     setIsEditingGoal(false);
   };
