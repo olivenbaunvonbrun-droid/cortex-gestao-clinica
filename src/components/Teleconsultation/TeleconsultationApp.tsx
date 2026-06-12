@@ -26,7 +26,8 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
-
+  const activeJitsiPatientIdRef = useRef<string>('');
+ 
   // Load patients and set preselected patient
   useEffect(() => {
     const loadData = async () => {
@@ -38,7 +39,7 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
     };
     loadData();
   }, [activePatientId]);
-
+ 
   // Load specific patient details when selectedPatientId changes
   useEffect(() => {
     if (selectedPatientId) {
@@ -47,99 +48,115 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
       setPatient(null);
     }
   }, [selectedPatientId]);
-
+ 
   // Load Jitsi script dynamically
   useEffect(() => {
-    const scriptUrl = 'https://meet.jit.si/external_api.js';
+    const scriptUrl = 'https://meet.ffmuc.net/external_api.js';
     
     if ((window as any).JitsiMeetExternalAPI) {
       setScriptLoaded(true);
       return;
     }
-
+ 
     // Check if script is already present in document
     const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
     if (existingScript) {
       existingScript.addEventListener('load', () => setScriptLoaded(true));
       return;
     }
-
+ 
     const script = document.createElement('script');
     script.src = scriptUrl;
     script.async = true;
     script.onload = () => setScriptLoaded(true);
     document.body.appendChild(script);
-
+ 
     return () => {
       // We don't remove script to allow caching, but we clean up references
     };
   }, []);
-
-  // Initialize Jitsi when container, script, and patient are ready
+ 
+  // Initialize Jitsi when container and script are ready
   useEffect(() => {
-    if (!scriptLoaded || !selectedPatientId || !jitsiContainerRef.current || !patient) return;
-
-    // Clean up previous instance if any
-    if (jitsiApiRef.current) {
-      jitsiApiRef.current.dispose();
-      jitsiApiRef.current = null;
-    }
-
-    setJitsiActive(false);
-    setSessionStartTime(new Date());
-
-    const domain = 'meet.jit.si';
-    // Unique room name linked to patient ID to avoid collisions
-    const roomName = `cortex-teleconsulta-${selectedPatientId.replace(/[^a-zA-Z0-9]/g, '')}`;
-
-    const options = {
-      roomName,
-      width: '100%',
-      height: '100%',
-      parentNode: jitsiContainerRef.current,
-      configOverwrite: {
-        startWithAudioMuted: false,
-        startWithVideoMuted: false,
-        enableWelcomePage: false,
-        prejoinPageEnabled: false,
-        p2p: { enabled: true },
-        disableDeepLinking: true,
-      },
-      interfaceConfigOverwrite: {
-        TOOLBAR_BUTTONS: [
-          'microphone', 'camera', 'desktop', 'chat', 'settings',
-          'videoquality', 'tileview', 'videobackgroundblur', 'help'
-        ],
-        SHOW_JITSI_WATERMARK: false,
-        SHOW_BRAND_WATERMARK: false,
-        SHOW_WATERMARK_FOR_GUESTS: false,
-      },
-      userInfo: {
-        displayName: localStorage.getItem('psiCurrentUsername_v9') || 'Terapeuta',
+    if (!scriptLoaded || !selectedPatientId || !jitsiContainerRef.current) return;
+ 
+    let isObsolete = false;
+ 
+    const initJitsi = async () => {
+      const patientObj = await db.pacientes.get(selectedPatientId);
+      if (isObsolete || !patientObj) return;
+ 
+      if (activeJitsiPatientIdRef.current === selectedPatientId && jitsiApiRef.current) {
+        // Already initialized for this patient, do not recreate!
+        return;
       }
-    };
-
-    try {
-      const api = new (window as any).JitsiMeetExternalAPI(domain, options);
-      jitsiApiRef.current = api;
-      setJitsiActive(true);
-
-      // Event listeners
-      api.addEventListener('videoConferenceLeft', () => {
-        toast.success('Você saiu da videoconferência.');
-      });
-    } catch (err) {
-      console.error('Failed to init Jitsi:', err);
-      toast.error('Erro ao conectar ao servidor Jitsi.');
-    }
-
-    return () => {
+ 
+      // Clean up previous instance if any
       if (jitsiApiRef.current) {
         jitsiApiRef.current.dispose();
         jitsiApiRef.current = null;
       }
+ 
+      setJitsiActive(false);
+      setSessionStartTime(new Date());
+ 
+      const domain = 'meet.ffmuc.net';
+      const roomName = `cortex-teleconsulta-${selectedPatientId.replace(/[^a-zA-Z0-9]/g, '')}`;
+ 
+      const options = {
+        roomName,
+        width: '100%',
+        height: '100%',
+        parentNode: jitsiContainerRef.current,
+        configOverwrite: {
+          startWithAudioMuted: false,
+          startWithVideoMuted: false,
+          enableWelcomePage: false,
+          prejoinPageEnabled: false,
+          p2p: { enabled: true },
+          disableDeepLinking: true,
+        },
+        interfaceConfigOverwrite: {
+          TOOLBAR_BUTTONS: [
+            'microphone', 'camera', 'desktop', 'chat', 'settings',
+            'videoquality', 'tileview', 'videobackgroundblur', 'help'
+          ],
+          SHOW_JITSI_WATERMARK: false,
+          SHOW_BRAND_WATERMARK: false,
+          SHOW_WATERMARK_FOR_GUESTS: false,
+        },
+        userInfo: {
+          displayName: localStorage.getItem('psiCurrentUsername_v9') || 'Dr(a). Terapeuta',
+        }
+      };
+ 
+      try {
+        const api = new (window as any).JitsiMeetExternalAPI(domain, options);
+        jitsiApiRef.current = api;
+        activeJitsiPatientIdRef.current = selectedPatientId;
+        setJitsiActive(true);
+ 
+        // Event listeners
+        api.addEventListener('videoConferenceLeft', () => {
+          toast.success('Você saiu da videoconferência.');
+        });
+      } catch (err) {
+        console.error('Failed to init Jitsi:', err);
+        toast.error('Erro ao conectar ao servidor Jitsi.');
+      }
     };
-  }, [scriptLoaded, selectedPatientId, patient]);
+ 
+    initJitsi();
+ 
+    return () => {
+      isObsolete = true;
+      if (jitsiApiRef.current) {
+        jitsiApiRef.current.dispose();
+        jitsiApiRef.current = null;
+        activeJitsiPatientIdRef.current = '';
+      }
+    };
+  }, [scriptLoaded, selectedPatientId]);
 
   const handleEndAndSave = async () => {
     if (!selectedPatientId || !patient) {
