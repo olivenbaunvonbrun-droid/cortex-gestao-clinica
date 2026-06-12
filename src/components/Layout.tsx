@@ -413,8 +413,8 @@ export default function Layout({
         </div>
       </header>
 
-      <nav className="bg-bg-sidebar/95 backdrop-blur-xl border-b border-border-subtle fixed top-[73px] w-full z-30 px-6">
-        <div className="max-w-7xl mx-auto flex overflow-x-auto scroller-hide gap-1">
+      <nav className="bg-bg-sidebar/95 backdrop-blur-xl border-b border-border-subtle fixed top-[73px] w-full z-30 px-2 sm:px-6">
+        <div className="max-w-7xl mx-auto flex w-full justify-between gap-0.5 sm:gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -422,16 +422,17 @@ export default function Layout({
                 key={item.id}
                 onClick={() => onSectionChange(item.id)}
                 className={cn(
-                  "flex items-center gap-2 px-6 py-4 text-xs font-bold uppercase tracking-widest transition-all relative min-w-max",
+                  "flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-1 sm:px-3 py-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all relative min-w-0 text-center",
                   activeSection === item.id
                     ? "text-primary bg-bg-card"
                     : "text-text-dim hover:text-text-main hover:bg-white/[0.02]"
                 )}
               >
-                <Icon size={16} />
-                {item.label}
+                <Icon size={14} className="shrink-0" />
+                <span className="truncate hidden xs:inline">{item.label}</span>
+                <span className="truncate xs:hidden">{item.label.substring(0, 4)}..</span>
                 {item.id === 'pacientes' && item.badge && (
-                  <span className="ml-2 flex items-center justify-center w-4 h-4 bg-amber-500 text-bg-deep text-[8px] font-black rounded-full animate-pulse border border-amber-400">
+                  <span className="ml-1 flex items-center justify-center w-3.5 h-3.5 bg-amber-500 text-bg-deep text-[7px] font-black rounded-full animate-pulse border border-amber-400 shrink-0">
                     {item.badge}
                   </span>
                 )}

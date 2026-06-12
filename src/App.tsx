@@ -28,7 +28,7 @@ import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import BibliotecaAvaliacaoApp from './components/BibliotecaAvaliacao/BibliotecaAvaliacaoApp';
 import TeleconsultationApp from './components/Teleconsultation/TeleconsultationApp';
 import { Window } from './components/ui/Window';
-import { Brain, Cloud } from 'lucide-react';
+import { Brain, Cloud, Users, Sparkles, ClipboardList, Layers, TrendingUp, FileSpreadsheet, Activity, BookOpen, Video, Pin } from 'lucide-react';
 import { cn } from './lib/utils';
 import LGPDNotice from './components/LGPDNotice';
 import { useFirebase } from './hooks/useFirebase';
@@ -70,6 +70,40 @@ export default function App() {
   const [openWindows, setOpenWindows] = useState<ToolWindow[]>([]);
   const [maxZIndex, setMaxZIndex] = useState(60);
   const [syncState, setSyncState] = useState<any>(syncService.getSyncState());
+
+  const [pinnedTools, setPinnedTools] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('cortex_pinned_tools_v1');
+      return saved ? JSON.parse(saved) : ['rid-inteligente', 'ysq-smart-ai', 'registro-atendimento'];
+    } catch {
+      return ['rid-inteligente', 'ysq-smart-ai', 'registro-atendimento'];
+    }
+  });
+
+  const handleTogglePin = (toolId: string) => {
+    setPinnedTools(prev => {
+      const updated = prev.includes(toolId)
+        ? prev.filter(id => id !== toolId)
+        : [...prev, toolId];
+      localStorage.setItem('cortex_pinned_tools_v1', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const toolMetadataMap: Record<string, { title: string; shortTitle: string; icon: React.ComponentType<any> }> = {
+    'rid-inteligente': { title: 'RID Inteligente', shortTitle: 'RID', icon: Brain },
+    'ihs-digital': { title: 'IHS Digital', shortTitle: 'IHS', icon: Users },
+    'ysq-smart-ai': { title: 'YSQ-Smart AI', shortTitle: 'YSQ', icon: Sparkles },
+    'registro-atendimento': { title: 'Registro de Atendimento', shortTitle: 'SOAP', icon: ClipboardList },
+    'plano-clinico-integrado': { title: 'Plano Clínico Integrado', shortTitle: 'PCI', icon: Layers },
+    'ihp-pr-digital': { title: 'IHP-PR Digital', shortTitle: 'IHP', icon: Brain },
+    'linha-vida': { title: 'Linha da Vida', shortTitle: 'Vida', icon: TrendingUp },
+    'psidiagnostic-pro': { title: 'Psidiagnostic Pro', shortTitle: 'Psi', icon: FileSpreadsheet },
+    'dfc-assistido': { title: 'DFC Assistido', shortTitle: 'DFC', icon: Layers },
+    'thp-training': { title: 'Treinamento THP', shortTitle: 'THP', icon: Activity },
+    'biblioteca-avaliacao': { title: 'Biblioteca de Avaliação', shortTitle: 'Testes', icon: BookOpen },
+    'teleconsulta': { title: 'Teleconsulta Virtual', shortTitle: 'Vídeo', icon: Video },
+  };
 
   // Live clock timer
   useEffect(() => {
@@ -113,7 +147,7 @@ export default function App() {
         type: 'tool',
         title: titleMap[toolId] || 'Ferramenta',
         isMinimized: false,
-        isMaximized: false,
+        isMaximized: true,
         snapState: null,
         zIndex: nextZ,
         patientId: patientId,
@@ -156,7 +190,7 @@ export default function App() {
         type: 'section',
         title: titleMap[sectionId] || 'Painel',
         isMinimized: false,
-        isMaximized: false,
+        isMaximized: true,
         snapState: null,
         zIndex: nextZ,
         width: 1000,
@@ -414,7 +448,7 @@ export default function App() {
         >
           {win.type === 'section' && (
             <div className="w-full h-full overflow-y-auto p-6 scrollbar-thin">
-              {win.id === 'section-dashboard' && <Dashboard onSectionChange={handleOpenSection} />}
+              {win.id === 'section-dashboard' && <Dashboard onSectionChange={handleOpenSection} openTool={handleOpenTool} />}
               {win.id === 'section-pacientes' && (
                 <Patients 
                   onOpenProntuario={(patientId) => {
@@ -437,6 +471,8 @@ export default function App() {
                 <ToolsLibrary 
                   onOpenTool={handleOpenTool} 
                   openWindows={openWindows.filter(w => w.type === 'tool').map(w => w.id)} 
+                  pinnedTools={pinnedTools}
+                  onTogglePin={handleTogglePin}
                 />
               )}
               {win.id === 'section-settings' && <Settings onUpdateSettings={(newS) => setSettings({ ...settings, ...newS })} />}
@@ -544,7 +580,59 @@ export default function App() {
             CORTEX
           </div>
           
-          <div className="w-px h-6 bg-border-subtle/50 mx-1" />
+          <div className="w-px h-6 bg-border-subtle/50 mx-1 shrink-0" />
+          
+          {/* Pinned Tools (Quick Launch) */}
+          {pinnedTools.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-white/[0.02] border border-white/[0.04] p-1 rounded-2xl shrink-0">
+              {pinnedTools.map(toolId => {
+                const meta = toolMetadataMap[toolId];
+                if (!meta) return null;
+                const Icon = meta.icon;
+                const isOpened = openWindows.some(w => w.id === toolId);
+                const activeWin = openWindows.find(w => w.id === toolId);
+                const isActive = activeWin && !activeWin.isMinimized && activeWin.zIndex === maxZIndex;
+
+                return (
+                  <button
+                    key={`pinned-taskbar-${toolId}`}
+                    onClick={() => {
+                      if (isOpened) {
+                        if (isActive) {
+                          handleToggleMinimize(toolId);
+                        } else {
+                          handleFocusTool(toolId);
+                          if (activeWin?.isMinimized) {
+                            handleToggleMinimize(toolId);
+                          }
+                        }
+                      } else {
+                        handleOpenTool(toolId, selectedPatientId);
+                      }
+                    }}
+                    className={cn(
+                      "p-2 rounded-xl transition-all relative group cursor-pointer flex items-center justify-center shrink-0 w-9 h-9 border",
+                      isActive 
+                        ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_10px_rgba(56,189,248,0.15)]' 
+                        : isOpened 
+                          ? 'bg-white/5 border-white/10 text-text-main hover:bg-white/10' 
+                          : 'bg-transparent border-transparent text-text-dim hover:text-text-main hover:bg-white/5'
+                    )}
+                    title={`${meta.title}${isOpened ? ' (Ativo)' : ' (Acesso Rápido)'}`}
+                  >
+                    <Icon size={14} />
+                    {isOpened && (
+                      <span className={cn(
+                        "absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full",
+                        activeWin?.isMinimized ? 'bg-text-dim/60' : 'bg-emerald-500 shadow-[0_0_4px_rgb(16,185,129)]'
+                      )} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {pinnedTools.length > 0 && <div className="w-px h-6 bg-border-subtle/50 mx-1 shrink-0" />}
           
           {/* Taskbar items */}
           <div className="flex items-center gap-2 overflow-x-auto max-w-[60vw] scrollbar-none">

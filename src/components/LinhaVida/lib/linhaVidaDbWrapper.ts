@@ -58,15 +58,18 @@ class LinhaVidaDatabaseWrapper {
         });
       });
     }
-    return assessments.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+    return assessments.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '') || (b.id || '').localeCompare(a.id || ''));
   }
 
   async saveEntry(assessment: Assessment, patientId: string, userId?: string): Promise<Assessment[]> {
     const record = await db.prontuarios.get(patientId);
     const textHtml = formatLinhaVidaToHtml(assessment);
     
+    const timestamp = Number(assessment.id) || Date.now();
+    assessment.id = String(timestamp);
+    
     const newEntry = {
-      timestamp: Number(assessment.id) || Date.now(),
+      timestamp,
       data: new Date(assessment.createdAt).toLocaleDateString('pt-BR'),
       textoHtml: textHtml,
       tipo: 'linha_vida' as const,

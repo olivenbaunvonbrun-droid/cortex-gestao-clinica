@@ -62,16 +62,19 @@ class PsicometrikDatabaseWrapper {
         });
       });
     }
-    return reports.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+    return reports.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '') || (b.id || '').localeCompare(a.id || ''));
   }
 
   async saveEntry(report: Report, patientId: string, userId?: string): Promise<Report[]> {
     const record = await db.prontuarios.get(patientId);
     const textHtml = formatPsicometrikToHtml(report);
     
+    const timestamp = Number(report.id) || Date.now();
+    report.id = String(timestamp);
+    
     // Create new entry
     const newEntry = {
-      timestamp: Date.now(), // default to now
+      timestamp,
       data: report.evaluationDate,
       textoHtml: textHtml,
       tipo: 'psicometrik' as any,
@@ -82,13 +85,7 @@ class PsicometrikDatabaseWrapper {
     };
 
     if (record) {
-      // Try to find if an entry with this report.id already exists
-      const existingEntry = record.entradas.find(e => e.metadata?.psicometrikData?.id === report.id);
-      if (existingEntry) {
-        newEntry.timestamp = existingEntry.timestamp;
-      }
-      
-      const filtered = record.entradas.filter(e => e.metadata?.psicometrikData?.id !== report.id);
+      const filtered = record.entradas.filter(e => e.metadata?.psicometrikData?.id !== report.id && String(e.timestamp) !== String(report.id));
       const updatedEntradas = [newEntry, ...filtered];
       await db.prontuarios.update(patientId, { entradas: updatedEntradas });
     } else {

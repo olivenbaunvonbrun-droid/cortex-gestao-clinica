@@ -13,7 +13,8 @@ import {
   ChevronLeft, 
   ChevronRight, 
   GripVertical,
-  Activity
+  Activity,
+  Pin
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -29,6 +30,8 @@ interface ToolItem {
 interface ToolsLibraryProps {
   onOpenTool: (toolId: string) => void;
   openWindows: string[];
+  pinnedTools?: string[];
+  onTogglePin?: (toolId: string) => void;
 }
 
 const DEFAULT_TOOLS: ToolItem[] = [
@@ -130,7 +133,7 @@ const DEFAULT_TOOLS: ToolItem[] = [
   }
 ];
 
-export default function ToolsLibrary({ onOpenTool, openWindows }: ToolsLibraryProps) {
+export default function ToolsLibrary({ onOpenTool, openWindows, pinnedTools = [], onTogglePin }: ToolsLibraryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [orderedTools, setOrderedTools] = useState<ToolItem[]>([]);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -366,18 +369,32 @@ export default function ToolsLibrary({ onOpenTool, openWindows }: ToolsLibraryPr
                           <div className="pt-4 border-t border-border-subtle/30 mt-4 flex items-center justify-between shrink-0">
                             {isActive ? (
                               <>
-                                <button
-                                  onClick={() => onOpenTool(tool.id)}
-                                  className={cn(
-                                    "py-2.5 px-4 rounded-xl font-black uppercase tracking-widest text-[8px] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm",
-                                    isOpened
-                                      ? "bg-primary/10 border border-primary/25 text-primary hover:bg-primary/20"
-                                      : "bg-primary hover:bg-primary-hover text-bg-deep active:scale-95 shadow-primary/5"
-                                  )}
-                                >
-                                  <ExternalLink size={10} />
-                                  {isOpened ? 'Foco' : 'Abrir'}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => onOpenTool(tool.id)}
+                                    className={cn(
+                                      "py-2.5 px-4 rounded-xl font-black uppercase tracking-widest text-[8px] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm",
+                                      isOpened
+                                        ? "bg-primary/10 border border-primary/25 text-primary hover:bg-primary/20"
+                                        : "bg-primary hover:bg-primary-hover text-bg-deep active:scale-95 shadow-primary/5"
+                                    )}
+                                  >
+                                    <ExternalLink size={10} />
+                                    {isOpened ? 'Foco' : 'Abrir'}
+                                  </button>
+                                  <button
+                                    onClick={() => onTogglePin?.(tool.id)}
+                                    className={cn(
+                                      "p-2.5 rounded-xl border transition-all cursor-pointer",
+                                      pinnedTools?.includes(tool.id)
+                                        ? "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                                        : "bg-bg-sidebar border-border-subtle/50 text-text-dim hover:text-text-main hover:border-border-subtle"
+                                    )}
+                                    title={pinnedTools?.includes(tool.id) ? "Desafixar da Barra de Tarefas" : "Fixar na Barra de Tarefas"}
+                                  >
+                                    <Pin size={10} className={cn(pinnedTools?.includes(tool.id) && "fill-primary")} />
+                                  </button>
+                                </div>
                                 {isOpened && (
                                   <span className="flex items-center gap-1 text-[8px] font-bold text-emerald-500 uppercase tracking-wider">
                                     <span className="h-1 w-1 bg-emerald-500 rounded-full animate-pulse" />

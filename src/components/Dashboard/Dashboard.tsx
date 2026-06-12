@@ -17,7 +17,8 @@ import {
   Send,
   X,
   Edit2,
-  Play
+  Play,
+  Video
 } from 'lucide-react';
 import { db, type Patient, type Appointment } from '../../lib/db';
 import { motion } from 'motion/react';
@@ -71,9 +72,10 @@ function getCountdownText(dataStr: string, horaStr: string): string {
 
 interface DashboardProps {
   onSectionChange?: (section: string) => void;
+  openTool?: (toolId: string, patientId?: string | null) => void;
 }
 
-export default function Dashboard({ onSectionChange }: DashboardProps = {}) {
+export default function Dashboard({ onSectionChange, openTool }: DashboardProps = {}) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [settings, setSettings] = useState<any>({});
@@ -432,6 +434,15 @@ export default function Dashboard({ onSectionChange }: DashboardProps = {}) {
                       Confirmar
                     </button>
                     <div className="flex gap-2.5">
+                      {openTool && (
+                        <button
+                          onClick={() => openTool('teleconsulta', app.pacienteId)}
+                          className="p-2 hover:bg-blue-500/10 hover:text-blue-400 rounded-xl text-text-dim/60 border border-border-subtle/40 hover:border-blue-500/20 cursor-pointer transition-all flex items-center gap-1 text-[9px] font-black uppercase tracking-widest"
+                          title="Iniciar Teleconsulta"
+                        >
+                          <Video size={12} /> Vídeo
+                        </button>
+                      )}
                       <button
                         onClick={() => handleSendConfirmWA(app)}
                         className="p-2 hover:bg-green-500/10 hover:text-green-500 rounded-xl text-text-dim/60 border border-border-subtle/40 hover:border-green-500/20 cursor-pointer transition-all flex items-center gap-1 text-[9px] font-black uppercase tracking-widest"
@@ -512,6 +523,15 @@ export default function Dashboard({ onSectionChange }: DashboardProps = {}) {
                   <div className="pt-3 border-t border-border-subtle/30 flex justify-between items-center text-[10px] gap-2">
                     <span className="text-[8px] font-black text-text-dim/80 uppercase tracking-wide">Falta: {getCountdownText(app.data, app.hora)}</span>
                     <div className="flex gap-1">
+                      {openTool && (
+                        <button
+                          onClick={() => openTool('teleconsulta', app.pacienteId)}
+                          className="p-2 hover:bg-blue-500/10 hover:text-blue-400 rounded-lg transition-all text-text-dim/60 border border-transparent hover:border-blue-500/20 cursor-pointer"
+                          title="Teleconsulta"
+                        >
+                          <Video size={12} />
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setSelectedAppForEdit(app);

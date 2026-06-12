@@ -66,15 +66,18 @@ class AttendanceDatabaseWrapper {
         });
       });
     }
-    return records.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+    return records.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '') || (b.id || '').localeCompare(a.id || ''));
   }
 
   async saveEntry(record: AttendanceRecord, patientId: string, userId?: string): Promise<AttendanceRecord[]> {
     const prontuario = await db.prontuarios.get(patientId);
     const textHtml = formatRecordToHtml(record);
     
+    const timestamp = Number(record.id) || Date.now();
+    record.id = String(timestamp);
+    
     const newEntry = {
-      timestamp: Number(record.id) || Date.now(),
+      timestamp,
       data: new Date(record.createdAt).toLocaleDateString('pt-BR'),
       textoHtml: textHtml,
       tipo: 'registro_atendimento' as any,

@@ -519,7 +519,7 @@ export default function Agenda({ openTool }: { openTool?: (toolId: string, patie
                       </button>
                       
                       <div className="flex flex-col gap-2">
-                        {app.tipo === 'online' && openTool && (
+                        {openTool && (
                           <button 
                             onClick={() => openTool('teleconsulta', app.pacienteId)}
                             className="p-2.5 bg-bg-sidebar border border-border-subtle rounded-xl text-blue-400 hover:bg-blue-400/10 transition-all"
@@ -865,7 +865,7 @@ export default function Agenda({ openTool }: { openTool?: (toolId: string, patie
                                           <p className="text-[8px] font-black text-text-dim uppercase tracking-widest mt-0.5">{app.tipo}</p>
                                        </div>
                                        <div className="flex items-center gap-1.5 opacity-100 transition-all scale-100 shrink-0">
-                                          {app.tipo === 'online' && openTool && (
+                                          {openTool && (
                                             <button 
                                               onClick={(e) => {
                                                 e.stopPropagation();

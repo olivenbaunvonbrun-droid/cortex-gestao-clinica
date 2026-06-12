@@ -62,15 +62,18 @@ class RidDatabaseWrapper {
         });
       });
     }
-    return rids.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+    return rids.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id || '').localeCompare(a.id || ''));
   }
 
   async saveEntry(entry: RidEntry, patientId: string, userId?: string): Promise<void> {
     const record = await db.prontuarios.get(patientId);
     const textHtml = formatRidToHtml(entry);
     
+    const timestamp = Number(entry.id) || Date.now();
+    entry.id = String(timestamp);
+    
     const newEntry = {
-      timestamp: Number(entry.id) || Date.now(),
+      timestamp,
       data: entry.date,
       textoHtml: textHtml,
       tipo: 'rid' as const,

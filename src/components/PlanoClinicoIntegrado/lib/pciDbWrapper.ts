@@ -63,15 +63,18 @@ class PciDatabaseWrapper {
         });
       });
     }
-    return records.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+    return records.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '') || (b.id || '').localeCompare(a.id || ''));
   }
 
   async saveEntry(record: PciRecord, patientId: string, userId?: string): Promise<PciRecord[]> {
     const prontuario = await db.prontuarios.get(patientId);
     const textHtml = formatPciToHtml(record);
     
+    const timestamp = Number(record.id) || Date.now();
+    record.id = String(timestamp);
+    
     const newEntry = {
-      timestamp: Number(record.id) || Date.now(),
+      timestamp,
       data: new Date(record.createdAt).toLocaleDateString('pt-BR'),
       textoHtml: textHtml,
       tipo: 'pci' as any,
