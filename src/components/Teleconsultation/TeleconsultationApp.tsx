@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Video, PhoneOff, Clipboard, Sparkles, FileText, CheckCircle, Brain, RefreshCw } from 'lucide-react';
+import { Video, PhoneOff, Clipboard, Sparkles, FileText, CheckCircle, Brain, RefreshCw, Link, MessageCircle, Copy } from 'lucide-react';
 import { db, type Patient } from '../../lib/db';
 import { syncService } from '../../lib/syncService';
 import { toast, Toaster } from 'react-hot-toast';
@@ -23,6 +23,29 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
   const [observations, setObservations] = useState('');
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleCopyLink = () => {
+    if (!selectedPatientId) return;
+    const roomName = `cortex-teleconsulta-${selectedPatientId.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const meetingLink = `https://jitsi.riot.im/${roomName}`;
+    navigator.clipboard.writeText(meetingLink);
+    toast.success('Link da teleconsulta copiado para a área de transferência!');
+  };
+
+  const handleSendLinkWA = () => {
+    if (!patient) return;
+    const roomName = `cortex-teleconsulta-${selectedPatientId.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const meetingLink = `https://jitsi.riot.im/${roomName}`;
+    const text = `Olá, ${patient.nome}. Aqui está o link para o nosso teleatendimento virtual: ${meetingLink}`;
+    const cleanPhone = patient.telefone ? patient.telefone.replace(/\D/g, '') : '';
+    if (!cleanPhone) {
+      toast.error('Paciente não possui telefone cadastrado!');
+      return;
+    }
+    const phoneWithCountry = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+    const waUrl = `https://api.whatsapp.com/send?phone=${phoneWithCountry}&text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+  };
 
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
@@ -51,7 +74,7 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
  
   // Load Jitsi script dynamically
   useEffect(() => {
-    const scriptUrl = 'https://meet.ffmuc.net/external_api.js';
+    const scriptUrl = 'https://jitsi.riot.im/external_api.js';
     
     if ((window as any).JitsiMeetExternalAPI) {
       setScriptLoaded(true);
@@ -100,7 +123,7 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
       setJitsiActive(false);
       setSessionStartTime(new Date());
  
-      const domain = 'meet.ffmuc.net';
+      const domain = 'jitsi.riot.im';
       const roomName = `cortex-teleconsulta-${selectedPatientId.replace(/[^a-zA-Z0-9]/g, '')}`;
  
       const options = {
@@ -277,6 +300,29 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
               ))}
             </select>
           </div>
+
+          {selectedPatientId && patient && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sidebar border border-border-subtle hover:border-primary/40 text-text-dim hover:text-primary rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                title="Copiar Link da Teleconsulta"
+              >
+                <Copy size={11} />
+                Copiar Link
+              </button>
+              {patient.telefone && (
+                <button
+                  onClick={handleSendLinkWA}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 hover:bg-green-500 hover:text-white text-green-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                  title="Enviar Link por WhatsApp para o Paciente"
+                >
+                  <MessageCircle size={11} />
+                  Enviar WA
+                </button>
+              )}
+            </div>
+          )}
 
           <button
             onClick={handleEndAndSave}
