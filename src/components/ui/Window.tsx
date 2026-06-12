@@ -42,6 +42,41 @@ export function Window({
   const [showSnapMenu, setShowSnapMenu] = useState(false);
   const snapMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    if (!isMinimized) {
+      setTimeout(() => {
+        windowRef.current?.focus();
+      }, 50);
+    }
+  }, [isMinimized]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable ||
+      target.closest('.ql-editor') ||
+      target.closest('[contenteditable="true"]')
+    ) {
+      return;
+    }
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (windowRef.current) {
+        const scrollable = windowRef.current.querySelector('.overflow-y-auto, .overflow-auto');
+        if (scrollable) {
+          e.preventDefault();
+          const scrollAmount = 60;
+          scrollable.scrollBy({
+            top: e.key === 'ArrowDown' ? scrollAmount : -scrollAmount,
+            behavior: 'auto'
+          });
+        }
+      }
+    }
+  };
+
   const handleMouseEnterMaximize = () => {
     if (snapMenuTimeoutRef.current) clearTimeout(snapMenuTimeoutRef.current);
     setShowSnapMenu(true);
@@ -162,7 +197,15 @@ export function Window({
       dragMomentum={false}
       dragElastic={0.05}
       dragConstraints={{ top: 0 }}
-      onPointerDown={onFocus}
+      onPointerDown={(e) => {
+        onFocus();
+        const target = e.target as HTMLElement;
+        if (!target.closest('input, textarea, button, select, [contenteditable="true"], .ql-editor')) {
+          windowRef.current?.focus();
+        }
+      }}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       style={{
         zIndex,
         display: isMinimized ? 'none' : 'flex',
@@ -171,9 +214,10 @@ export function Window({
         position: 'fixed',
         top,
         left,
+        outline: 'none',
       }}
       className={cn(
-        "flex flex-col bg-bg-sidebar border border-border-subtle shadow-2xl overflow-hidden transition-all duration-150 select-none",
+        "flex flex-col bg-bg-sidebar border border-border-subtle shadow-2xl overflow-hidden transition-all duration-150 select-none focus:outline-none",
         isMaximized || snapState ? "rounded-none" : "rounded-3xl",
         "z-[60]"
       )}

@@ -935,7 +935,7 @@ export default function ThpTrainingApp({ activePatientId, lockPatient = false, u
   };
 
   return (
-    <div className="min-h-[calc(100vh-191px)] w-full flex bg-bg-deep text-text-main font-sans overflow-auto select-none relative">
+    <div className="h-full min-h-0 w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-hidden select-none relative">
       {thpPatient ? (
         <>
           {/* Left Sidebar */}

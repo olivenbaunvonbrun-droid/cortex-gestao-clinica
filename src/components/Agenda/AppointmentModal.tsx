@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Clock, Calendar as CalendarIcon, Link as LinkIcon, Plus, Trash2, CalendarClock, Ban, User, MessageCircle, Shield } from 'lucide-react';
 import { db, type Appointment, type Patient, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn, getLocalDateString } from '../../lib/utils';
+import { cn, getLocalDateString, safeUUID } from '../../lib/utils';
 import { getHoliday } from '../../utils/holidays';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
@@ -24,6 +24,16 @@ interface AppointmentModalProps {
 }
 
 export default function AppointmentModal({ appointment, initialDate, isOpen, onClose }: AppointmentModalProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        formRef.current?.focus();
+      }, 50);
+    }
+  }, [isOpen]);
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [ufState, setUfState] = useState('SP');
@@ -93,8 +103,12 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
       // Sync cancellation to cloud immediately
       const firebaseUid = auth.currentUser?.uid;
       if (firebaseUid) {
-        const updated = await db.agendamentos.get(appointment.id);
-        if (updated) await syncService.saveToCloud(firebaseUid, 'agendamentos', updated);
+        try {
+          const updated = await db.agendamentos.get(appointment.id);
+          if (updated) await syncService.saveToCloud(firebaseUid, 'agendamentos', updated);
+        } catch (err) {
+          console.warn("Cloud sync failed (cancel appointment):", err);
+        }
       }
       onClose();
     } catch (error) {
@@ -126,7 +140,11 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         await db.agendamentos.add(recApp);
         // Sync each recurring instance to cloud immediately
         if (firebaseUid) {
-          await syncService.saveToCloud(firebaseUid, 'agendamentos', recApp);
+          try {
+            await syncService.saveToCloud(firebaseUid, 'agendamentos', recApp);
+          } catch (err) {
+            console.warn("Cloud sync failed (generate recurrence):", err);
+          }
         }
       }
     }
@@ -189,12 +207,16 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         // Mark original as rescheduled
         await db.agendamentos.update(appointment.id, { status: 'rescheduled' });
         if (firebaseUid) {
-          const updated = await db.agendamentos.get(appointment.id);
-          if (updated) await syncService.saveToCloud(firebaseUid, 'agendamentos', updated);
+          try {
+            const updated = await db.agendamentos.get(appointment.id);
+            if (updated) await syncService.saveToCloud(firebaseUid, 'agendamentos', updated);
+          } catch (err) {
+            console.warn("Cloud sync failed (original rescheduled):", err);
+          }
         }
         
         // Create new one as reagendamento
-        const id = crypto.randomUUID();
+        const id = safeUUID();
         const newApp = { 
           ...formData, 
           id, 
@@ -204,7 +226,13 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         delete (newApp as any).recorrenciaPaiId;
         
         await db.agendamentos.add(newApp);
-        if (firebaseUid) await syncService.saveToCloud(firebaseUid, 'agendamentos', newApp);
+        if (firebaseUid) {
+          try {
+            await syncService.saveToCloud(firebaseUid, 'agendamentos', newApp);
+          } catch (err) {
+            console.warn("Cloud sync failed (new rescheduled appointment):", err);
+          }
+        }
         logAction(currentUser, `Reagendou sessão de: ${formData.pacienteId}`);
       } else if (appointment) {
         const recurrenceChanged = formData.recorrencia !== appointment.recorrencia;
@@ -235,8 +263,12 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
                 hora: formData.hora
               });
               if (firebaseUid) {
-                const updatedFApp = await db.agendamentos.get(fApp.id);
-                if (updatedFApp) await syncService.saveToCloud(firebaseUid, 'agendamentos', updatedFApp);
+                try {
+                  const updatedFApp = await db.agendamentos.get(fApp.id);
+                  if (updatedFApp) await syncService.saveToCloud(firebaseUid, 'agendamentos', updatedFApp);
+                } catch (err) {
+                  console.warn("Cloud sync failed (series future app update):", err);
+                }
               }
             }
           }
@@ -262,14 +294,22 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
             .delete();
 
           if (firebaseUid && idsToDelete.length > 0) {
-            await syncService.deleteFromCloudBatch(firebaseUid, 'agendamentos', idsToDelete);
+            try {
+              await syncService.deleteFromCloudBatch(firebaseUid, 'agendamentos', idsToDelete);
+            } catch (err) {
+              console.warn("Cloud sync failed (delete series):", err);
+            }
           }
 
           // Delete medical records and attachments if user selected to delete
           if (deleteDocs) {
             await db.prontuarios.delete(formData.pacienteId!);
             if (firebaseUid) {
-              await syncService.removeFromCloud(firebaseUid, 'prontuarios', formData.pacienteId!);
+              try {
+                await syncService.removeFromCloud(firebaseUid, 'prontuarios', formData.pacienteId!);
+              } catch (err) {
+                console.warn("Cloud sync failed (remove prontuario):", err);
+              }
             }
 
             const attachments = await db.anexos.where('ownerId').equals(formData.pacienteId!).toArray();
@@ -277,7 +317,11 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
             await db.anexos.where('ownerId').equals(formData.pacienteId!).delete();
 
             if (firebaseUid && attachmentIds.length > 0) {
-              await syncService.deleteFromCloudBatch(firebaseUid, 'anexos', attachmentIds);
+              try {
+                await syncService.deleteFromCloudBatch(firebaseUid, 'anexos', attachmentIds);
+              } catch (err) {
+                console.warn("Cloud sync failed (delete attachments):", err);
+              }
             }
           }
 
@@ -295,15 +339,25 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
 
         await db.agendamentos.update(appointment.id, formData);
         if (firebaseUid) {
-          const updatedApp = await db.agendamentos.get(appointment.id);
-          if (updatedApp) await syncService.saveToCloud(firebaseUid, 'agendamentos', updatedApp);
+          try {
+            const updatedApp = await db.agendamentos.get(appointment.id);
+            if (updatedApp) await syncService.saveToCloud(firebaseUid, 'agendamentos', updatedApp);
+          } catch (err) {
+            console.warn("Cloud sync failed (update appointment):", err);
+          }
         }
         logAction(currentUser, `Editou agendamento de: ${formData.pacienteId}${updateSeries ? ' (e série futura)' : ''}`);
       } else {
-        const id = crypto.randomUUID();
+        const id = safeUUID();
         const newApp = { ...formData, id } as Appointment;
         await db.agendamentos.add(newApp);
-        if (firebaseUid) await syncService.saveToCloud(firebaseUid, 'agendamentos', newApp);
+        if (firebaseUid) {
+          try {
+            await syncService.saveToCloud(firebaseUid, 'agendamentos', newApp);
+          } catch (err) {
+            console.warn("Cloud sync failed (new appointment):", err);
+          }
+        }
         
         if (formData.recorrencia && formData.recorrencia !== 'nao') {
           await generateRecurrences(id, formData, firebaseUid);
@@ -353,7 +407,18 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-10 space-y-8 h-[600px] overflow-y-auto scroller-hide">
+            <form 
+              ref={formRef}
+              onSubmit={handleSave} 
+              className="p-10 space-y-8 h-[600px] overflow-y-auto scroller-hide outline-none"
+              tabIndex={0}
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (!target.closest('input, textarea, button, select, [contenteditable="true"], .ql-editor')) {
+                  e.currentTarget.focus();
+                }
+              }}
+            >
               {appointment && appointment.status === 'cancelled' && !isRescheduling && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3">
                   <Ban className="text-red-500" size={18} />

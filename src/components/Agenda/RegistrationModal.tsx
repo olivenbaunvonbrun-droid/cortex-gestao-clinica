@@ -13,6 +13,16 @@ interface RegistrationModalProps {
 }
 
 export default function RegistrationModal({ appointment, isOpen, onClose }: RegistrationModalProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        scrollRef.current?.focus();
+      }, 50);
+    }
+  }, [isOpen]);
+
   const [notes, setNotes] = useState(appointment?.registroAtendimentoData?.notes || '');
   const [isSaving, setIsSaving] = useState(false);
   const [attachments, setAttachments] = useState<{ id?: number, name: string, type: string, size: number, data: string }[]>([]);
@@ -387,7 +397,18 @@ export default function RegistrationModal({ appointment, isOpen, onClose }: Regi
               </div>
             </div>
 
-            <div className="flex-grow overflow-y-auto p-10 scroller-hide bg-bg-card/30" onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 80)}>
+            <div 
+              ref={scrollRef}
+              className="flex-grow overflow-y-auto p-10 scroller-hide bg-bg-card/30 outline-none" 
+              tabIndex={0}
+              onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 80)}
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (!target.closest('input, textarea, button, select, [contenteditable="true"], .ql-editor')) {
+                  e.currentTarget.focus();
+                }
+              }}
+            >
               <AnimatePresence>
                 {isScrolled && (
                   <motion.div

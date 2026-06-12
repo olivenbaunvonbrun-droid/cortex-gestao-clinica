@@ -178,7 +178,7 @@ export default function IhsDigitalApp({ activePatientId, lockPatient = false, us
   };
 
   return (
-    <div className="min-h-[calc(100vh-191px)] w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-auto select-none relative">
+    <div className="h-full min-h-0 w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-hidden select-none relative">
       {/* HEADER COMPONENT */}
       <header className="h-14 bg-bg-card border-b border-border-subtle px-6 flex items-center justify-between shrink-0 relative z-50">
         <div className="flex items-center gap-3">

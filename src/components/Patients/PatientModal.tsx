@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, Trash2, Plus, ExternalLink, Camera, FileText, Download, UserPlus, Users } from 'lucide-react';
 import { db, type Patient, logAction } from '../../lib/db';
-import { cn } from '../../lib/utils';
+import { cn, safeUUID } from '../../lib/utils';
 import RichTextEditor from '../RichTextEditor';
 import { CONTRACT_TEMPLATES, type ContractType } from '../../constants/contracts';
 import { syncService } from '../../lib/syncService';
@@ -44,6 +44,16 @@ interface PatientModalProps {
 }
 
 export default function PatientModal({ patient, isOpen, onClose }: PatientModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        modalRef.current?.focus();
+      }, 50);
+    }
+  }, [isOpen]);
+
   const [formData, setFormData] = useState<Partial<Patient>>({
     nome: '',
     cpf: '',
@@ -168,7 +178,11 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
         if (firebaseUid) {
           const updatedPatient = await db.pacientes.get(patient.id);
           if (updatedPatient) {
-            await syncService.saveToCloud(firebaseUid, 'pacientes', updatedPatient);
+            try {
+              await syncService.saveToCloud(firebaseUid, 'pacientes', updatedPatient);
+            } catch (err) {
+              console.warn("Cloud sync failed (patients update):", err);
+            }
           }
         }
 
@@ -188,7 +202,11 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
             if (firebaseUid) {
               const updatedRecord = await db.prontuarios.get(patient.id);
               if (updatedRecord) {
-                await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+                try {
+                  await syncService.saveToCloud(firebaseUid, 'prontuarios', updatedRecord);
+                } catch (err) {
+                  console.warn("Cloud sync failed (prontuarios update):", err);
+                }
               }
             }
           }
@@ -196,7 +214,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
       } else {
         const newPatient = {
           ...saveData,
-          id: crypto.randomUUID(),
+          id: safeUUID(),
           dataCadastro: new Date().toISOString()
         } as Patient;
         await db.pacientes.add(newPatient);
@@ -217,8 +235,12 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
 
         // Sync new patient and prontuario to cloud immediately
         if (firebaseUid) {
-          await syncService.saveToCloud(firebaseUid, 'pacientes', newPatient);
-          await syncService.saveToCloud(firebaseUid, 'prontuarios', initialProntuario);
+          try {
+            await syncService.saveToCloud(firebaseUid, 'pacientes', newPatient);
+            await syncService.saveToCloud(firebaseUid, 'prontuarios', initialProntuario);
+          } catch (err) {
+            console.warn("Cloud sync failed (new patient/prontuario):", err);
+          }
         }
       }
       onClose();
@@ -434,7 +456,17 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-content max-w-5xl">
+      <div 
+        ref={modalRef}
+        className="modal-content max-w-5xl outline-none"
+        tabIndex={0}
+        onClick={(e) => {
+          const target = e.target as HTMLElement;
+          if (!target.closest('input, textarea, button, select, [contenteditable="true"], .ql-editor')) {
+            e.currentTarget.focus();
+          }
+        }}
+      >
         <div className="flex items-center justify-between mb-10 pb-6 border-b border-border-subtle">
           <div>
             <h2 className="text-3xl font-display font-bold text-text-main tracking-tight">

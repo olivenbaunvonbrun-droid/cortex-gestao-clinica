@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Save, DollarSign } from 'lucide-react';
 import { db, type Transaction, type Patient } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../../lib/utils';
+import { cn, safeUUID } from '../../lib/utils';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
 
@@ -13,6 +13,16 @@ interface TransactionModalProps {
 }
 
 export default function TransactionModal({ transaction, isOpen, onClose }: TransactionModalProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        formRef.current?.focus();
+      }, 50);
+    }
+  }, [isOpen]);
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [formData, setFormData] = useState<Partial<Transaction>>({
     tipo: 'receita',
@@ -55,17 +65,25 @@ export default function TransactionModal({ transaction, isOpen, onClose }: Trans
       if (transaction) {
         await db.transacoes.update(transaction.id, formData);
         if (firebaseUid) {
-          const updated = await db.transacoes.get(transaction.id);
-          if (updated) await syncService.saveToCloud(firebaseUid, 'transacoes', updated);
+          try {
+            const updated = await db.transacoes.get(transaction.id);
+            if (updated) await syncService.saveToCloud(firebaseUid, 'transacoes', updated);
+          } catch (err) {
+            console.warn("Cloud sync failed (update transaction):", err);
+          }
         }
       } else {
         const newTransaction = {
           ...formData,
-          id: crypto.randomUUID()
+          id: safeUUID()
         } as Transaction;
         await db.transacoes.add(newTransaction);
         if (firebaseUid) {
-          await syncService.saveToCloud(firebaseUid, 'transacoes', newTransaction);
+          try {
+            await syncService.saveToCloud(firebaseUid, 'transacoes', newTransaction);
+          } catch (err) {
+            console.warn("Cloud sync failed (new transaction):", err);
+          }
         }
       }
       onClose();
@@ -110,7 +128,18 @@ export default function TransactionModal({ transaction, isOpen, onClose }: Trans
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-10 space-y-8">
+            <form 
+              ref={formRef}
+              onSubmit={handleSave} 
+              className="p-10 space-y-8 max-h-[500px] overflow-y-auto scroller-hide outline-none"
+              tabIndex={0}
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (!target.closest('input, textarea, button, select')) {
+                  e.currentTarget.focus();
+                }
+              }}
+            >
               <div className="grid grid-cols-2 gap-6">
                  <div className="space-y-3">
                     <label className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] ml-1">Natureza do Fluxo</label>

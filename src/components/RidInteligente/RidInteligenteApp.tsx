@@ -148,7 +148,7 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
   };
 
   return (
-    <div className="min-h-[calc(100vh-191px)] w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-auto select-none">
+    <div className="h-full min-h-0 w-full flex flex-col bg-bg-deep text-text-main font-sans overflow-hidden select-none">
       <Header 
         activeTab={activeTab} 
         setActiveTab={(tab) => {
