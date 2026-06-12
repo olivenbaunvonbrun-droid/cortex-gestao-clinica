@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, User, MoreVertical, Trash2, Edit2, MessageCircle, Mail, Shield, BarChart3, Info } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, User, MoreVertical, Trash2, Edit2, MessageCircle, Mail, Shield, BarChart3, Info, Video } from 'lucide-react';
 import { db, type Appointment, type Patient, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, formatDate, getLocalDateString } from '../../lib/utils';
@@ -46,7 +46,7 @@ function getCountdownText(dataStr: string, horaStr: string): string {
   return `Falta ${diffDays}d e ${remainingHours}h`;
 }
 
-export default function Agenda() {
+export default function Agenda({ openTool }: { openTool?: (toolId: string, patientId?: string | null) => void }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<(Appointment & { patientName?: string, patientPhoto?: string })[]>([]);
   const [settings, setSettings] = useState<any>({});
@@ -519,6 +519,15 @@ export default function Agenda() {
                       </button>
                       
                       <div className="flex flex-col gap-2">
+                        {app.tipo === 'online' && openTool && (
+                          <button 
+                            onClick={() => openTool('teleconsulta', app.pacienteId)}
+                            className="p-2.5 bg-bg-sidebar border border-border-subtle rounded-xl text-blue-400 hover:bg-blue-400/10 transition-all"
+                            title="Iniciar Teleconsulta"
+                          >
+                            <Video size={16} />
+                          </button>
+                        )}
                         <button 
                           onClick={() => handleSendReceiptWA(app)}
                           className="p-2.5 bg-bg-sidebar border border-border-subtle rounded-xl text-green-500 hover:bg-green-500/10 transition-all"
@@ -856,6 +865,18 @@ export default function Agenda() {
                                           <p className="text-[8px] font-black text-text-dim uppercase tracking-widest mt-0.5">{app.tipo}</p>
                                        </div>
                                        <div className="flex items-center gap-1.5 opacity-100 transition-all scale-100 shrink-0">
+                                          {app.tipo === 'online' && openTool && (
+                                            <button 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openTool('teleconsulta', app.pacienteId);
+                                              }}
+                                              className="p-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-lg transition-all"
+                                              title="Teleconsulta"
+                                            >
+                                              <Video size={12} />
+                                            </button>
+                                          )}
                                           <button 
                                             onClick={(e) => {
                                               e.stopPropagation();

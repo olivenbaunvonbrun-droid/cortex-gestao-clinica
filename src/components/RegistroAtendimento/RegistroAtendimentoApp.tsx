@@ -10,7 +10,8 @@ import {
   Brain,
   ChevronRight,
   Sparkles,
-  Save
+  Save,
+  Video
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PatientData, AttendanceRecord, AttendanceTemplateType } from './types';
@@ -30,9 +31,10 @@ interface RegistroAtendimentoAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  openTool?: (toolId: string, patientId?: string | null) => void;
 }
 
-export default function RegistroAtendimentoApp({ activePatientId, lockPatient = false, userId }: RegistroAtendimentoAppProps) {
+export default function RegistroAtendimentoApp({ activePatientId, lockPatient = false, userId, openTool }: RegistroAtendimentoAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
@@ -275,6 +277,16 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
               </option>
             ))}
           </select>
+          {selectedPatientId && openTool && (
+            <button
+              onClick={() => openTool('teleconsulta', selectedPatientId)}
+              className="p-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-bg-deep rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+              title="Iniciar Teleconsulta"
+            >
+              <Video size={14} />
+              <span className="text-[9px] font-black uppercase tracking-wider hidden sm:inline">Teleconsulta</span>
+            </button>
+          )}
         </div>
 
         {/* SUB-TABS */}

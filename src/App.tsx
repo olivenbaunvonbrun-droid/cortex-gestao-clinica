@@ -26,6 +26,7 @@ import DfcAssistidoApp from './components/DfcAssistido/DfcAssistidoApp';
 import ThpTrainingApp from './components/ThpTraining/ThpTrainingApp';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import BibliotecaAvaliacaoApp from './components/BibliotecaAvaliacao/BibliotecaAvaliacaoApp';
+import TeleconsultationApp from './components/Teleconsultation/TeleconsultationApp';
 import { Window } from './components/ui/Window';
 import { Brain, Cloud } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -92,6 +93,7 @@ export default function App() {
       'dfc-assistido': 'DFC Assistido',
       'thp-training': 'Treinamento THP',
       'biblioteca-avaliacao': 'Biblioteca de Avaliação',
+      'teleconsulta': 'Teleconsulta Virtual',
     };
 
     const nextZ = maxZIndex + 1;
@@ -115,7 +117,7 @@ export default function App() {
         snapState: null,
         zIndex: nextZ,
         patientId: patientId,
-        width: 850,
+        width: toolId === 'teleconsulta' ? 1100 : 850,
         height: 650,
         x: 150 + (prev.length * 30) % 200,
         y: 120 + (prev.length * 30) % 200
@@ -421,7 +423,7 @@ export default function App() {
                   }} 
                 />
               )}
-              {win.id === 'section-agenda' && <Agenda />}
+              {win.id === 'section-agenda' && <Agenda openTool={handleOpenTool} />}
               {win.id === 'section-prontuarios' && (
                 <Records 
                   preSelectedPatientId={selectedPatientId} 
@@ -469,6 +471,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  openTool={handleOpenTool}
                 />
               )}
               {win.id === 'plano-clinico-integrado' && (
@@ -518,6 +521,13 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                />
+              )}
+              {win.id === 'teleconsulta' && (
+                <TeleconsultationApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
             </>
