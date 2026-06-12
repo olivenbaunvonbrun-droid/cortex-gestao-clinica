@@ -27,9 +27,10 @@ interface IhpPrDigitalAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function IhpPrDigitalApp({ activePatientId, lockPatient = false, userId }: IhpPrDigitalAppProps) {
+export default function IhpPrDigitalApp({ activePatientId, lockPatient = false, userId, onClose }: IhpPrDigitalAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');

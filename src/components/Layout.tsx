@@ -429,8 +429,7 @@ export default function Layout({
                 )}
               >
                 <Icon size={14} className="shrink-0" />
-                <span className="truncate hidden xs:inline">{item.label}</span>
-                <span className="truncate xs:hidden">{item.label.substring(0, 4)}..</span>
+                <span className="truncate">{item.label}</span>
                 {item.id === 'pacientes' && item.badge && (
                   <span className="ml-1 flex items-center justify-center w-3.5 h-3.5 bg-amber-500 text-bg-deep text-[7px] font-black rounded-full animate-pulse border border-amber-400 shrink-0">
                     {item.badge}

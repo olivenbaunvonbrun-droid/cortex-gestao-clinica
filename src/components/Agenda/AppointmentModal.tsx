@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Clock, Calendar as CalendarIcon, Link as LinkIcon, Plus, Trash2, CalendarClock, Ban, User, MessageCircle, Shield } from 'lucide-react';
+import { X, Save, Clock, Calendar as CalendarIcon, Link as LinkIcon, Plus, Trash2, CalendarClock, Ban, User, MessageCircle, Shield, Loader2 } from 'lucide-react';
 import { db, type Appointment, type Patient, logAction } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, getLocalDateString, safeUUID } from '../../lib/utils';
@@ -39,6 +39,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
   const [ufState, setUfState] = useState('SP');
   const [showUpdateSeriesConfirm, setShowUpdateSeriesConfirm] = useState(false);
   const [showRecurrenceDocConfirm, setShowRecurrenceDocConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Appointment>>({
     pacienteId: '',
     data: getLocalDateString(initialDate),
@@ -152,6 +153,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!formData.pacienteId || !formData.data || !formData.hora) return;
 
     try {
@@ -199,6 +201,8 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
   };
 
   const handleSaveConfirmed = async (updateSeries: boolean, deleteDocs: boolean = false) => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
       const firebaseUid = auth.currentUser?.uid;
@@ -371,6 +375,8 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
       onClose();
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -614,14 +620,24 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
                   </button>
                   <button
                     type="submit"
+                    disabled={isSaving}
                     className={cn(
-                      "px-10 py-4 font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl transition-all flex items-center gap-3 hover:-translate-y-0.5 active:scale-95",
+                      "px-10 py-4 font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl transition-all flex items-center gap-3 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:pointer-events-none",
                       isRescheduling 
                         ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/25" 
                         : "bg-primary hover:bg-primary-hover text-bg-deep shadow-primary/25"
                     )}
                   >
-                    <Save size={18} /> {isRescheduling ? 'Confirmar Reagendamento' : 'Confirmar Reserva'}
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        {isRescheduling ? 'Confirmando...' : 'Reservando...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} /> {isRescheduling ? 'Confirmar Reagendamento' : 'Confirmar Reserva'}
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

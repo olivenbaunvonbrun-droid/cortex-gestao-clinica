@@ -33,6 +33,7 @@ interface PsidiagnosticProAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
 interface UploadedFile {
@@ -44,7 +45,7 @@ interface UploadedFile {
   base64Data?: string;
 }
 
-export default function PsidiagnosticProApp({ activePatientId, lockPatient = false, userId }: PsidiagnosticProAppProps) {
+export default function PsidiagnosticProApp({ activePatientId, lockPatient = false, userId, onClose }: PsidiagnosticProAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');

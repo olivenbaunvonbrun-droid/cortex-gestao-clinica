@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Trash2, Plus, ExternalLink, Camera, FileText, Download, UserPlus, Users } from 'lucide-react';
+import { X, Save, Trash2, Plus, ExternalLink, Camera, FileText, Download, UserPlus, Users, Loader2 } from 'lucide-react';
 import { db, type Patient, logAction } from '../../lib/db';
 import { cn, safeUUID } from '../../lib/utils';
 import RichTextEditor from '../RichTextEditor';
@@ -84,6 +84,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
   const [activeTab, setActiveTab] = useState<'dados' | 'historico' | 'contrato'>('dados');
   const [selectedTemplate, setSelectedTemplate] = useState<ContractType | ''>('');
   const [settings, setSettings] = useState<any>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -148,17 +149,19 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!formData.nome) return alert("O nome é obrigatório!");
 
-    const saveData = {
-      ...formData,
-      valorConsulta: formData.valorConsulta !== undefined && formData.valorConsulta !== null && formData.valorConsulta !== '' ? Number(formData.valorConsulta) : 0,
-      frequenciaSemanal: formData.frequenciaSemanal !== undefined && formData.frequenciaSemanal !== null && formData.frequenciaSemanal !== '' ? Number(formData.frequenciaSemanal) : 1,
-      valorMensal: formData.valorMensal !== undefined && formData.valorMensal !== null && formData.valorMensal !== '' ? Number(formData.valorMensal) : 0,
-      valorFinalCombinado: formData.valorFinalCombinado !== undefined && formData.valorFinalCombinado !== null && formData.valorFinalCombinado !== '' ? Number(formData.valorFinalCombinado) : 0,
-    };
-
+    setIsSaving(true);
     try {
+      const saveData = {
+        ...formData,
+        valorConsulta: formData.valorConsulta !== undefined && formData.valorConsulta !== null && formData.valorConsulta !== '' ? Number(formData.valorConsulta) : 0,
+        frequenciaSemanal: formData.frequenciaSemanal !== undefined && formData.frequenciaSemanal !== null && formData.frequenciaSemanal !== '' ? Number(formData.frequenciaSemanal) : 1,
+        valorMensal: formData.valorMensal !== undefined && formData.valorMensal !== null && formData.valorMensal !== '' ? Number(formData.valorMensal) : 0,
+        valorFinalCombinado: formData.valorFinalCombinado !== undefined && formData.valorFinalCombinado !== null && formData.valorFinalCombinado !== '' ? Number(formData.valorFinalCombinado) : 0,
+      };
+
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
       const firebaseUid = auth.currentUser?.uid;
 
@@ -247,6 +250,8 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
     } catch (error) {
       console.error("Erro ao salvar paciente:", error);
       alert("Erro ao salvar paciente.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -960,9 +965,20 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
             </button>
             <button
               type="submit"
-              className="px-10 py-3.5 bg-primary hover:bg-primary-hover text-bg-deep font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-primary/20 transition-all flex items-center gap-3 hover:-translate-y-0.5 active:scale-95"
+              disabled={isSaving}
+              className="px-10 py-3.5 bg-primary hover:bg-primary-hover text-bg-deep font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-primary/20 transition-all flex items-center gap-3 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
             >
-              <Save size={18} /> Salvar Prontuário
+              {isSaving ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  Salvar Prontuário
+                </>
+              )}
             </button>
           </div>
         </form>

@@ -10,16 +10,19 @@ import { INITIAL_TOOLS } from "./data";
 import { FileDown, Sparkles, BookOpen, Clock, Activity, MessageSquare, History } from "lucide-react";
 import { db } from "../../lib/db";
 import { psicometrikDbWrapper } from "./lib/psicometrikDbWrapper";
+import { toast } from "react-hot-toast";
 
 interface BibliotecaAvaliacaoAppProps {
   activePatientId?: string;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function App({ activePatientId, lockPatient, userId }: BibliotecaAvaliacaoAppProps) {
+export default function App({ activePatientId, lockPatient, userId, onClose }: BibliotecaAvaliacaoAppProps) {
   // Navigation: 'catalog' | 'history'
   const [currentTab, setCurrentTab] = useState<'catalog' | 'history'>('catalog');
+  const [isSaving, setIsSaving] = useState(false);
 
   interface WindowState {
     id: string;
@@ -132,11 +135,17 @@ export default function App({ activePatientId, lockPatient, userId }: Biblioteca
   // Add report to dossier
   const handleSaveReport = async (report: Report) => {
     if (!selectedPatientId) return;
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       const updated = await psicometrikDbWrapper.saveEntry(report, selectedPatientId, userId);
       setReports(updated);
+      toast.success("Avaliação salva no prontuário!");
     } catch (err) {
       console.error("Erro ao salvar relatório no banco:", err);
+      toast.error("Erro ao salvar a avaliação.");
+    } finally {
+      setIsSaving(false);
     }
   };
 

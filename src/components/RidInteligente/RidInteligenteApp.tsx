@@ -16,9 +16,10 @@ interface RidInteligenteAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function RidInteligenteApp({ activePatientId, lockPatient = false, userId }: RidInteligenteAppProps) {
+export default function RidInteligenteApp({ activePatientId, lockPatient = false, userId, onClose }: RidInteligenteAppProps) {
   const [activeTab, setActiveTab] = useState('new');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
@@ -97,22 +98,33 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
     loadHistory();
   }, [selectedPatientId]);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleSaveEntry = async (entry: RidEntry) => {
+    if (isSaving) return;
     if (!selectedPatientId) {
       toast.error('Por favor, selecione um paciente antes de salvar!');
       return;
     }
-    const patientObj = patients.find(p => String(p.id) === String(selectedPatientId));
-    const enrichedEntry = {
-      ...entry,
-      patientName: patientObj?.nome || '',
-      patientAge: patientObj?.nascimento ? String(new Date().getFullYear() - new Date(patientObj.nascimento).getFullYear()) : ''
-    };
-    const updated = await storage.saveEntry(enrichedEntry, selectedPatientId, userId);
-    setHistory(updated);
-    setActiveTab('history');
-    setEditingEntry(undefined);
-    toast.success('Registro salvo no prontuário do paciente!');
+    setIsSaving(true);
+    try {
+      const patientObj = patients.find(p => String(p.id) === String(selectedPatientId));
+      const enrichedEntry = {
+        ...entry,
+        patientName: patientObj?.nome || '',
+        patientAge: patientObj?.nascimento ? String(new Date().getFullYear() - new Date(patientObj.nascimento).getFullYear()) : ''
+      };
+      const updated = await storage.saveEntry(enrichedEntry, selectedPatientId, userId);
+      setHistory(updated);
+      setActiveTab('history');
+      setEditingEntry(undefined);
+      toast.success('Registro salvo no prontuário do paciente!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao salvar o registro no prontuário.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteEntry = async (id: string) => {
@@ -187,6 +199,7 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
                     settings={settings}
                     patientName={pName}
                     patientAge={pAge}
+                    isSaving={isSaving}
                   />
                 );
               })()}
@@ -210,6 +223,7 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
                       settings={settings}
                       patientName={pName}
                       patientAge={pAge}
+                      isSaving={isSaving}
                     />
                   );
                 })()}

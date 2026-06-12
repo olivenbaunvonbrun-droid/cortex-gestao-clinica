@@ -28,9 +28,10 @@ interface YsqSmartAiAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function YsqSmartAiApp({ activePatientId, lockPatient = false, userId }: YsqSmartAiAppProps) {
+export default function YsqSmartAiApp({ activePatientId, lockPatient = false, userId, onClose }: YsqSmartAiAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');

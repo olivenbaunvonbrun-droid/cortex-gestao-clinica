@@ -322,14 +322,16 @@ interface ThpTrainingAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function ThpTrainingApp({ activePatientId, lockPatient = false, userId }: ThpTrainingAppProps) {
+export default function ThpTrainingApp({ activePatientId, lockPatient = false, userId, onClose }: ThpTrainingAppProps) {
   const [activeTab, setActiveTab] = useState<string>('profiler');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [thpPatient, setThpPatient] = useState<Patient | null>(null);
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load patients list and map to Patient type
   useEffect(() => {
@@ -811,18 +813,26 @@ export default function ThpTrainingApp({ activePatientId, lockPatient = false, u
   };
 
   const handleUpdatePatient = async (updated: Patient) => {
-    setThpPatient(updated);
-    setPatients(prev => prev.map(p => p.id === updated.id ? updated : p));
-    
-    // Save to Dexie prontuarios
-    await db.prontuarios.update(updated.id, { thpState: updated });
-    
-    // Cloud sync
-    if (userId) {
-      const updatedRecord = await db.prontuarios.get(updated.id);
-      if (updatedRecord) {
-        await syncService.saveToCloud(userId, 'prontuarios', updatedRecord);
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      setThpPatient(updated);
+      setPatients(prev => prev.map(p => p.id === updated.id ? updated : p));
+      
+      // Save to Dexie prontuarios
+      await db.prontuarios.update(updated.id, { thpState: updated });
+      
+      // Cloud sync
+      if (userId) {
+        const updatedRecord = await db.prontuarios.get(updated.id);
+        if (updatedRecord) {
+          await syncService.saveToCloud(userId, 'prontuarios', updatedRecord);
+        }
       }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 

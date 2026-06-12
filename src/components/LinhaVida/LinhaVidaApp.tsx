@@ -30,9 +30,10 @@ interface LinhaVidaAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function LinhaVidaApp({ activePatientId, lockPatient = false, userId }: LinhaVidaAppProps) {
+export default function LinhaVidaApp({ activePatientId, lockPatient = false, userId, onClose }: LinhaVidaAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');

@@ -486,6 +486,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'ihs-digital' && (
@@ -493,6 +494,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'ysq-smart-ai' && (
@@ -500,6 +502,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'registro-atendimento' && (
@@ -508,6 +511,7 @@ export default function App() {
                   lockPatient={false} 
                   userId={currentUser?.id}
                   openTool={handleOpenTool}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'plano-clinico-integrado' && (
@@ -515,6 +519,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'ihp-pr-digital' && (
@@ -522,6 +527,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'linha-vida' && (
@@ -529,6 +535,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'psidiagnostic-pro' && (
@@ -536,6 +543,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'dfc-assistido' && (
@@ -543,6 +551,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'thp-training' && (
@@ -550,6 +559,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'biblioteca-avaliacao' && (
@@ -557,6 +567,7 @@ export default function App() {
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
                 />
               )}
               {win.id === 'teleconsulta' && (

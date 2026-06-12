@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, DollarSign } from 'lucide-react';
+import { X, Save, DollarSign, Loader2 } from 'lucide-react';
 import { db, type Transaction, type Patient } from '../../lib/db';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, safeUUID } from '../../lib/utils';
@@ -24,6 +24,7 @@ export default function TransactionModal({ transaction, isOpen, onClose }: Trans
   }, [isOpen]);
 
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Transaction>>({
     tipo: 'receita',
     descricao: '',
@@ -58,8 +59,10 @@ export default function TransactionModal({ transaction, isOpen, onClose }: Trans
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (!formData.descricao || !formData.valor || !formData.data) return;
 
+    setIsSaving(true);
     try {
       const firebaseUid = auth.currentUser?.uid;
       if (transaction) {
@@ -89,6 +92,8 @@ export default function TransactionModal({ transaction, isOpen, onClose }: Trans
       onClose();
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -253,9 +258,19 @@ export default function TransactionModal({ transaction, isOpen, onClose }: Trans
                 </button>
                 <button
                   type="submit"
-                  className="px-10 py-4 bg-primary hover:bg-primary-hover text-bg-deep font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl shadow-primary/25 transition-all flex items-center gap-3 hover:-translate-y-0.5 active:scale-95"
+                  disabled={isSaving}
+                  className="px-10 py-4 bg-primary hover:bg-primary-hover text-bg-deep font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl shadow-primary/25 transition-all flex items-center gap-3 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  <Save size={18} /> Confirmar Lançamento
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      Confirmando...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} /> Confirmar Lançamento
+                    </>
+                  )}
                 </button>
               </div>
             </form>

@@ -39,12 +39,14 @@ interface PlanoClinicoIntegradoAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient = false, userId }: PlanoClinicoIntegradoAppProps) {
+export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient = false, userId, onClose }: PlanoClinicoIntegradoAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
   
   // Single form state
   const [formState, setFormState] = useState<Omit<PciRecord, 'id' | 'createdAt'>>({
@@ -413,6 +415,7 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
     if (!selectedPatientId) {
       toast.error('Selecione um paciente para salvar!');
       return;
@@ -423,6 +426,7 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
       return;
     }
 
+    setIsSaving(true);
     try {
       const newRecord: PciRecord = {
         ...formState,
@@ -438,6 +442,8 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
     } catch (err) {
       console.error(err);
       toast.error('Erro ao salvar no prontuário.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -649,10 +655,15 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
               
               <button
                 onClick={handleSave}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-bg-deep rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 cursor-pointer shadow-md"
+                disabled={isSaving}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-bg-deep rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shadow-md"
               >
-                <Save size={11} />
-                Salvar Plano
+                {isSaving ? (
+                  <div className="w-3 h-3 border-2 border-bg-deep/30 border-t-bg-deep rounded-full animate-spin" />
+                ) : (
+                  <Save size={11} />
+                )}
+                {isSaving ? 'Salvando...' : 'Salvar Plano'}
               </button>
             </div>
           )}

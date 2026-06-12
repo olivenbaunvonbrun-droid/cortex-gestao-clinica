@@ -28,9 +28,10 @@ interface IhsDigitalAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function IhsDigitalApp({ activePatientId, lockPatient = false, userId }: IhsDigitalAppProps) {
+export default function IhsDigitalApp({ activePatientId, lockPatient = false, userId, onClose }: IhsDigitalAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');

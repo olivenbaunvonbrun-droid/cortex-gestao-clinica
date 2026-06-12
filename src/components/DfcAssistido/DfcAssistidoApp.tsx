@@ -29,9 +29,10 @@ interface DfcAssistidoAppProps {
   activePatientId?: string | null;
   lockPatient?: boolean;
   userId?: string;
+  onClose?: () => void;
 }
 
-export default function DfcAssistidoApp({ activePatientId, lockPatient = false, userId }: DfcAssistidoAppProps) {
+export default function DfcAssistidoApp({ activePatientId, lockPatient = false, userId, onClose }: DfcAssistidoAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');

@@ -29,9 +29,10 @@ interface RidFormProps {
   settings: AppSettings;
   patientName?: string;
   patientAge?: string;
+  isSaving?: boolean;
 }
 
-export function RidForm({ onSave, onCancel, initialData, settings, patientName, patientAge }: RidFormProps) {
+export function RidForm({ onSave, onCancel, initialData, settings, patientName, patientAge, isSaving = false }: RidFormProps) {
   const [formData, setFormData] = useState<Omit<RidEntry, 'id' | 'date' | 'analysis'>>(() => {
     if (initialData) {
       return {
@@ -823,10 +824,11 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
           </button>
           <button
             onClick={handleSave}
-            disabled={isAnalyzing || !formData.situacao || !formData.pensamento}
-            className="px-6 py-2 bg-bg-sidebar border border-border-subtle text-text-main font-black rounded-xl hover:bg-white/5 transition-all text-xs uppercase tracking-widest disabled:opacity-40 disabled:hover:bg-bg-sidebar cursor-pointer"
+            disabled={isSaving || isAnalyzing || !formData.situacao || !formData.pensamento}
+            className="px-6 py-2 bg-bg-sidebar border border-border-subtle text-text-main font-black rounded-xl hover:bg-white/5 transition-all text-xs uppercase tracking-widest disabled:opacity-40 disabled:hover:bg-bg-sidebar cursor-pointer flex items-center justify-center gap-2"
           >
-            SALVAR
+            {isSaving && <Loader2 size={14} className="animate-spin" />}
+            {isSaving ? 'SALVANDO...' : 'SALVAR'}
           </button>
         </div>
       </section>

@@ -32,9 +32,10 @@ interface RegistroAtendimentoAppProps {
   lockPatient?: boolean;
   userId?: string;
   openTool?: (toolId: string, patientId?: string | null) => void;
+  onClose?: () => void;
 }
 
-export default function RegistroAtendimentoApp({ activePatientId, lockPatient = false, userId, openTool }: RegistroAtendimentoAppProps) {
+export default function RegistroAtendimentoApp({ activePatientId, lockPatient = false, userId, openTool, onClose }: RegistroAtendimentoAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
@@ -42,6 +43,7 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
   const [fields, setFields] = useState<Record<string, string>>({});
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentResult, setCurrentResult] = useState<AttendanceRecord | null>(null);
   const [aiSummary, setAiSummary] = useState<string>('');
 
@@ -172,6 +174,7 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
     if (!selectedPatientId) {
       toast.error('Por favor, selecione um paciente antes de salvar!');
       return;
@@ -190,6 +193,7 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
       return;
     }
 
+    setIsSaving(true);
     try {
       const pData: PatientData = {
         name: patientObj.nome,
@@ -218,6 +222,8 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
     } catch (err) {
       console.error(err);
       toast.error('Erro ao salvar registro de atendimento.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -308,10 +314,15 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
               
               <button
                 onClick={handleSave}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-bg-deep rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 cursor-pointer shadow-md"
+                disabled={isSaving}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-bg-deep rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer shadow-md"
               >
-                <Save size={11} />
-                Salvar Registro
+                {isSaving ? (
+                  <div className="w-3 h-3 border-2 border-bg-deep/30 border-t-bg-deep rounded-full animate-spin" />
+                ) : (
+                  <Save size={11} />
+                )}
+                {isSaving ? 'Salvando...' : 'Salvar Registro'}
               </button>
             </div>
           )}
