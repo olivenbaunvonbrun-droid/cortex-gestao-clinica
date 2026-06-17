@@ -27,7 +27,7 @@ import ExameModelosPessoaisView, { ExameModelosPessoaisState } from "./ExameMode
 import ExameMentalidadesSaudaveisView, { ExameMentalidadesSaudaveisState } from "./ExameMentalidadesSaudaveisView";
 import PdpMonitoringView from "./PdpMonitoringView";
 import PmeMonitoringView from "./PmeMonitoringView";
-import { ClinicalSuggestionsSidebar, ClinicalSuggestionsButton } from "./ClinicalSuggestionsHelper";
+import { ClinicalSuggestionsButton } from "./ClinicalSuggestionsHelper";
 import { generatePsicometrikReport } from "../../../services/geminiService";
 import { db } from "../../../lib/db";
 import { 
@@ -7488,7 +7488,6 @@ export default function AssessmentWizard({
             </div>
           </>
         )}
-        <ClinicalSuggestionsSidebar />
       </div>
     </div>
   );

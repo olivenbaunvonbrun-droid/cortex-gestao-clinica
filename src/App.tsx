@@ -26,6 +26,7 @@ import DfcAssistidoApp from './components/DfcAssistido/DfcAssistidoApp';
 import ThpTrainingApp from './components/ThpTraining/ThpTrainingApp';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import BibliotecaAvaliacaoApp from './components/BibliotecaAvaliacao/BibliotecaAvaliacaoApp';
+import { ClinicalSuggestionsSidebar } from './components/BibliotecaAvaliacao/components/ClinicalSuggestionsHelper';
 import TeleconsultationApp from './components/Teleconsultation/TeleconsultationApp';
 import { Window } from './components/ui/Window';
 import { Brain, Cloud, Users, Sparkles, ClipboardList, Layers, TrendingUp, FileSpreadsheet, Activity, BookOpen, Video, Pin } from 'lucide-react';
@@ -742,6 +743,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <ClinicalSuggestionsSidebar />
 
       {showLGPD && (
         <LGPDNotice 
