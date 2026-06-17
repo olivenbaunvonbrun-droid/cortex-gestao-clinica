@@ -147,9 +147,7 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
         name: patientObj?.nome || 'Paciente',
         age,
         psychologistName: settings.professionalName,
-        crp: settings.professionalCRP,
-        logoUrl: settings.professionalLogo,
-        signatureUrl: settings.professionalSignature
+        crp: settings.professionalCRP
       };
 
       const newRecord: AttendanceRecord = {
@@ -199,9 +197,7 @@ export default function RegistroAtendimentoApp({ activePatientId, lockPatient = 
         name: patientObj.nome,
         age: patientObj.nascimento ? String(new Date().getFullYear() - new Date(patientObj.nascimento).getFullYear()) : 'N/D',
         psychologistName: settings.professionalName,
-        crp: settings.professionalCRP,
-        logoUrl: settings.professionalLogo,
-        signatureUrl: settings.professionalSignature
+        crp: settings.professionalCRP
       };
 
       const newRecord: AttendanceRecord = {

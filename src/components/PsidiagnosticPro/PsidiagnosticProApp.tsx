@@ -45,6 +45,18 @@ interface UploadedFile {
   base64Data?: string;
 }
 
+const cleanHtmlText = (htmlStr: string): string => {
+  let cleaned = htmlStr.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  cleaned = cleaned.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  cleaned = cleaned.replace(/<[^>]*>/g, ' ');
+  cleaned = cleaned.replace(/&nbsp;/g, ' ')
+                   .replace(/&lt;/g, '<')
+                   .replace(/&gt;/g, '>')
+                   .replace(/&quot;/g, '"')
+                   .replace(/&amp;/g, '&');
+  return cleaned.replace(/\s+/g, ' ').trim();
+};
+
 export default function PsidiagnosticProApp({ activePatientId, lockPatient = false, userId, onClose }: PsidiagnosticProAppProps) {
   const [activeTab, setActiveTab] = useState<'test' | 'history'>('test');
   const [patients, setPatients] = useState<any[]>([]);
@@ -118,12 +130,17 @@ export default function PsidiagnosticProApp({ activePatientId, lockPatient = fal
       const isText = file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.html') || file.name.endsWith('.json');
       
       reader.onload = (event: any) => {
+        let textContent: string | undefined = undefined;
+        if (isText) {
+          const rawText = event.target.result as string;
+          textContent = file.name.endsWith('.html') ? cleanHtmlText(rawText) : rawText;
+        }
         const newFile: UploadedFile = {
           id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
           name: file.name,
           type: file.type || 'application/octet-stream',
           size: file.size,
-          textContent: isText ? event.target.result : undefined,
+          textContent,
           base64Data: !isText ? event.target.result : undefined
         };
         setUploadedFiles(prev => [...prev, newFile]);
@@ -216,9 +233,7 @@ export default function PsidiagnosticProApp({ activePatientId, lockPatient = fal
         name: patientObj.nome,
         age: patientObj.nascimento ? String(new Date().getFullYear() - new Date(patientObj.nascimento).getFullYear()) : 'N/D',
         psychologistName: settings.professionalName,
-        crp: settings.professionalCRP,
-        logoUrl: settings.professionalLogo,
-        signatureUrl: settings.professionalSignature
+        crp: settings.professionalCRP
       };
 
       // 1. Fetch prontuario if checked
@@ -239,10 +254,22 @@ export default function PsidiagnosticProApp({ activePatientId, lockPatient = fal
       // 3. AI Analysis
       let analysis = '';
       try {
+        const binaryFiles = uploadedFiles
+          .filter(f => f.base64Data)
+          .map(f => {
+            const parts = f.base64Data!.split(',');
+            const base64 = parts[1] || parts[0];
+            return {
+              data: base64,
+              mimeType: f.type
+            };
+          });
+
         analysis = await analyzePsidiagnosticAssessment(
           { name: pData.name, age: pData.age },
           prontuarioText,
-          filesText
+          filesText,
+          binaryFiles
         );
       } catch (err: any) {
         console.error("Erro ao gerar análise Psicodiagnóstico via IA:", err);

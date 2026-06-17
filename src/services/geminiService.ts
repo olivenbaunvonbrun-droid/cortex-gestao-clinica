@@ -438,7 +438,8 @@ Instruções importantes:
 export async function analyzePsidiagnosticAssessment(
   patient: { name: string; age: string },
   prontuarioText: string,
-  filesText: string
+  filesText: string,
+  binaryFiles: { data: string; mimeType: string }[] = []
 ) {
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -456,6 +457,8 @@ ${prontuarioText ? `--- HISTÓRICO DE PRONTUÁRIO CLÍNICO (Sessões e Evoluçõ
 
 ${filesText ? `--- DOCUMENTOS ANEXOS (Laudos, Exames e Triagens): ---\n${filesText}\n` : ''}
 
+Considere também o conteúdo de quaisquer arquivos multimídia ou PDFs anexados a esta chamada para complementar a análise diagnóstica.
+
 ESTRUTURA DO RELATÓRIO:
 1. IDENTIFICAÇÃO (Nome e idade do paciente)
 2. DESCRIÇÃO DA DEMANDA (Principais queixas, sintomas, motivos da consulta e demandas observadas nas fontes)
@@ -471,9 +474,22 @@ Instruções importantes:
 - IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados de forma automática no cabeçalho e rodapé do documento de exportação.
 `;
 
+  const contents: any[] = [
+    { text: prompt }
+  ];
+
+  binaryFiles.forEach(f => {
+    contents.push({
+      inlineData: {
+        data: f.data,
+        mimeType: f.mimeType
+      }
+    });
+  });
+
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: prompt,
+    contents: contents as any,
   });
 
   return response.text || "Erro ao gerar laudo psicodiagnóstico.";
