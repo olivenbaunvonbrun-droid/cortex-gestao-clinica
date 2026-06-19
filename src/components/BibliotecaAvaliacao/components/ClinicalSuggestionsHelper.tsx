@@ -12,15 +12,179 @@ export type SuggestionsCategoryType =
   | "necessidades_infantil"
   | "necessidades_adulto"
   | "necessidades_conjugal"
-  | "necessidades_parental";
+  | "necessidades_parental"
+  | "mchf";
 
 export interface ClinicalSuggestionItem {
   key: string;
   value: string; // The text to be inserted
   explanation: string; // Clinical detailed description/explanation
+  mchf?: {
+    estiloParental: string;
+    necessidade: string;
+    historico: string;
+    edi: string;
+    crencasCentrais: string;
+    crencasIntermediarias: string;
+    comportamento: string;
+    distorcoes: string;
+    sentimentos: string;
+    funcoesMantenedoras: string;
+    hipotesesDiagnosticas: string;
+  };
 }
 
 export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: string; items: ClinicalSuggestionItem[] }> = {
+  mchf: {
+    title: "Mapas Contextuais-Históricos-Funcionais (MCHF)",
+    items: [
+      {
+        key: "MCHF - Vínculo Seguro, Aceitação e Cuidado",
+        value: `MAPA CONTEXTUAL-HISTÓRICO-FUNCIONAL: Vínculo Seguro, Aceitação e Cuidado
+Estilo Parental: Negligente, Frio, Ausente, Abusivo, Rejeitador ou Instável.
+Necessidade: Vínculo Seguro, Estabilidade, Aceitação, Cuidado, Proteção e Empatia.
+Histórico Contextual-funcional: Pais emocionalmente indisponíveis ou agressivos; invalidação precoce de carências; punições por expressar choro ou carinho; ambiente em que a segurança era condicional à obediência ou performance; divórcio conflituoso ou mortes precoces sem suporte afetivo.
+EDI: Privação Emocional, Abandono/Instabilidade, Desconfiança/Abuso, Defectividade/Vergonha, Isolamento Social/Alienação.
+Crenças Centrais: "Eu sou indigno de amor", "Todos vão me abandonar", "As pessoas vão se aproveitar de mim", "Eu sou defeituoso", "Eu não pertenço a lugar nenhum".
+Crenças Intermediárias: "Se eu confiar em alguém, serei ferido", "Se eu demonstrar carinho, vão me rejeitar", "Se eu for eu mesmo, as pessoas se afastarão".
+Comportamento Desadaptativo/Estratégia de Enfrentamento: Esquiva de intimidade (não se abrir); hipervigilância social; submissão excessiva (agradar para não ser deixado); agressividade defensiva antes de ser rejeitado.
+Distorções Cognitivas: Leitura de Mente, Catastrofização, Filtro Mental (focar só na rejeição), Pensamento Tudo-ou-Nada.
+Sentimentos/Emoções: Solidão desoladora, pânico de abandono, vergonha profunda, raiva reprimida, ciúme obsessivo.
+Funções Mantenedoras: Reforçamento negativo por evitação da dor da rejeição (esquivar-se impede de testar que há pessoas seguras); reforço social mediado pela condescendência passiva (agradar evita conflito imediato, mas mantém a privação).
+Hipóteses Diagnósticas: Transtorno de Personalidade Borderline (TPB), Depressão Maior Recorrente, Transtorno de Personalidade Esquiva, Ansiedade Social.`,
+        explanation: "Cadeia causal para a violação da necessidade de afeto e segurança. Conecta o estilo parental ausente ou abusivo ao sofrimento e esquemas de desconexão.",
+        mchf: {
+          estiloParental: "Parentagem Fria, Rejeitadora, Negligente, Instável ou Abusiva.",
+          necessidade: "Vínculo Seguro, Estabilidade, Cuidado, Aceitação e Empatia.",
+          historico: "Pais emocionalmente inacessíveis; agressões verbal/físicas; abandono real ou ameaças de separação; invalidação de necessidades afetivas infantis primárias.",
+          edi: "Privação Emocional, Abandono/Instabilidade, Desconfiança/Abuso, Defectividade/Vergonha, Isolamento Social.",
+          crencasCentrais: "\"Eu sou indigno de amor\", \"Todos vão me deixar\", \"Vão abusar de mim\", \"Sou falho/defeituoso\".",
+          crencasIntermediarias: "\"Se eu confiar, serei ferido\", \"Se eu demonstrar vulnerabilidade, vão me humilhar\", \"Devo agradar sempre para não ser rejeitado\".",
+          comportamento: "Esquiva de relacionamentos íntimos; submissão excessiva; hipervigilância a sinais de rejeição; agressividade defensiva precoce.",
+          distorcoes: "Leitura de Mente, Catastrofização, Filtro Mental, Pensamento Tudo-ou-Nada.",
+          sentimentos: "Solidão intensa, pânico de abandono, vergonha crônica, raiva contida, ciúmes.",
+          funcoesMantenedoras: "Reforçamento negativo pela evitação da intimidade (evita a dor temporária, mas impede a correção do esquema); reforço social por complacência excessiva.",
+          hipotesesDiagnosticas: "Transtorno de Personalidade Borderline (TPB), Transtorno de Personalidade Esquiva, Depressão Maior, Transtorno de Ansiedade Social."
+        }
+      },
+      {
+        key: "MCHF - Autonomia, Competência e Identidade",
+        value: `MAPA CONTEXTUAL-HISTÓRICO-FUNCIONAL: Autonomia, Competência e Identidade
+Estilo Parental: Superprotetor, Intrusivo, Asfixiante, Controlador ou Infantilizador.
+Necessidade: Autonomia, Competência, Autoidentidade, Independência de Escolhas.
+Histórico Contextual-funcional: Cuidadores que faziam tudo pela criança; proibição de explorar o ambiente de forma independente; avisos catastróficos constantes sobre doenças, perigos ou falências; tomada de decisões pelos genitores sem escutar a criança; emaranhamento simbiótico.
+EDI: Dependência/Incompetência, Vulnerabilidade a Danos ou Doenças, Emaranhamento/Self Subdesenvolvido, Fracasso.
+Crenças Centrais: "Eu sou incapaz de decidir", "O mundo é perigoso demais para mim", "Eu não sei quem eu sou sem meus pais", "Eu sou um fracassado".
+Crenças Intermediárias: "Se eu agir sozinho, vou cometer erros graves", "Se eu me afastar das opiniões dos outros, estarei em perigo", "Devo sempre consultar alguém para ter certeza de tudo".
+Comportamento Desadaptativo/Estratégia de Enfrentamento: Recusa de responsabilidades adultas; consulta compulsiva a terceiros; evitação de novas tarefas profissionais ou acadêmicas desafiadoras; fusão de opiniões com o cônjuge ou pais.
+Distorções Cognitivas: Catastrofização, Desqualificação do Positivo, Ditadura dos Deverias, Supergeneralização.
+Sentimentos/Emoções: Ansiedade antecipatória difusa, pânico, desamparo, insegurança crônica, vazio de identidade.
+Funções Mantenedoras: Reforçamento negativo por delegação de decisões (não decidir elimina a ansiedade de errar, mas perpetua a incompetência percebida); reforço positivo por conformação simbiótica (manter-se dependente garante a aprovação dos genitores).
+Hipóteses Diagnósticas: Transtorno de Ansiedade Generalizada (TAG), Transtorno de Pânico, Transtorno de Personalidade Dependente, Fobia Social.`,
+        explanation: "Cadeia fenomenológica associada à superproteção infantil e invasão de limites de individualização. Conecta a intrusão parental à ansiedade generalizada e dependência.",
+        mchf: {
+          estiloParental: "Superprotetor, Controlador, Intrusivo, Infantilizador ou Altamente Ansioso.",
+          necessidade: "Autonomia, Competência, Senso de Identidade e Autodirecionamento.",
+          historico: "Superproteção debilitante; os pais faziam todas as escolhas pela criança; alertas catastróficos contínuos sobre o mundo exterior; proibição de tomar iniciativas.",
+          edi: "Dependência/Incompetência, Vulnerabilidade a Danos ou Doenças, Emaranhamento/Self Subdesenvolvido, Fracasso.",
+          crencasCentrais: "\"Eu sou fraco e indefeso\", \"Sou incompetente\", \"O mundo exterior é perigoso e catastrófico\".",
+          crencasIntermediarias: "\"Se eu agir sem aprovação, falharei terrivelmente\", \"Se eu tomar decisões só, causarei um desastre\", \"Devo delegar responsabilidades aos outros para estar seguro\".",
+          comportamento: "Consulta compulsiva a terceiros para qualquer decisão; procrastinação por medo de errar; evitação de cargos/responsabilidades; dependência financeira ou operacional de pais/parceiros.",
+          distorcoes: "Catastrofização, Pensamento Tudo-ou-Nada, Desqualificação do Positivo, Supergeneralização.",
+          sentimentos: "Ansiedade antecipatória constante, pânico físico, sensação de fragilidade, desamparo.",
+          funcoesMantenedoras: "Reforçamento negativo por delegação (evita o estresse imediato da decisão, mas impede a aquisição de autoconfiança); reforçamento negativo por evitação de tarefas.",
+          hipotesesDiagnosticas: "Transtorno de Ansiedade Generalizada (TAG), Transtorno de Pânico, Transtorno de Personalidade Dependente, Agorafobia."
+        }
+      },
+      {
+        key: "MCHF - Limites Realistas e Autocontrole",
+        value: `MAPA CONTEXTUAL-HISTÓRICO-FUNCIONAL: Limites Realistas e Autocontrole
+Estilo Parental: Permissivo, Indulgente, Sem Contornos, Superindulgente ou Sem Regras.
+Necessidade: Limites Realistas, Autocontrole, Autodisciplina, Respeito aos Direitos Alheios, Reciprocidade.
+Histórico Contextual-funcional: Pais que satisfaziam todos os caprichos da criança imediatamente; ausência de regras de convivência ou de tarefas domésticas; falta de consequências para comportamentos agressivos ou desrespeitosos; modelagem de impulsividade ou grandiosidade parental.
+EDI: Merecimento/Grandiosidade, Autocontrole/Autodisciplina Insuficientes.
+Crenças Centrais: "Eu sou especial e as regras não se aplicam a mim", "Eu não preciso tolerar frustrações", "Eu posso ter o que eu quiser, custe o que custar", "Eu sou incapaz de me esforçar se for chato".
+Crenças Intermediárias: "Se eu não conseguir o que quero agora, é intolerável", "Se eu tiver que me esforçar muito, então não vale a pena", "Os outros devem se adaptar às minhas necessidades".
+Comportamento Desadaptativo/Estratégia de Enfrentamento: Desistência rápida de cursos, empregos ou projetos ao menor sinal de tédio ou dificuldade; acessos de raiva infantil ao ser contrariado; comportamento de manipulação interpessoal; procrastinação extrema.
+Distorções Cognitivas: Raciocínio Emocional, Ditadura dos Deverias (aplicado aos outros), Personalização, Rotulação.
+Sentimentos/Emoções: Raiva intensa, tédio crônico, irritabilidade crônica, vazio existencial por falta de realizações a longo prazo.
+Funções Mantenedoras: Reforçamento negativo por abandono de tarefas aversivas (desistir da atividade entediante cessa o desconforto imediato, mas impede a autodisciplina); reforço social de controle (impor vontades garante benefícios imediatos temporários).
+Hipóteses Diagnósticas: Transtorno de Personalidade Narcisista, Transtorno de Conduta / Personalidade Antissocial, TDAH desregulado, Transtornos de Controle de Impulsos.`,
+        explanation: "Cadeia causal resultante de ambientes infantis permissivos ou sem regras de cooperação social. Conecta a superindulgência à baixa autodisciplina e narcisismo.",
+        mchf: {
+          estiloParental: "Permissivo, Indulgente, Sem Limites Coerentes, Superindulgente ou Sem Consequências.",
+          necessidade: "Limites Realistas, Autocontrole, Autodisciplina e Respeito à Reciprocidade.",
+          historico: "Satisfação imediata de todos os caprichos infantis; ausência de cobranças por tarefas domésticas ou cooperação familiar; modelagem de superioridade e impunidade.",
+          edi: "Merecimento/Grandiosidade, Autocontrole/Autodisciplina Insuficientes.",
+          crencasCentrais: "\"Eu sou especial/superior\", \"As regras comuns não se aplicam a mim\", \"Não sou obrigado a tolerar tédio ou desconforto\".",
+          crencasIntermediarias: "\"Se eu não obtiver o que desejo na hora, é intolerável\", \"Se for difícil ou chato, devo abandonar imediatamente\", \"Os outros devem se submeter aos meus desejos\".",
+          comportamento: "Abandono de cursos, empregos e tratamentos ao menor sinal de frustração; explosões de ira quando contrariado; manipulação relacional; procrastinação severa.",
+          distorcoes: "Raciocínio Emocional, Ditadura dos Deverias (em relação aos outros), Personalização.",
+          sentimentos: "Tédio crônico, irritabilidade intensa, raiva explosiva, insatisfação existencial.",
+          funcoesMantenedoras: "Reforçamento negativo imediato ao desistir de tarefas aversivas ou aborrecidas (cessação da frustração); reforço social pelas demandas agressivas atendidas.",
+          hipotesesDiagnosticas: "Transtorno de Personalidade Narcisista, TDAH em adultos, Transtornos de Controle dos Impulsos, Transtorno de Personalidade Borderline (traço impulsivo)."
+        }
+      },
+      {
+        key: "MCHF - Liberdade de Expressão de Necessidades e Emoções",
+        value: `MAPA CONTEXTUAL-HISTÓRICO-FUNCIONAL: Liberdade de Expressão de Emoções e Necessidades
+Estilo Parental: Dominador, Controlador, Condicional ou Focado em Aparências.
+Necessidade: Liberdade para Expressar Emoções, Desejos e Necessidades Saudáveis.
+Histórico Contextual-funcional: Pais que reagiam com agressão, rejeição ou chantagem emocional quando a criança chorava, expressava raiva ou tinha opiniões próprias; foco obsessivo nas aparências sociais e no que os outros iriam pensar; amor condicionado a ser o melhor aluno, atleta ou filho perfeito.
+EDI: Subjugação, Auto-sacrifício, Busca de Aprovação/Reconhecimento.
+Crenças Centrais: "Minhas opiniões não importam", "Se eu me expressar, serei rejeitado ou punido", "Meu valor depende do que eu faço pelos outros".
+Crenças Intermediárias: "Devo sempre agradar aos outros para ser amado", "Se eu colocar minhas necessidades em primeiro lugar, sou egoísta", "Devo esconder minhas verdadeiras opiniões para evitar conflitos".
+Comportamento Desadaptativo/Estratégia de Enfrentamento: Comportamento passivo-agressivo; anulação de desejos próprios; hipercompensação por busca de status ou aprovação cênica; centralização de tarefas alheias; incapacidade de dizer "não".
+Distorções Cognitivas: Ditadura dos Deverias, Leitura de Mente, Filtro Mental, Desqualificação do Positivo.
+Sentimentos/Emoções: Cansaço crônico (Burnout), ressentimento silencioso, culpa severa, ansiedade por avaliação alheia, depressão por autoanulação.
+Funções Mantenedoras: Reforçamento negativo por esquiva de conflitos (não se posicionar evita atritos interpessoais imediatos, mantendo o esquema ativo); reforço positivo social (receber elogios por ser "bonzinho" e prestativo).
+Hipóteses Diagnósticas: Depressão Distímica, Burnout Clínico, Transtornos Psicossomáticos, Transtorno de Ansiedade de Avaliação.`,
+        explanation: "Cadeia fenomenológica associada à invalidação sistemática da autoexpressão da criança. Conecta a subjugação parental a quadros de autoanulação, depressão e burnout.",
+        mchf: {
+          estiloParental: "Dominador, Autoritário, Controlador, com Amor Condicional ou Focado em Aparências.",
+          necessidade: "Liberdade para Expressar Emoções, Desejos e Necessidades Saudáveis.",
+          historico: "Punições ou rejeição emocional fria quando a criança discordava ou chorava; cobrança obsessiva de metas sociais ou comportamento impecável para ser valorizada.",
+          edi: "Subjugação, Auto-sacrifício, Busca de Aprovação/Reconhecimento.",
+          crencasCentrais: "\"Minhas vontades não contam\", \"Só sou aceito se eu agradar\", \"Sou egoísta se priorizar minhas necessidades\".",
+          crencasIntermediarias: "\"Se eu discordar, serei punido ou excluído\", \"Devo carregar os problemas dos outros para ter valor\", \"O conflito interpessoal deve ser evitado a qualquer custo\".",
+          comportamento: "Dificuldade grave em dizer não e estabelecer limites; acúmulo de tarefas alheias; comportamento passivo-agressivo; busca de status ou validação cênica constante.",
+          distorcoes: "Ditadura dos Deverias, Leitura de Mente, Filtro Mental, Personalização.",
+          sentimentos: "Ressentimento silencioso, cansaço profundo (Burnout), culpa patológica, ansiedade de avaliação.",
+          funcoesMantenedoras: "Reforçamento negativo por evitação de confrontos imediatos; reforço positivo social por ser considerado prestativo, reforçando a anulação do self.",
+          hipotesesDiagnosticas: "Transtorno Depressivo Maior, Distimia, Burnout Parental ou Profissional, Transtornos Psicossomáticos/Dor Crônica."
+        }
+      },
+      {
+        key: "MCHF - Espontaneidade, Lazer e Recreação",
+        value: `MAPA CONTEXTUAL-HISTÓRICO-FUNCIONAL: Espontaneidade, Lazer e Recreação
+Estilo Parental: Rígido, Perfeccionista, Exigente, Focado no Dever, Punitivo ou Preocupado.
+Necessidade: Espontaneidade, Lazer, Recreação, Brincar, Alegria Incondicional.
+Histórico Contextual-funcional: Família estruturada sob regras rígidas de religião, trabalho ou moral; o brincar era considerado perda de tempo; exigência precoce de maturidade e deveres de adulto; punições severas para falhas estéticas ou intelectuais; ambiente de pessimismo e hipervigilância constante sobre desastres.
+EDI: Negatividade/Pessimismo, Inibição Emocional, Padrões Inflexíveis/Crítica Exagerada, Punitividade.
+Crenças Centrais: "A vida é só dever e sofrimento", "Se eu relaxar, algo terrível vai acontecer", "Eu devo ser perfeito em tudo", "Qualquer erro deve ser punido severamente".
+Crenças Intermediárias: "Se eu não fizer tudo perfeitamente, sou um fracasso total", "Não posso me divertir enquanto houver obrigações pendentes", "Expressar emoções espontâneas é sinal de fraqueza".
+Comportamento Desadaptativo/Estratégia de Enfrentamento: Trabalho compulsivo (workaholism); autocobrança e crítica severa a si e aos outros; restrição de sorrisos, abraços ou choro; recusa de participar de eventos sociais de lazer.
+Distorções Cognitivas: Catastrofização, Ditadura dos Deverias, Pensamento Tudo-ou-Nada, Filtro Mental.
+Sentimentos/Emoções: Estresse crônico, culpa por relaxar, melancolia, insatisfação permanente, raiva reprimida.
+Funções Mantenedoras: Reforçamento negativo por evitação da culpa (trabalhar sem parar evita a culpa de estar ocioso, mas causa esgotamento); reforço positivo por metas perfeccionistas atingidas (status profissional temporário).
+Hipóteses Diagnósticas: Transtorno Obsessivo-Compulsivo (TOC), Transtorno de Personalidade Obsessivo-Compulsiva (TPOC), Transtorno Depressivo Persistente, TAG.`,
+        explanation: "Cadeia causal decorrente de ambientes familiares hiperexigentes e moralmente severos. Conecta o perfeccionismo e a inibição afetiva a quadros obsessivos, ansiosos e melancólicos.",
+        mchf: {
+          estiloParental: "Rígido, Exigente, Perfeccionista, Punitivo, Preocupado ou Focado no Dever.",
+          necessidade: "Espontaneidade, Brincadeira, Lazer, Recreação e Expressão Emocional Leve.",
+          historico: "Criação sob regras estritas; lazer desencorajado ou punido como 'preguiça'; hipervigilância sobre possíveis erros morais ou falhas intelectuais.",
+          edi: "Negatividade/Pessimismo, Inibição Emocional, Padrões Inflexíveis, Punitividade.",
+          crencasCentrais: "\"Não posso falhar\", \"A vida é um ambiente perigoso de obrigações\", \"Se eu relaxar, algo terrível acontecerá\".",
+          crencasIntermediarias: "\"Devo fazer tudo perfeitamente para não ser culpado\", \"O dever sempre antecede o prazer; divertir-se é perda de tempo\", \"Demonstrar sentimentos quentes é vulnerabilidade perigosa\".",
+          comportamento: "Workaholism crônico; críticas implacáveis a si e aos outros; evitação ativa de momentos recreativos; inibição na expressão física de afeto.",
+          distorcoes: "Ditadura dos Deverias, Catastrofização, Pensamento Tudo-ou-Nada, Filtro Mental.",
+          sentimentos: "Estresse e tensão crônicos, culpa intensa por descansar, insatisfação e melancolia.",
+          funcoesMantenedoras: "Reforçamento negativo por evitação de culpa (manter-se ocupado impede o surgimento da culpa de ociosidade, mas perpetua a exaustão); reforço por aprovação de produtividade.",
+          hipotesesDiagnosticas: "Transtorno Obsessivo-Compulsivo (TOC), Transtorno de Personalidade Obsessivo-Compulsiva (TPOC), Transtorno Depressivo Persistente, Transtorno de Ansiedade Generalizada (TAG)."
+        }
+      }
+    ]
+  },
   esquemas: {
     title: "Esquemas Iniciais Disfuncionais (EIDs / EDIs)",
     items: [
@@ -178,6 +342,16 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
         key: "Regra do distanciamento: Se me criticarem, é o fim",
         value: "Atitude/Regra: 'A crítica profissional é um veredito de destruição existencial. Se alguém discordar de mim, devo romper o contato imediatamente.'",
         explanation: "Regra que nutre a fobia ao julgamento profissional e inviabiliza feedbacks sadios em ambientes corporativos de alta pressão."
+      },
+      {
+        key: "Suposição do desamparo: Se eu pedir ajuda, sou fraco",
+        value: "Suposição: 'Se eu precisar pedir ajuda a alguém para resolver um problema, é porque sou fraco e incapaz.'",
+        explanation: "Crença intermediária que impede a busca por cooperação mútua sadia no ambiente de trabalho ou pessoal."
+      },
+      {
+        key: "Regra da punitividade: Devo punir meus erros",
+        value: "Atitude/Regra: 'Se eu cometer um erro, não mereço descanso nem perdão; devo me cobrar e me punir rigorosamente.'",
+        explanation: "Regra extrema que gera exaustão mental crônica e alimenta a autocrítica punitiva nociva."
       }
     ]
   },
@@ -233,6 +407,16 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
         key: "Rotulação",
         value: "Distorção: Rotulação (Fixar rótulos absolutos arbitrários no self ou nas pessoas ao redor)",
         explanation: "Reduzir a complexidade humana a chavões limitantes (ex: 'Cometi uma asneira técnica ontem, portanto eu sou um retardado profissional inútil')."
+      },
+      {
+        key: "Minimização / Maximização",
+        value: "Distorção: Minimização / Maximização (Exagerar a gravidade de falhas ou minimizar a importância de acertos)",
+        explanation: "Processamento distorcido onde conquistas parecem irrelevantes e deslizes comuns assumem proporções catastróficas."
+      },
+      {
+        key: "Adivinhação / Previsão do Futuro",
+        value: "Distorção: Adivinhação (Prever que eventos futuros terão desfechos negativos de forma dogmática)",
+        explanation: "A pessoa adota uma postura fatalista, agindo como se um fracasso ou tragédia futura já estivesse predefinido."
       }
     ]
   },
@@ -255,7 +439,7 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
         explanation: "O indivíduo tenta compensar inferioridade impondo dominância exagerada, perfeccionismo doentio, arrogância cênica e defensividade irada."
       },
       {
-        key: "Hipercompensação (Busca obsessiva por poder/status)",
+        key: "Hipercompensação (Busca obsessiva por power/status)",
         value: "Comportamento de Hipercompensação: Perseguição incansável por riqueza, títulos ou cargos de comando para silenciar o sentimento de demência latente.",
         explanation: "Utilização do status profissional como armadura. Tende a tratar pares com altivez e a se desregular ao menor indício de feedback corretivo."
       },
@@ -298,6 +482,11 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
         key: "Frustração / Desalento Profissional",
         value: "Sentimento de Frustração (Esgotamento diante de esforços seguidos sabotados por distorções e evitamentos)",
         explanation: "Sensação subjetiva de saturação e estagnação laboral, gerada pela incapacidade de se posicionar de cabeça erguida e propor novas ideias aos líderes."
+      },
+      {
+        key: "Vazio existencial",
+        value: "Sentimento: Vazio Existencial (Falta crônica de sentido interno, apatia e desconexão de desejos genuínos)",
+        explanation: "Estado de anestesia e falta de propósito, frequentemente associado a esquemas de subjugação e emaranhamento subjacentes."
       }
     ]
   },
@@ -316,7 +505,7 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
       },
       {
         key: "Negligente / Desconectado",
-        value: "Estilo Parental Negligente / Ausente (Falta de suporte físico, emocional e afetivo básico, com frieza ou exaustão parental)",
+        value: "Estilo Parental Negligente / Ausente (Falta de suporte físico, emocional and afetivo básico, com frieza ou exaustão parental)",
         explanation: "A infância transcorre desamparada de amparo afetivo genuíno. A criança é impelida a se virar sozinha precocemente, gerando esquemas de abandono."
       },
       {
@@ -355,7 +544,7 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
         explanation: "Necessita de pais sensíveis que ajudem a nomear e modular biologicamente os sentimentos infantis, em vez de exigir silêncio forçado de submissão."
       },
       {
-        key: "Esponatenidade e Jogo/Lazer",
+        key: "Espontaneidade e Jogo/Lazer",
         value: "Necessidade Infantil: Espontaneidade e Jogo (Liberdade de brincar sem cobranças prematuras de rendimento ou maturidade)",
         explanation: "Necessidade vital de se divertir livremente, rir de bobagens e viver o lúdico sem obrigações funcionais severas antecipadas de adultos."
       }
@@ -417,7 +606,7 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
       {
         key: "Divisão de Carga e Coparentalidade Ativa",
         value: "Necessidade Parental: Coparentalidade Alinhada (Parceria equitativa no gerenciamento emocional e físico da rotina dos filhos)",
-        explanation: "Exige comunicação unificada e divisão salutar da loucura diária doméstica, evitando que um dos pais desmorone em Burnout parental."
+        explanation: "Exige comunicação unificada e divisão salutar da rotina doméstica, evitando que um dos pais desmorone em Burnout parental."
       },
       {
         key: "Auto-compaixão contra Culpas Fantasiosas",
@@ -562,7 +751,6 @@ export function ClinicalSuggestionsButton({
                       {item.key}
                     </span>
                     <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                      {/* Action buttons */}
                       <button
                         type="button"
                         onClick={() => handleSelect(item.value, "replace")}
@@ -582,7 +770,6 @@ export function ClinicalSuggestionsButton({
                     </div>
                   </div>
 
-                  {/* Expanded explanation/description details */}
                   <p className="text-[10px] text-gray-450 leading-relaxed font-normal p-1 bg-[#101116] border border-gray-900 rounded select-none">
                     {item.explanation}
                   </p>
@@ -596,20 +783,77 @@ export function ClinicalSuggestionsButton({
             <span>Lincoln Poubel</span>
             <span className="text-amber-500 font-bold">TERAPIA DE ESQUEMAS</span>
           </div>
-
         </div>
       )}
     </div>
   );
 }
 
-export function ClinicalSuggestionsSidebar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<SuggestionsCategoryType>("esquemas");
+function MchfFlowchart({ item, onCopy, copied }: { item: ClinicalSuggestionItem; onCopy: () => void; copied: boolean }) {
+  const m = item.mchf;
+  if (!m) return null;
+
+  const steps = [
+    { label: "1. Estilo Parental Formativo", value: m.estiloParental, color: "border-red-500/20 text-red-400 bg-red-500/5", desc: "Histórico de conduta e estilo de criação dos cuidadores que moldaram a infância." },
+    { label: "2. Necessidade Psic. Negligenciada / Suprimida", value: m.necessidade, color: "border-blue-500/20 text-blue-400 bg-blue-500/5", desc: "A carência de desenvolvimento central que originou a vulnerabilidade do paciente." },
+    { label: "3. Histórico Contextual-Funcional", value: m.historico, color: "border-gray-800 text-gray-300 bg-gray-950/40", desc: "A dinâmica factual de reforçamento e punições experimentados na infância." },
+    { label: "4. Esquemas Iniciais Disfuncionais (EDI)", value: m.edi, color: "border-purple-500/20 text-purple-400 bg-purple-500/5", desc: "Lentes de processamento cognitivo rígidas e disfuncionais ativadas pelo contexto." },
+    { label: "5. Crenças Centrais (Core Beliefs)", value: m.crencasCentrais, color: "border-amber-500/20 text-amber-400 bg-amber-500/5", desc: "Ideias nucleares e inabaláveis sobre si mesmo, sobre as pessoas e sobre o mundo." },
+    { label: "6. Crenças Intermediárias (Regras e Pressupostos)", value: m.crencasIntermediarias, color: "border-yellow-500/20 text-yellow-450 bg-yellow-500/5", desc: "Normas e premissas extremas criadas para suportar ou blindar as crenças centrais." },
+    { label: "7. Comportamento Desadaptativo / Enfrentamento", value: m.comportamento, color: "border-rose-500/20 text-rose-450 bg-rose-500/5", desc: "Estratégias de resignação, esquiva ou hipercompensação adotadas." },
+    { label: "8. Distorções Cognitivas Frequentes", value: m.distorcoes, color: "border-orange-500/20 text-orange-400 bg-orange-500/5", desc: "Erros sistemáticos de processamento de informação ativados na rotina do paciente." },
+    { label: "9. Sentimentos e Estados Emocionais", value: m.sentimentos, color: "border-pink-500/20 text-pink-400 bg-pink-500/5", desc: "A ativação neurofisiológica e a dor interna de sofrimento resultante." },
+    { label: "10. Funções Mantenedoras do Padrão", value: m.funcoesMantenedoras, color: "border-teal-500/20 text-teal-400 bg-teal-500/5", desc: "Processos que impedem a flexibilização cognitiva (ex: reforçamento negativo)." },
+    { label: "11. Hipóteses Diagnósticas (DSM-5)", value: m.hipotesesDiagnosticas, color: "border-indigo-500/20 text-indigo-400 bg-indigo-500/5", desc: "Possíveis diagnósticos clínicos correspondentes e correlacionados aos padrões." },
+  ];
+
+  return (
+    <div className="space-y-4 font-sans text-left" id={`mchf-flowchart-${item.key.replace(/\s+/g, '-')}`}>
+      <div className="flex justify-between items-center border-b border-gray-900 pb-2">
+        <h4 className="text-xs font-black text-amber-400 uppercase tracking-widest">{item.key}</h4>
+        <button
+          onClick={onCopy}
+          className="p-1.5 px-2.5 text-[10px] font-mono font-bold hover:bg-amber-500 hover:text-gray-950 text-amber-400 rounded-md border border-amber-500/30 bg-transparent cursor-pointer transition-all flex items-center gap-1 shrink-0"
+        >
+          {copied ? <Check size={11} /> : <Copy size={11} />}
+          {copied ? "Cadeia Copiada!" : "Copiar Cadeia"}
+        </button>
+      </div>
+
+      <div className="bg-amber-500/5 border border-amber-500/10 p-3 rounded-lg text-[10px] text-gray-400 leading-relaxed">
+        <strong className="text-amber-300 block mb-1">Legenda Explicativa do MCHF:</strong>
+        Este mapa contextualiza a cadeia causal fenomenológica, partindo das origens parentais e necessidades psicológicas violadas até a manutenção funcional dos sintomas e hipóteses de diagnósticos clínicos. Clique em <strong>Copiar Cadeia</strong> para extrair a transcrição completa formatada.
+      </div>
+
+      <div className="relative pl-4 border-l-2 border-dashed border-gray-800 space-y-4 mt-2">
+        {steps.map((step, idx) => (
+          <div key={idx} className="relative group/step">
+            {/* Dot marker */}
+            <span className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-gray-800 border-2 border-[#0c0d12] group-hover/step:bg-amber-500 transition-colors" />
+            
+            <div className={`p-3 rounded-lg border ${step.color} space-y-1 transition-all hover:border-opacity-100`}>
+              <span className="text-[8px] font-mono font-black uppercase tracking-wider block opacity-60">
+                {step.label}
+              </span>
+              <p className="text-[11px] font-bold leading-relaxed text-gray-150 select-text">{step.value}</p>
+              <span className="text-[9px] text-gray-550 block italic leading-normal font-sans border-t border-white/[0.02] pt-1">
+                {step.desc}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function ClinicalSuggestionsApp({ onClose }: { onClose?: () => void }) {
+  const [selectedCategory, setSelectedCategory] = useState<SuggestionsCategoryType>("mchf");
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const categoriesList: { id: SuggestionsCategoryType; name: string }[] = [
+    { id: "mchf", name: "Mapa Contextual-Histórico-Funcional (MCHF)" },
     { id: "esquemas", name: "EDIs (Esquemas)" },
     { id: "crencas_centrais", name: "Crenças Centrais" },
     { id: "crencas_intermediarias", name: "Crenças Intermediárias" },
@@ -629,7 +873,7 @@ export function ClinicalSuggestionsSidebar() {
     setTimeout(() => setCopiedKey(null), 1500);
   };
 
-  const currentCategoryData = CLINICAL_SUGGESTIONS_DB[selectedCategory];
+  const currentCategoryData = CLINICAL_SUGGESTIONS_DB[selectedCategory] || { title: "", items: [] };
 
   const filteredItems = currentCategoryData.items.filter(
     item =>
@@ -639,97 +883,78 @@ export function ClinicalSuggestionsSidebar() {
   );
 
   return (
-    <div className="relative font-sans" id="clinical-sidebar-helper-root">
-      {/* Floating Action Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-[80px] right-6 z-[9999] flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-gray-950 font-sans text-xs font-black shadow-2xl p-3 px-4 rounded-full transition-transform hover:scale-105 active:scale-95 border-0 cursor-pointer uppercase tracking-wider"
-        title="Dicionário e Sugestões Clínicas de Preenchimento"
-        id="clinical-floating-trigger-btn"
-      >
-        <Sparkles size={14} className="animate-spin text-gray-950" style={{ animationDuration: "10s" }} />
-        <span>Sugestões Clínicas</span>
-      </button>
+    <div className="h-full min-h-0 w-full flex flex-col bg-[#0c0d12] text-gray-250 p-5 space-y-4 font-sans select-none overflow-hidden" id="clinical-suggestions-app-root">
+      {/* Header Info */}
+      <div className="border-b border-gray-900 pb-3" id="clinical-app-header">
+        <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest block">Lincoln Poubel</span>
+        <h3 className="text-base font-black text-white mt-1 flex items-center gap-1.5 font-sans">
+          <Sparkles size={16} className="text-amber-400 animate-pulse" />
+          PARÂMETROS CLÍNICOS
+        </h3>
+        <p className="text-[11px] text-gray-500 font-sans mt-0.5">
+          Consulte e copie conceitos técnicos e mapas funcionais diretamente para suas ferramentas clínicas.
+        </p>
+      </div>
 
-      {/* Sidebar Panel overlay sliding from right */}
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/45 backdrop-blur-xs z-[9998] animate-fadeIn"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Sidebar Drawer container */}
-          <div
-            className="fixed right-0 top-0 bottom-0 w-full sm:w-[450px] bg-[#0c0d12]/98 border-l border-gray-800 shadow-2xl z-[9999] p-5 flex flex-col space-y-4 animate-slideInRight"
-            id="clinical-floating-drawer"
+      {/* Controls Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" id="clinical-app-controls">
+        <div className="space-y-1">
+          <label className="text-[9px] font-mono font-black text-gray-450 uppercase tracking-wider block">Contexto Clínico:</label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value as SuggestionsCategoryType);
+              setSearchTerm("");
+            }}
+            className="w-full bg-[#14151b] border border-gray-800 text-gray-250 text-xs rounded-lg p-2 focus:outline-none focus:border-amber-500"
           >
-            {/* Drawer Header */}
-            <div className="flex justify-between items-start border-b border-gray-900 pb-3" id="clinical-drawer-header">
-              <div>
-                <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest block">Lincoln Poubel</span>
-                <h3 className="text-base font-black text-gray-150 mt-1 flex items-center gap-1.5 font-sans">
-                  <Sparkles size={16} className="text-amber-400" />
-                  BANCO DE SUGESTÕES CLÍNICAS
-                </h3>
-                <p className="text-[11px] text-gray-500 font-sans mt-0.5">
-                  Copie conceitos técnicos fundamentais e explicados diretamente para suas ferramentas.
-                </p>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 hover:bg-gray-900 rounded-lg text-gray-400 hover:text-white transition-colors bg-transparent border-0 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            {categoriesList.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-            {/* Selector list of Categories */}
-            <div className="space-y-1.5" id="clinical-drawer-selector-box">
-              <label className="text-[10px] font-mono font-black text-gray-450 uppercase tracking-wider block">Selecione o Contexto Clínico:</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value as SuggestionsCategoryType);
-                  setSearchTerm("");
-                }}
-                className="w-full bg-[#14151b] border border-gray-800 text-gray-200 text-xs rounded-lg p-2 focus:outline-none focus:border-amber-500"
-              >
-                {categoriesList.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="space-y-1">
+          <label className="text-[9px] font-mono font-black text-gray-450 uppercase tracking-wider block">Pesquisa Rápida:</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-gray-500" size={14} />
+            <input
+              type="text"
+              placeholder="Pesquisar por palavra chave..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#14151b] border border-gray-800 rounded-lg pl-9 pr-3 py-2 text-xs text-gray-250 focus:outline-none focus:border-amber-500 placeholder-gray-600 animate-fadeIn"
+            />
+          </div>
+        </div>
+      </div>
 
-            {/* Keyword search input */}
-            <div className="relative" id="clinical-drawer-search-box">
-              <Search className="absolute left-3 top-2.5 text-gray-500" size={14} />
-              <input
-                type="text"
-                placeholder="Pesquisar por palavra chave..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#14151b] border border-gray-800 rounded-lg pl-9 pr-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500 placeholder-gray-600"
-              />
-            </div>
+      {/* Results List */}
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin" id="clinical-app-results">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[10px] font-mono text-gray-550 uppercase">
+            {filteredItems.length} registros encontrados
+          </span>
+          <span className="text-[9px] text-gray-600 italic">Clique em Copiar para utilizar</span>
+        </div>
 
-            {/* List results scrollpane */}
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1" id="clinical-drawer-results">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] font-mono text-gray-500 uppercase">
-                  {filteredItems.length} termos clínicos encontrados
-                </span>
-                <span className="text-[9px] text-gray-600 italic">Clique em Copiar para utilizar</span>
-              </div>
-
-              {filteredItems.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="bg-[#111218] border border-gray-900 hover:border-amber-500/20 rounded-xl p-3.5 space-y-2 transition-all group relative"
-                >
+        {filteredItems.map((item, idx) => {
+          const isMchf = selectedCategory === "mchf" && item.mchf;
+          return (
+            <div
+              key={idx}
+              className="bg-[#111218] border border-gray-900 hover:border-amber-500/20 rounded-xl p-4 space-y-3 transition-all group relative"
+            >
+              {isMchf ? (
+                <MchfFlowchart 
+                  item={item} 
+                  onCopy={() => handleCopy(item.value, item.key)} 
+                  copied={copiedKey === item.key} 
+                />
+              ) : (
+                <>
                   <div className="flex justify-between items-start gap-3">
                     <h5 className="text-[12px] text-gray-150 font-bold group-hover:text-amber-400 transition-colors font-sans leading-snug">
                       {item.key}
@@ -737,12 +962,11 @@ export function ClinicalSuggestionsSidebar() {
                     <button
                       onClick={() => handleCopy(item.value, item.key)}
                       className="p-1 px-2 text-[10px] font-mono font-bold hover:bg-amber-500 hover:text-gray-950 text-amber-400 rounded-md border border-amber-500/30 bg-transparent cursor-pointer transition-all flex items-center gap-1 shrink-0"
-                      title="Copiar texto de preenchimento sugerido"
                     >
                       {copiedKey === item.key ? (
                         <>
                           <Check size={11} />
-                          Copie!
+                          Copiado!
                         </>
                       ) : (
                         <>
@@ -757,18 +981,18 @@ export function ClinicalSuggestionsSidebar() {
                     <span className="text-amber-500 font-bold font-mono text-[9px] uppercase tracking-wider block mb-0.5">Explicação Clínica:</span>
                     {item.explanation}
                   </p>
-                </div>
-              ))}
+                </>
+              )}
             </div>
+          );
+        })}
+      </div>
 
-            {/* Bottom info signature banner */}
-            <div className="bg-amber-500/5 border border-amber-500/10 p-3 rounded-xl text-center space-y-1 block" id="clinical-drawer-footer">
-              <span className="text-[11px] text-amber-300 font-bold block">Terapia de Esquemas Integrada</span>
-              <span className="text-[9px] text-gray-550 block font-mono">Consulte explicações e insira em qualquer formulário de laudos.</span>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Footer Info */}
+      <div className="bg-amber-500/5 border border-amber-500/10 p-3 rounded-xl text-center space-y-1 block shrink-0" id="clinical-app-footer">
+        <span className="text-[11px] text-amber-300 font-bold block">Terapia de Esquemas Integrada</span>
+        <span className="text-[9px] text-gray-550 block font-mono">Consulte explicações e insira em qualquer formulário de laudos.</span>
+      </div>
     </div>
   );
 }

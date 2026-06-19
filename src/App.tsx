@@ -26,7 +26,7 @@ import DfcAssistidoApp from './components/DfcAssistido/DfcAssistidoApp';
 import ThpTrainingApp from './components/ThpTraining/ThpTrainingApp';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import BibliotecaAvaliacaoApp from './components/BibliotecaAvaliacao/BibliotecaAvaliacaoApp';
-import { ClinicalSuggestionsSidebar } from './components/BibliotecaAvaliacao/components/ClinicalSuggestionsHelper';
+import { ClinicalSuggestionsApp } from './components/BibliotecaAvaliacao/components/ClinicalSuggestionsHelper';
 import TeleconsultationApp from './components/Teleconsultation/TeleconsultationApp';
 import { Window } from './components/ui/Window';
 import { Brain, Cloud, Users, Sparkles, ClipboardList, Layers, TrendingUp, FileSpreadsheet, Activity, BookOpen, Video, Pin } from 'lucide-react';
@@ -104,6 +104,7 @@ export default function App() {
     'thp-training': { title: 'Treinamento THP', shortTitle: 'THP', icon: Activity },
     'biblioteca-avaliacao': { title: 'Biblioteca de Avaliação', shortTitle: 'Testes', icon: BookOpen },
     'teleconsulta': { title: 'Teleconsulta Virtual', shortTitle: 'Vídeo', icon: Video },
+    'parametros-clinicos': { title: 'Parâmetros Clínicos', shortTitle: 'Parâmetros', icon: Sparkles },
   };
 
   // Live clock timer
@@ -129,6 +130,7 @@ export default function App() {
       'thp-training': 'Treinamento THP',
       'biblioteca-avaliacao': 'Biblioteca de Avaliação',
       'teleconsulta': 'Teleconsulta Virtual',
+      'parametros-clinicos': 'Parâmetros Clínicos',
     };
 
     const nextZ = maxZIndex + 1;
@@ -152,8 +154,8 @@ export default function App() {
         snapState: null,
         zIndex: nextZ,
         patientId: patientId,
-        width: toolId === 'teleconsulta' ? 1100 : 850,
-        height: 650,
+        width: toolId === 'parametros-clinicos' ? 520 : (toolId === 'teleconsulta' ? 1100 : 850),
+        height: toolId === 'parametros-clinicos' ? 620 : 650,
         x: 150 + (prev.length * 30) % 200,
         y: 120 + (prev.length * 30) % 200
       }];
@@ -578,6 +580,11 @@ export default function App() {
                   onClose={() => handleCloseTool(win.id)}
                 />
               )}
+              {win.id === 'parametros-clinicos' && (
+                <ClinicalSuggestionsApp 
+                  onClose={() => handleCloseTool(win.id)}
+                />
+              )}
             </>
           )}
         </Window>
@@ -744,7 +751,16 @@ export default function App() {
         </div>
       )}
 
-      <ClinicalSuggestionsSidebar />
+      {/* Floating Button for Clinical Parameters */}
+      <button
+        onClick={() => handleOpenTool('parametros-clinicos')}
+        className="fixed bottom-[80px] right-6 z-[9999] flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-gray-950 font-sans text-xs font-black shadow-2xl p-3 px-4 rounded-full transition-transform hover:scale-105 active:scale-95 border-0 cursor-pointer uppercase tracking-wider no-print"
+        title="Dicionário e Parâmetros Clínicos de Preenchimento"
+        id="clinical-floating-trigger-btn"
+      >
+        <Sparkles size={14} className="animate-spin text-gray-950" style={{ animationDuration: "10s" }} />
+        <span>Parâmetros Clínicos</span>
+      </button>
 
       {showLGPD && (
         <LGPDNotice 
