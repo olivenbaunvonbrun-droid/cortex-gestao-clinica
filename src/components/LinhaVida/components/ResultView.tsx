@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Download, User, TrendingUp, Calendar, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Download, User, TrendingUp, Calendar, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Assessment } from '../types';
 import {
@@ -14,14 +14,37 @@ import {
   ReferenceLine
 } from 'recharts';
 import { cn } from '../../../lib/utils';
+import { analyzeLinhaVidaAssessment } from '../../../services/geminiService';
+import { toast } from 'react-hot-toast';
 
 interface ResultViewProps {
   assessment: Assessment;
   onBack: () => void;
   onExport: () => void;
+  onUpdateAnalysis?: (newAnalysis: string) => Promise<void> | void;
 }
 
-export function ResultView({ assessment, onBack, onExport }: ResultViewProps) {
+export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: ResultViewProps) {
+  const [isGenerating, setIsGenerating] = React.useState(false);
+
+  const handleRegenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const generated = await analyzeLinhaVidaAssessment(
+        { name: assessment.patient.name, age: assessment.patient.age },
+        assessment.events
+      );
+      if (onUpdateAnalysis) {
+        await onUpdateAnalysis(generated);
+      }
+      toast.success('Relatório gerado com sucesso!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Falha ao gerar relatório de IA. Verifique as configurações de chave de API.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   // Sort events chronologically by age
   const sortedEvents = [...assessment.events].sort((a, b) => a.age - b.age);
 
@@ -215,7 +238,7 @@ export function ResultView({ assessment, onBack, onExport }: ResultViewProps) {
           </div>
 
           {/* AI Clinical Report */}
-          {assessment.aiAnalysis && (
+          {(assessment.aiAnalysis || onUpdateAnalysis) && (
             <div className="bg-bg-card rounded-[2.5rem] p-8 sm:p-12 border border-border-subtle shadow-xl text-text-main font-serif leading-relaxed text-sm select-text">
               <div className="text-center mb-10 border-b border-border-subtle pb-6 flex flex-col items-center">
                 <h2 className="text-sm font-black uppercase tracking-[0.2em] text-text-main mb-2 font-display">Linha da Vida</h2>
@@ -223,8 +246,39 @@ export function ResultView({ assessment, onBack, onExport }: ResultViewProps) {
               </div>
 
               <div className="space-y-6 max-w-none text-justify prose prose-invert prose-headings:font-display prose-headings:font-bold prose-h1:text-sm prose-h1:uppercase prose-h1:tracking-[0.15em] prose-h1:text-[#10b981] prose-h1:border-l-2 prose-h1:border-[#10b981] prose-h1:pl-3 prose-p:text-text-main/90 prose-p:text-[13px] prose-p:leading-relaxed prose-strong:text-[#10b981]/95 prose-li:text-[13px] prose-ul:list-disc prose-ul:pl-5">
-                <ReactMarkdown>{assessment.aiAnalysis}</ReactMarkdown>
+                {assessment.aiAnalysis ? (
+                  <ReactMarkdown>{assessment.aiAnalysis}</ReactMarkdown>
+                ) : (
+                  <p className="text-xs text-text-dim italic">Sem análise de inteligência artificial cadastrada.</p>
+                )}
               </div>
+              
+              {(!assessment.aiAnalysis || 
+                assessment.aiAnalysis.includes('Não foi possível gerar a análise') || 
+                assessment.aiAnalysis.trim() === '') && (
+                <div className="mt-8 p-6 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col items-center justify-center gap-4 text-center font-sans no-print">
+                  <p className="text-xs text-text-dim max-w-md">
+                    O relatório de inteligência artificial não pôde ser concluído no momento do salvamento do teste. Você pode tentar gerar a análise técnica novamente agora.
+                  </p>
+                  <button
+                    onClick={handleRegenerate}
+                    disabled={isGenerating}
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-bg-deep px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        Gerando Análise...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={12} />
+                        Gerar Análise com IA
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
               
               <div className="mt-16 pt-8 border-t border-border-subtle font-sans">
                  <div className="flex flex-col items-center">

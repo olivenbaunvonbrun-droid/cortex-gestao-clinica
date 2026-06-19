@@ -660,6 +660,13 @@ export default function LinhaVidaApp({ activePatientId, lockPatient = false, use
                   assessment={currentResult} 
                   onBack={() => setCurrentResult(null)} 
                   onExport={() => handleExport(currentResult)}
+                  onUpdateAnalysis={async (newAnalysis) => {
+                    if (!selectedPatientId) return;
+                    const updatedRecord = { ...currentResult, aiAnalysis: newAnalysis };
+                    const updated = await dbWrapper.saveEntry(updatedRecord, selectedPatientId, userId);
+                    setAssessments(updated);
+                    setCurrentResult(updatedRecord);
+                  }}
                 />
               </div>
             )}

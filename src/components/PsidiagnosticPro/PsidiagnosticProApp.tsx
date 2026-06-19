@@ -283,7 +283,9 @@ export default function PsidiagnosticProApp({ activePatientId, lockPatient = fal
         hasProntuarioData: includeProntuario && prontuarioText.length > 0,
         uploadedFilesCount: uploadedFiles.length,
         aiAnalysis: analysis,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        savedProntuarioText: prontuarioText || undefined,
+        savedFilesText: filesText || undefined
       };
 
       const updated = await dbWrapper.saveEntry(newRecord, selectedPatientId, userId);
@@ -576,6 +578,13 @@ export default function PsidiagnosticProApp({ activePatientId, lockPatient = fal
                   assessment={currentResult} 
                   onBack={() => setCurrentResult(null)} 
                   onExport={() => handleExport(currentResult)}
+                  onUpdateAnalysis={async (newAnalysis) => {
+                    if (!selectedPatientId) return;
+                    const updatedRecord = { ...currentResult, aiAnalysis: newAnalysis };
+                    const updated = await dbWrapper.saveEntry(updatedRecord, selectedPatientId, userId);
+                    setAssessments(updated);
+                    setCurrentResult(updatedRecord);
+                  }}
                 />
               </div>
             )}

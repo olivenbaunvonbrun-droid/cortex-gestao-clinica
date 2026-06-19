@@ -685,6 +685,13 @@ Situação ${idx + 1}: ${s.situation}
                   assessment={currentResult} 
                   onBack={() => setCurrentResult(null)} 
                   onExport={() => handleExport(currentResult)}
+                  onUpdateAnalysis={async (newAnalysis) => {
+                    if (!selectedPatientId) return;
+                    const updatedRecord = { ...currentResult, aiAnalysis: newAnalysis };
+                    const updated = await dbWrapper.saveEntry(updatedRecord, selectedPatientId, userId);
+                    setAssessments(updated);
+                    setCurrentResult(updatedRecord);
+                  }}
                 />
               </div>
             )}

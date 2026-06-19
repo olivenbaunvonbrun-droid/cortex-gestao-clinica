@@ -1,18 +1,41 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Download, FileText, Calendar, User, Zap, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Calendar, User, Zap, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Assessment, Frequency, SCHEMA_DETAILS, YSQ_QUESTIONS } from '../types';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { cn } from '../../../lib/utils';
+import { analyzeYsqAssessment } from '../../../services/geminiService';
+import { toast } from 'react-hot-toast';
 
 interface ResultViewProps {
   assessment: Assessment;
   onBack: () => void;
   onExport: () => void;
+  onUpdateAnalysis?: (newAnalysis: string) => Promise<void> | void;
 }
 
-export function ResultView({ assessment, onBack, onExport }: ResultViewProps) {
+export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: ResultViewProps) {
+  const [isGenerating, setIsGenerating] = React.useState(false);
+
+  const handleRegenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const generated = await analyzeYsqAssessment(
+        { name: assessment.patient.name, age: assessment.patient.age },
+        activeSchemas
+      );
+      if (onUpdateAnalysis) {
+        await onUpdateAnalysis(generated);
+      }
+      toast.success('Relatório gerado com sucesso!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Falha ao gerar relatório de IA. Verifique as configurações de chave de API.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   // Group answers by schema
   const schemaSums: Record<string, number> = {};
   const schemaCounts: Record<string, number> = {};
@@ -187,6 +210,33 @@ export function ResultView({ assessment, onBack, onExport }: ResultViewProps) {
             <div className="space-y-6 max-w-none text-justify prose prose-invert prose-headings:font-display prose-headings:font-bold prose-h1:text-sm prose-h1:uppercase prose-h1:tracking-[0.15em] prose-h1:text-primary prose-h1:border-l-2 prose-h1:border-primary prose-h1:pl-3 prose-p:text-text-main/90 prose-p:text-[13px] prose-p:leading-relaxed prose-strong:text-primary/95 prose-li:text-[13px] prose-ul:list-disc prose-ul:pl-5">
               <ReactMarkdown>{assessment.aiAnalysis}</ReactMarkdown>
             </div>
+
+            {(!assessment.aiAnalysis || 
+              assessment.aiAnalysis.includes('Não foi possível gerar a análise') || 
+              assessment.aiAnalysis.trim() === '') && (
+              <div className="mt-8 p-6 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col items-center justify-center gap-4 text-center font-sans no-print">
+                <p className="text-xs text-text-dim max-w-md">
+                  O relatório de inteligência artificial não pôde ser concluído no momento do salvamento do teste. Você pode tentar gerar a análise técnica novamente agora.
+                </p>
+                <button
+                  onClick={handleRegenerate}
+                  disabled={isGenerating}
+                  className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-bg-deep px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" />
+                      Gerando Análise...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={12} />
+                      Gerar Análise com IA
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
             
             <div className="mt-16 pt-8 border-t border-border-subtle font-sans">
                <div className="flex flex-col items-center">

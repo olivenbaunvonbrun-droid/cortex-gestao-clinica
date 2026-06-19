@@ -14,4 +14,6 @@ export interface DiagnosticRecord {
   uploadedFilesCount: number;
   aiAnalysis?: string;
   createdAt: string;
+  savedProntuarioText?: string;
+  savedFilesText?: string;
 }
