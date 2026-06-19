@@ -23,7 +23,7 @@ export async function analyzeRid(data: Omit<RidEntry, 'id' | 'date' | 'analysis'
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const prompt = `
-    Você é um assistente sênior especialista em Terapia Cognitivo-Comportamental (TCC) e Terapia do Esquema. 
+    Você é um assistente sênior especialista em Terapia Cognitivo-Comportamental (TCC) de quarta geração e Terapia do Esquema. 
     Analise o seguinte Registro de Interações Diárias (RID) e forneça insights clínicos profundos.
 
     DADOS DO REGISTRO:
@@ -37,14 +37,22 @@ export async function analyzeRid(data: Omit<RidEntry, 'id' | 'date' | 'analysis'
     - Consequências de Longo Prazo: ${data.consequenciasLongoPrazo}
 
     SUA TAREFA:
-    Analise o caso utilizando como referência teórica os 18 Esquemas Iniciais Desadaptativos (EIDs) e os Domínios de Young.
+    Analise o caso de forma multidimensional utilizando como referência teórica os seguintes parâmetros clínicos avançados:
+    - **Esquemas Cognitivos**: 18 Esquemas Iniciais Desadaptativos (EIDs / Domínios de Young) e os 15 Esquemas Adaptativos (YPQ).
+    - **Crenças Centrais e Intermediárias**: Avaliar crenças (sobre si, outros, mundo) e regras/pressupostos/atitudes, distinguindo versões disfuncionais e adaptativas.
+    - **Distorções Cognitivas e Vieses**: Identificar as 18 distorções de Beck (incluindo catastrofização, pensamento dicotômico, comparação injusta, falácias de justiça/controle/mudança e viés confirmatório) e vieses de negatividade/rejeição/comparação social.
+    - **Estratégias de Enfrentamento (Coping) e Modos**: Diferenciar coping disfuncional (evitação, resignação, hipercompensação) de coping funcional (enfrentamento ativo, regulação emocional, flexibilidade) e mapear os Modos Esquemáticos (Criança Vulnerável/Irritada/Feliz, Pai Punitivo/Exigente, Protetor Distante, Capitulador Complacente, Hipercompensador e Adulto Saudável).
+    - **Necessidades Emocionais Básicas**: Discernir quais necessidades primárias foram frustradas (na história formativa) e quais foram atendidas.
+    - **Padrões Comportamentais, Emoções Nucleares e Fatores Protetivos**: Avaliar comportamentos disfuncionais (autossabotagem, isolamento) vs. funcionais (assertividade, autocuidado), emoções funcionais/disfuncionais e fatores protetivos (autoeficácia, rede de apoio, autocompaixão).
+    - **Parâmetros Clínicos Avançados**: Mapear valores pessoais, metas, propósito existencial, nível de insight, metacognições, tolerância à incerteza/frustração e sensibilidade à rejeição/fracasso.
+
     Forneça a resposta em formato Markdown estruturado com:
-    1. **Análise do Ciclo Cognitivo**: Como a crença ativou o ciclo. Relacione com um dos 5 Domínios de Young se aplicável.
-    2. **Distorções Cognitivas**: Identifique e explique as distorções presentes.
-    3. **Funcionamento da Estratégia**: Identifique se o comportamento reflete Rendição, Evitação ou Hipercompensação.
-    4. **Reestruturação Cognitiva**: Sugira pensamentos alternativos baseados na técnica de Seta Descendente ou evidências.
-    5. **Ações Adaptativas**: Sugestões práticas (ex: técnicas de aterramento ou novos comportamentos).
-    6. **Mensagem de Apoio**: Uma validação empática.
+    1. **Análise do Ciclo Cognitivo e Dinâmica de Esquemas**: Como as crenças centrais e intermediárias ativaram os EIDs ou ativaram modos esquemáticos disfuncionais. Identifique também quais Esquemas Adaptativos e necessidades básicas atendidas/frustradas estão em jogo.
+    2. **Distorções Cognitivas e Vieses**: Identifique quais das 18 distorções clássicas e vieses de processamento ocorreram.
+    3. **Funcionamento da Estratégia de Coping**: Identifique se o comportamento reflete resignação, evitação ou hipercompensação, e como treinar o enfrentamento ativo e flexibilidade psicológica.
+    4. **Reestruturação Cognitiva e Raciocínio Adaptativo**: Sugira pensamentos e crenças alternativas funcionais (sobre si, outros e mundo).
+    5. **Treinamento de Habilidades Psicológicas (Ações Adaptativas)**: Sugestões práticas baseadas em fatores protetivos, regulação emocional (mindfulness, autocompaixão) e parâmetros avançados (repertório de habilidades sociais, diferenciação do self).
+    6. **Mensagem de Apoio e Validação Empática**.
 
     Use uma linguagem profissional, mas acessível e acolhedora.
     IMPORTANTE: Não utilize notação LaTeX (como $\\rightarrow$). Use setas simples em texto se necessário (-> ou =>).

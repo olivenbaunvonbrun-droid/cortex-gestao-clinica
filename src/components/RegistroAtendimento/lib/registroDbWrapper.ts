@@ -1,31 +1,163 @@
 import { db } from '../../../lib/db';
 import { AttendanceRecord } from '../types';
-import { ATTENDANCE_TEMPLATES } from '../utils/templates';
 import { syncService } from '../../../lib/syncService';
 
+// Format YYYY-MM-DD to DD/MM/YYYY
+const formatBrazilianDate = (dateStr: string): string => {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+};
+
 export function formatRecordToHtml(record: AttendanceRecord): string {
-  const template = ATTENDANCE_TEMPLATES.find(t => t.id === record.template);
-  const fieldsRendered = template?.fields.map(f => {
-    const val = record.fields[f.id] || '';
-    if (!val) return '';
-    return `<p class="mb-1 text-[11px] text-text-main/90"><strong>${f.label}:</strong> ${val}</p>`;
-  }).join('') || '';
+  const f = record.fields;
+  
+  // Parse approaches array if stored as stringified JSON
+  let abordagens = f.abordagensSessao || '';
+  try {
+    if (abordagens.startsWith('[')) {
+      const parsed = JSON.parse(abordagens);
+      if (Array.isArray(parsed)) {
+        abordagens = parsed.join(', ');
+      }
+    }
+  } catch (e) {
+    // Keep as is if not JSON
+  }
 
   return `
-    <div class="attendance-record-rendered p-6 bg-white/[0.01] border border-white/[0.06] rounded-2xl space-y-4">
+    <div class="attendance-record-rendered p-6 bg-white/[0.01] border border-white/[0.06] rounded-2xl space-y-4 font-sans select-text">
       <div class="flex items-center justify-between border-b border-white/[0.08] pb-3 mb-3">
-        <h4 class="text-xs font-black uppercase tracking-wider text-[#10b981]">Registro de Atendimento (${template?.name || record.template})</h4>
-        <span class="text-[9px] font-mono opacity-50">${new Date(record.createdAt).toLocaleDateString('pt-BR')}</span>
+        <h4 class="text-xs font-black uppercase tracking-wider text-[#10b981]">Registro de Atendimento Psicológico</h4>
+        <span class="text-[9px] font-mono opacity-50">Cód: ${f.codigoRegistro || 'N/A'}</span>
       </div>
-      <div class="text-xs leading-relaxed space-y-2">
-        ${fieldsRendered}
+      
+      <!-- Dados Técnicos -->
+      <div class="grid grid-cols-2 gap-2 text-[10px] text-text-main/90 border-b border-white/[0.04] pb-3">
+        <div><strong>Psicólogo:</strong> ${f.psicologo || 'Dr. Bruno de Oliveira Lima'}</div>
+        <div><strong>CRP:</strong> ${f.crp || 'CRP05/75885'}</div>
+        <div><strong>Data:</strong> ${formatBrazilianDate(f.dataAtendimento || '')}</div>
+        <div><strong>Horário:</strong> ${f.horario || 'N/A'}</div>
+        <div><strong>Sessão Nº:</strong> ${f.numeroSessao || 'N/A'}</div>
+        <div><strong>Tipo/Local:</strong> ${f.tipoSessao || 'Individual'} (${f.localSessao || 'Online'})</div>
       </div>
-      ${record.aiAnalysis ? `
-        <div class="mt-4 pt-4 border-t border-white/[0.08]">
-          <h5 class="text-xs font-black uppercase text-emerald-400 tracking-wider mb-2">Resumo Clínico Integrativo (IA)</h5>
-          <div class="text-xs text-text-main/80 font-medium whitespace-pre-line leading-relaxed">
-            ${record.aiAnalysis.substring(0, 300)}...
+      
+      <!-- Identificação do Cliente -->
+      <div class="text-[10px] text-text-main/90 border-b border-white/[0.04] pb-3 pt-1">
+        <h5 class="font-bold uppercase tracking-wider text-text-dim text-[9px] mb-1.5">1. Identificação do Cliente</h5>
+        <div class="grid grid-cols-2 gap-2">
+          <div><strong>Nome:</strong> ${f.nomeCliente || 'Não informado'}</div>
+          <div><strong>Idade:</strong> ${f.idadeCliente || 'Não informada'} anos</div>
+          <div><strong>Sexo:</strong> ${f.sexoCliente || 'Não informado'}</div>
+          <div><strong>Contato:</strong> ${f.contatoCliente || 'Não informado'}</div>
+        </div>
+        ${f.motivoConsulta ? `
+          <div class="mt-2 text-xs leading-relaxed text-text-main/80 pt-1">
+            <strong>Motivo da Consulta / Queixa:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.motivoConsulta}</div>
           </div>
+        ` : ''}
+      </div>
+
+      <!-- Objetivos -->
+      <div class="text-[10px] text-text-main/90 border-b border-white/[0.04] pb-3 pt-1">
+        <h5 class="font-bold uppercase tracking-wider text-text-dim text-[9px] mb-1.5">2. Objetivos da Sessão</h5>
+        ${f.objetivosCliente ? `
+          <div class="mt-1 text-xs leading-relaxed text-text-main/80">
+            <strong>Definidos pelo Cliente:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.objetivosCliente}</div>
+          </div>
+        ` : ''}
+        ${f.objetivosTerapeuta ? `
+          <div class="mt-2 text-xs leading-relaxed text-text-main/80">
+            <strong>Definidos pelo Terapeuta:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.objetivosTerapeuta}</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Prática da Sessão -->
+      <div class="text-[10px] text-text-main/90 border-b border-white/[0.04] pb-3 pt-1">
+        <h5 class="font-bold uppercase tracking-wider text-text-dim text-[9px] mb-1.5">3. Estrutura e Prática</h5>
+        ${f.relatoCliente ? `
+          <div class="mt-1 text-xs leading-relaxed text-text-main/80">
+            <strong>Relato Detalhado:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.relatoCliente}</div>
+          </div>
+        ` : ''}
+        ${f.intervencoes ? `
+          <div class="mt-2 text-xs leading-relaxed text-text-main/80">
+            <strong>Intervenções Clínicas:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.intervencoes}</div>
+          </div>
+        ` : ''}
+        ${f.observacoes ? `
+          <div class="mt-2 text-xs leading-relaxed text-text-main/80">
+            <strong>Observações Complementares:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.observacoes}</div>
+          </div>
+        ` : ''}
+        ${f.insights ? `
+          <div class="mt-2 text-xs leading-relaxed text-text-main/80">
+            <strong>Insights Emergentes:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.insights}</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Avaliação -->
+      <div class="text-[10px] text-text-main/90 border-b border-white/[0.04] pb-3 pt-1">
+        <h5 class="font-bold uppercase tracking-wider text-text-dim text-[9px] mb-1.5">4. Avaliação e Progresso</h5>
+        <div><strong>Progresso Estimado:</strong> ${f.progresso || 'Não avaliado'}</div>
+        ${f.percepcaoCliente ? `
+          <div class="mt-2 text-xs leading-relaxed text-text-main/80">
+            <strong>Percepção do Cliente:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.percepcaoCliente}</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Plano de Continuidade -->
+      <div class="text-[10px] text-text-main/90 border-b border-white/[0.04] pb-3 pt-1">
+        <h5 class="font-bold uppercase tracking-wider text-text-dim text-[9px] mb-1.5">5. Plano Terapêutico Intersessão</h5>
+        ${f.tarefas ? `
+          <div class="mt-1 text-xs leading-relaxed text-text-main/80">
+            <strong>Tarefas Recomendadas:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.tarefas}</div>
+          </div>
+        ` : ''}
+        ${f.planejamento ? `
+          <div class="mt-2 text-xs leading-relaxed text-text-main/80">
+            <strong>Foco Próxima Sessão:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.planejamento}</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Considerações Éticas / Encaminhamentos -->
+      <div class="text-[10px] text-text-main/90 pb-2 pt-1">
+        <h5 class="font-bold uppercase tracking-wider text-text-dim text-[9px] mb-1.5">6. Considerações Éticas e Técnicas</h5>
+        ${f.confidencialidade ? `
+          <div class="mt-1 text-xs leading-relaxed text-text-main/80">
+            <strong>Confidencialidade:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.confidencialidade}</div>
+          </div>
+        ` : ''}
+        ${f.encaminhamentos ? `
+          <div class="mt-2 text-xs leading-relaxed text-text-main/80">
+            <strong>Encaminhamentos Especiais:</strong>
+            <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.encaminhamentos}</div>
+          </div>
+        ` : ''}
+      </div>
+      
+      ${f.assinatura ? `
+        <div class="mt-6 pt-4 border-t border-white/[0.08] flex flex-col items-center">
+          <img src="${f.assinatura}" alt="Assinatura" style="max-height: 50px; opacity: 0.85;" />
+          <div class="text-[9px] font-mono text-text-dim uppercase mt-1">Assinado Eletronicamente</div>
         </div>
       ` : ''}
     </div>

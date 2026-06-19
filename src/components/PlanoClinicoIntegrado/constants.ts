@@ -3,77 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CLINICAL_SUGGESTIONS_DB } from "../BibliotecaAvaliacao/components/ClinicalSuggestionsHelper";
+
 export const TCC_CONCEPTS = {
-  NecessidadesInfantis: [
-    { name: "Atenção", desc: "Necessidade de ser notado, visto e percebido pelos cuidadores." },
-    { name: "Carinho", desc: "Necessidade de afeto físico, proximidade emocional e ternura." },
-    { name: "Reconhecimento", desc: "Necessidade de validação de suas conquistas e qualidades únicas." },
-    { name: "Vinculação", desc: "Sentimento profundidade de conexão, pertencimento e segurança nas relações." },
-    { name: "Proteção", desc: "Sentimento de segurança física e emocional contra ameaças." },
-    { name: "Cuidado", desc: "Suporte consistente nas necessidades biológicas e emocionais básicas." },
-    { name: "Autonomia", desc: "Incentivo para desenvolver independência e agência própria." },
-    { name: "Socialização", desc: "Capacidade e oportunidade de interagir e criar laços com pares." },
-    { name: "Conversação", desc: "Espaço para dialogar, expressar sentimentos e ser ouvido sem julgamento." },
-    { name: "Instrução", desc: "Recebimento de orientação adequada sobre o funcionamento do mundo." },
-    { name: "Brincar", desc: "Oportunidade de explorar, criar e vivenciar o lazer sem cobranças." },
-    { name: "Limites", desc: "Aprendizado sobre responsabilidade, autocontrole e limites interpessoais." },
-    { name: "Gregária", desc: "Sentimento de fazer parte de grupos sociais amplos e comunidades." },
-    { name: "Autoconceito", desc: "Construção de uma identidade clara e autovalorização positiva." },
-    { name: "Compreensão", desc: "Sentir-se compreendido e ter suas emoções validadas e empatizadas." }
-  ],
-  NecessidadesParentais: [
-    { name: "Honra", desc: "Reconhecimento do papel e dignidade parental na estrutura familiar." },
-    { name: "Respeito", desc: "Consideração pelos limites, escolhas e autoridade dos cuidadores." },
-    { name: "Carinho", desc: "Demonstração de afeto, gratidão e calor emocional pelos filhos." },
-    { name: "Reconhecimento", desc: "Validação do esforço, dedicação e sacrifícios na criação dos filhos." },
-    { name: "Vinculação", desc: "Conexão profunda e afeto seguro entre pais e filhos." },
-    { name: "Autoridade", desc: "Manutenção do papel orientador e de limite dos cuidadores." },
-    { name: "Autonomia", desc: "Espaço para os pais manterem sua individualidade e vida própria." },
-    { name: "Conversação", desc: "Diálogo aberto e escuta respeitosa na dinâmica familiar." },
-    { name: "Compreensão", desc: "Empatia com as dificuldades, medos e cansaço inerentes à parentalidade." },
-    { name: "Sabedoria", desc: "Orientação, discernimento e bom senso nas decisões familiares." }
-  ],
-  NecessidadesConjugais: [
-    { name: "Atenção", desc: "Sentir-se priorizado, ouvido e percebido pelo parceiro no cotidiano." },
-    { name: "Admiração", desc: "Reconhecimento mútuo do valor, qualidades e atratividade do parceiro." },
-    { name: "Conversa íntima", desc: "Partilha profunda de sentimentos, medos, sonhos e planos de vida." },
-    { name: "Carinho", desc: "Demonstrações físicas e verbais de afeto, ternura e amor." },
-    { name: "Atração física", desc: "Química, desejo físico e admiração estética mútua no relacionamento." },
-    { name: "Sexo", desc: "Conexão sexual satisfatória e intimidade erótica compartilhada." },
-    { name: "Romantismo", desc: "Momentos especiais, surpresas e cultivo do afeto romântico." },
-    { name: "Apoio doméstico", desc: "Colaboração nas tarefas cotidianas e divisão justa do cuidado do lar." },
-    { name: "Apoio financeiro", desc: "Parceria e alinhamento no planejamento financeiro e provisão." },
-    { name: "Lazer", desc: "Momentos de diversão, descontração e hobbies compartilhados a dois." },
-    { name: "Individualidade", desc: "Respeito ao espaço, privacidade e hobbies individuais de cada cônjuge." }
-  ],
-  NecessidadesAdultas: [
-    { name: "Atenção", desc: "Sentir-se percebido e valorizado em suas relações interpessoais." },
-    { name: "Carinho", desc: "Necessidade de receber afeto físico, proximidade e ternura nas relações." },
-    { name: "Reconhecimento", desc: "Validação externa de suas conquistas, esforços e valor pessoal." },
-    { name: "Autoestima", desc: "Apreço por si mesmo, autovalorização e autoconfiança saudável." },
-    { name: "Vínculo", desc: "Relações seguras de conexão emocional e pertencimento." },
-    { name: "Confiança", desc: "Sentimento de segurança, previsibilidade e lealdade nas relações." },
-    { name: "Socialização", desc: "Interação, convivência e troca social com amigos e grupos." },
-    { name: "Desejabilidade", desc: "Sentir-se atraente, interessante e desejado pelos outros." },
-    { name: "Realização", desc: "Sentimento de progresso, conquista e competência em áreas importantes." },
-    { name: "Autonomia", desc: "Capacidade de decidir e agir de forma independente." },
-    { name: "Proteção", desc: "Sentir-se seguro contra ameaças físicas, financeiras ou emocionais." },
-    { name: "Asserção", desc: "Habilidade de expressar necessidades, opiniões e limites assertivamente." },
-    { name: "Gregária", desc: "Integração e participação ativa em grupos, comunidades e redes sociais." },
-    { name: "Compreensão", desc: "Sentimento de ser escutado, compreendido e validado em seus sentimentos." },
-    { name: "Responsabilidade", desc: "Compromisso em assumir as consequências de suas escolhas e atos." },
-    { name: "Liberdade e poder", desc: "Sensação de agência, poder de escolha e influência sobre o próprio destino." },
-    { name: "Aprovação", desc: "Aceitação social, validação e pertencimento a grupos significativos." },
-    { name: "Otimismo", desc: "Manutenção de uma perspectiva positiva e esperançosa diante do futuro." },
-    { name: "Reflexividade", desc: "Capacidade de autoanálise, auto-observação e reflexão ética sobre si." },
-    { name: "Controle", desc: "Sensação de gerência pessoal sobre as próprias emoções e reações." },
-    { name: "Recreatividade", desc: "Acesso a atividades recreativas, hobbies, descanso e prazer puro." },
-    { name: "Enfrentamento", desc: "Capacidade de lidar ativamente e resolver problemas ou estressores." },
-    { name: "Intimidade", desc: "Vínculos profundos de partilha e vulnerabilidade emocional recíproca." },
-    { name: "Correspondência", desc: "Sensação de reciprocidade e equilíbrio nas trocas afetivas e sociais." },
-    { name: "Feedback", desc: "Recebimento de retorno construtivo e sincero sobre suas ações e atitudes." },
-    { name: "Merecimento", desc: "Crença profunda no próprio direito ao bem-estar, afeto e sucesso." }
-  ],
+  NecessidadesInfantis: CLINICAL_SUGGESTIONS_DB.necessidades_infantil.items.map(item => ({
+    name: item.key,
+    desc: item.explanation
+  })),
+  NecessidadesParentais: CLINICAL_SUGGESTIONS_DB.necessidades_parental.items.map(item => ({
+    name: item.key,
+    desc: item.explanation
+  })),
+  NecessidadesConjugais: CLINICAL_SUGGESTIONS_DB.necessidades_conjugal.items.map(item => ({
+    name: item.key,
+    desc: item.explanation
+  })),
+  NecessidadesAdultas: CLINICAL_SUGGESTIONS_DB.necessidades_adulto.items.map(item => ({
+    name: item.key,
+    desc: item.explanation
+  })),
   DimensoesVida: [
     { name: "Pessoal", desc: "Cuidados com a saúde física, saúde mental, intelectualidade e espiritualidade." },
     { name: "Interpessoal", desc: "Relações familiares, amizades, conexões sociais e conjugalidade." },
@@ -185,7 +133,18 @@ export const TCC_CONCEPTS = {
     { name: "Incapacidade", desc: "Núcleo de desamparo: 'Eu sou incompetente', 'Eu não consigo lidar com a vida', 'Sou vulnerável', 'Sou fraco'.", id: "incapacidade" },
     { name: "Não-amabilidade", desc: "Núcleo de rejeição: 'Eu sou indesejável', 'Ninguém vai me querer', 'Sou chato', 'Serei sozinho para sempre'.", id: "nao_amabilidade" },
     { name: "Desvalor", desc: "Núcleo de indignidade: 'Não tenho valor', 'Sou um impostor', 'Sou uma pessoa má', 'O mundo é um lugar cruel'.", id: "desvalor" },
-    { name: "Fracasso", desc: "Crença central de incompetência generalizada: 'Eu sou um fracassado', 'Nada que eu faço dá certo'.", id: "fracasso" }
+    { name: "Fracasso", desc: "Crença central de incompetência generalizada: 'Eu sou um fracassado', 'Nada que eu faço dá certo'.", id: "fracasso" },
+    { name: "Sou inadequado", desc: "Crença de desvalor/inadequação: 'Eu sou inadequado frente às demandas sociais e interpessoais.'", id: "desvalor" },
+    { name: "Sou fraco", desc: "Crença de vulnerabilidade física ou mental: 'Eu sou fraco e incapaz de me proteger.'", id: "incapacidade" },
+    { name: "Sou inferior", desc: "Crença de comparação negativa: 'Eu sou inferior a qualquer um ao meu redor.'", id: "desvalor" },
+    { name: "Sou defeituoso", desc: "Crença de defeito interno: 'Eu sou falho por dentro e rejeitável se descoberto.'", id: "desvalor" },
+    { name: "Sou descartável", desc: "Crença de rejeição extrema: 'Eu sou descartável e as pessoas se cansarão de mim.'", id: "nao_amabilidade" },
+    // Funcionais
+    { name: "Sou valioso (Funcional)", desc: "Crença adaptativa: 'Eu tenho valor intrínseco incondicional como pessoa.'", id: "funcional_valor" },
+    { name: "Sou capaz (Funcional)", desc: "Crença adaptativa: 'Eu sou capaz de lidar com os problemas práticos e me vira.'", id: "funcional_capacidade" },
+    { name: "Posso aprender (Funcional)", desc: "Crença adaptativa: 'Eu posso aprender e me desenvolver através de erros.'", id: "funcional_aprendizado" },
+    { name: "Sou digno de amor (Funcional)", desc: "Crença adaptativa: 'Eu sou merecedor de afeto e cuidado naturalmente.'", id: "funcional_amor" },
+    { name: "Sou resiliente (Funcional)", desc: "Crença adaptativa: 'Eu tenho forças internas para superar adversidades.'", id: "funcional_resiliencia" }
   ],
   CrencasPerifericas: [
     { name: "Perfeccionismo", desc: "Regra: 'Se eu não for perfeito, ninguém vai me amar.'", cat: "nao_amabilidade" },
@@ -197,7 +156,20 @@ export const TCC_CONCEPTS = {
     { name: "Subjugação por Medo", desc: "Regra: 'Eu devo fazer o que os outros querem para evitar que me deixem.'", cat: "nao_amabilidade" },
     { name: "Escaneamento de Rejeição", desc: "Regra: 'Eu devo estar sempre atento a sinais de que as pessoas estão se cansando de mim.'", cat: "nao_amabilidade" },
     { name: "Autosuficiência Rígida", desc: "Regra: 'Não posso pedir ajuda, pois isso mostra que sou incompetente.'", cat: "incapacidade" },
-    { name: "Necessidade de Controle", desc: "Regra: 'Tenho que controlar tudo ao meu redor para que nada saia errado.'", cat: "incapacidade" }
+    { name: "Necessidade de Controle", desc: "Regra: 'Tenho que controlar tudo ao meu redor para que nada saia errado.'", cat: "incapacidade" },
+    // Novas Crenças Intermediárias
+    { name: "Tenho que agradar todos", desc: "Regra disfuncional: 'Devo silenciar minhas vontades para agradar as pessoas.'", cat: "nao_amabilidade" },
+    { name: "Não posso falhar", desc: "Regra disfuncional: 'Qualquer erro prova que sou incompetente.'", cat: "fracasso" },
+    { name: "Não devo demonstrar emoções", desc: "Regra disfuncional: 'Demonstrar sentimentos é fraqueza e vulnerabilidade.'", cat: "desvalor" },
+    { name: "Se eu falhar serei rejeitado", desc: "Pressuposto: 'Se eu cometer falhas, serei descartado pelas pessoas.'", cat: "nao_amabilidade" },
+    { name: "Se eu demonstrar fraqueza serei humilhado", desc: "Pressuposto: 'Usarão minhas vulnerabilidades para me humilhar.'", cat: "desvalor" },
+    { name: "O sofrimento deve ser evitado", desc: "Atitude: 'Eu não posso tolerar tédio ou sofrimento na vida.'", cat: "incapacidade" },
+    { name: "Meu valor depende do desempenho", desc: "Atitude: 'Meu valor como pessoa depende inteiramente de meus resultados.'", cat: "desvalor" },
+    // Adaptativas
+    { name: "Posso cometer erros (Adaptativa)", desc: "Regra adaptativa: 'Se eu errar, posso corrigir e aprender.'", cat: "funcional_aprendizado" },
+    { name: "Nem todos precisam gostar de mim (Adaptativa)", desc: "Regra adaptativa: 'A desaprovação de alguns não afeta meu valor.'", cat: "funcional_valor" },
+    { name: "Emoções são humanas (Adaptativa)", desc: "Atitude adaptativa: 'Expressar vulnerabilidade é natural e saudável.'", cat: "funcional_amor" },
+    { name: "Valor independente de resultados (Adaptativa)", desc: "Regra adaptativa: 'Meu valor existencial é independente de resultados.'", cat: "funcional_valor" }
   ],
   TranstornosTopograficos: [
     { 
@@ -677,13 +649,10 @@ export const TCC_CONCEPTS = {
       peripheralBeliefs: ["Se eu mudar de 'quem eu sou', a dor para"]
     }
   ],
-  EstilosParentais: [
-    { name: "Negligente", desc: "Baixo afeto e baixo limite; pais ausentes ou focados apenas nos próprios desejos." },
-    { name: "Autoritário", desc: "Baixo afeto e alto controle; foco em obediência cega e punição." },
-    { name: "Permissivo", desc: "Alto afeto e baixo limite; a criança manda na casa e não aprende regras." },
-    { name: "Superprotetor", desc: "Alto afeto e alto controle; impede a autonomia por medo de danos à criança." },
-    { name: "Democrático / Responsivo", desc: "Equilíbrio entre afeto e limites; regras são explicadas e sentimentos ouvidos." }
-  ],
+  EstilosParentais: CLINICAL_SUGGESTIONS_DB.estilos_parentais.items.map(item => ({
+    name: item.key,
+    desc: item.explanation
+  })),
   RID_Contextos: [
     { name: "Trabalho / Reunião", desc: "Ambiente profissional sob pressão ou avaliação." },
     { name: "Interação Social", desc: "Festas, conversas casuais ou encontro com estranhos." },
@@ -696,21 +665,45 @@ export const TCC_CONCEPTS = {
     { name: "Leitura Mental", desc: "Achar que sabe o que os outros estão pensando de forma negativa." },
     { name: "Raciocínio Emocional", desc: "Achar que porque sente algo, aquilo é uma verdade absoluta." },
     { name: "Tudo ou Nada", desc: "Visão binária da vida; se não for perfeito, é um fracasso total." },
-    { name: "Personalização", desc: "Atribuir a si mesmo a culpa por eventos externos fora de seu controle." }
+    { name: "Personalização", desc: "Atribuir a si mesmo a culpa por eventos externos fora de seu controle." },
+    // Novos Pensamentos Automáticos
+    { name: "Não vou conseguir", desc: "Pensamento Automático: Certeza antecipada de insucesso perante tarefas." },
+    { name: "Vai dar errado", desc: "Pensamento Automático: Catastrofização automática sobre desfechos futuros." },
+    { name: "Ninguém se importa", desc: "Pensamento Automático: Sensação de isolamento e desamor." },
+    { name: "Eu estraguei tudo", desc: "Pensamento Automático: Auto-acusação global exagerada por um erro pontual." },
+    { name: "Posso lidar com isso", desc: "Pensamento Adaptativo: Confiança na própria capacidade de enfrentamento." },
+    { name: "Já superei dores antes", desc: "Pensamento Adaptativo: Resgate de autoeficácia histórica de superação." },
+    { name: "Posso aprender aqui", desc: "Pensamento Adaptativo: Reavaliação cognitiva focada em aprendizado." }
   ],
   RID_Emocoes: [
     { name: "Ansiedade / Medo", desc: "Apreensão, taquicardia (coração disparado), respiração curta, suor frio, boca seca, tremores, tensão." },
     { name: "Tristeza / Desânimo", desc: "Desalento, choro, peso físico, aperto ou vazio no peito, nó na garganta, fadiga, fadiga muscular." },
     { name: "Raiva / Irritabilidade", desc: "Tensão muscular (mandíbula, punhos), rosto/pescoço quente, batimentos acelerados, impaciência." },
     { name: "Culpa / Vergonha", desc: "Evitação do olhar, rubor facial (corar), peso nos ombros/peito, desconforto gástrico, postura encurvada." },
-    { name: "Vazio Emocional", desc: "Sensação de anestesia afetiva, falta de energia física, descolamento/despersonalização." }
+    { name: "Vazio Emocional", desc: "Sensação de anestesia afetiva, falta de energia física, descolamento/despersonalização." },
+    // Novas Emoções Nucleares
+    { name: "Vergonha Tóxica", desc: "Sentimento visceral de inadequação existencial e defeito interno." },
+    { name: "Culpa Crônica", desc: "Sentimento de responsabilidade excessiva por problemas ou dores alheias." },
+    { name: "Alegria / Contentamento", desc: "Sensação de bem-estar, leveza física, sorriso espontâneo e serenidade." },
+    { name: "Gratidão", desc: "Reconhecimento sincero e apreciação pelas vivências positivas e suportes recebidos." },
+    { name: "Esperança", desc: "Expectativa otimista de futuro baseada em agência pessoal e resiliência." },
+    { name: "Amor / Conexão", desc: "Sensação de calor e acolhimento seguro nas relações de apego." },
+    { name: "Serenidade", desc: "Ausência de ansiedade de controle, estado de paz e repouso muscular." },
+    { name: "Desamparo", desc: "Sensação de paralisia e falta de recursos para mudar contingências ruins." }
   ],
   RID_Comportamentos: [
     { name: "Esquiva Comportamental", desc: "Fugir ou evitar fisicamente a situação temida." },
     { name: "Procrastinação", desc: "Adiar tarefas para não lidar com o desconforto que elas geram." },
     { name: "Busca de Reasseguramento", desc: "Perguntar constantemente se está tudo bem ou se agiu certo." },
     { name: "Isolamento Social", desc: "Afastar-se das pessoas para se proteger." },
-    { name: "Compensação / Perfecionismo", desc: "Trabalhar em excesso para tentar esconder falhas percebidas." }
+    { name: "Compensação / Perfecionismo", desc: "Trabalhar em excesso para tentar esconder falhas percebidas." },
+    // Novos Padrões de Enfrentamento
+    { name: "Submissão / Passividade", desc: "Cedência passiva e anulação de limites para apaziguar parceiros." },
+    { name: "Controle Excessivo", desc: "Tentar monitorar atitudes alheias para reduzir a própria ansiedade." },
+    { name: "Uso de Substâncias / Compulsões", desc: "Comida, álcool, gastos ou telas como anestesia para o vazio do esquema." },
+    { name: "Assertividade", desc: "Comunicação clara de desejos e limites com respeito mútuo (Adaptativo)." },
+    { name: "Resolução de Problemas", desc: "Planejamento estruturado e ação direta sobre o estressor (Adaptativo)." },
+    { name: "Autocuidado Planejado", desc: "Engajamento em exercícios, sono de qualidade e limites de deveres (Adaptativo)." }
   ],
   RID_ConsequenciasCP: [
     { name: "Alívio Imediato", desc: "Redução rápida da ansiedade ou desconforto após a esquiva." },

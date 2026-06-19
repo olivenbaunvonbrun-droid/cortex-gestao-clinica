@@ -53,6 +53,49 @@ async function getApiKey(): Promise<string> {
   throw new Error("Chave API não encontrada. Por favor, verifique as configurações.");
 }
 
+// Framework de Parâmetros Clínicos Avançados
+export const CLINICAL_FRAMEWORK_PROMPT = `
+DIRETRIZES DO FRAMEWORK DE PARÂMETROS CLÍNICOS AVANÇADOS (MÉTODO DE 4ª GERAÇÃO E TCC):
+1. ESQUEMAS COGNITIVOS: Mapear os 18 Esquemas Iniciais Desadaptativos (EIDs / Domínios de Young) e os 15 Esquemas Adaptativos (YPQ - Apego Seguro, Autonomia, Competência, Valor Pessoal, etc.).
+2. CRENÇAS NUCLEARES E INTERMEDIÁRIAS: Crenças Centrais (Incapacidade, Não-Amabilidade, Desvalor, Fracasso) vs. Crenças Funcionais; Crenças Intermediárias (Regras condicionais "Se... então...", pressupostos e atitudes) disfuncionais e adaptativas.
+3. DISTORÇÕES COGNITIVAS E VIESES: Mapear as 18 distorções de Beck (catastrofização, pensamento dicotômico, leitura de mente, comparação injusta, falácias de justiça/controle/mudança, viés confirmatório) e vieses de negatividade, rejeição ou comparação.
+4. ESTRATÉGIAS DE ENFRENTAMENTO (COPING) E MODOS: Coping disfuncional (evitação, resignação, hipercompensação) vs. Coping funcional (enfrentamento ativo, regulação emocional, flexibilidade); Modos Esquemáticos (Criança Vulnerável/Irritada/Feliz, Pai Punitivo/Exigente, Protetor Distante, Adulto Saudável).
+5. NECESSIDADES EMOCIONAIS BÁSICAS: Identificar as necessidades primárias frustradas ou atendidas (Infantis, Parentais, Conjugais ou Adultas).
+6. HABILIDADES PSICOLÓGICAS (HPs): Identificar déficits ou progressos nas 8 HPs centrais (Autoconhecimento, Autorregulação Emocional, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade/Enfrentamento, Autocontrole, Sociabilidade, Imunidade Social).
+7. PARÂMETROS CLÍNICOS AVANÇADOS: Valores pessoais, propósito existencial, nível de insight, metacognições, tolerância à incerteza/frustração e sensibilidade à rejeição/fracasso.
+`;
+
+export async function generateContentWithSystemInstruction(prompt: string, systemInstruction: string) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: { systemInstruction }
+  });
+  return response.text || "";
+}
+
+export async function transcribeAudioFile(audioBase64: string, mimeType: string) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const systemInstruction = `
+    Você é um Especialista em Documentação Clínica Psicológica de alto nível.
+    Sua tarefa é transcrever e formatar de forma estruturada as falas do áudio da consulta.
+    Retorne apenas o conteúdo final estruturado em código HTML clássico que contenha parágrafos justificados (<p style='text-align: justify;'>), tópicos usando (<ul> e <li>) ou ênfases usando (<strong>).
+    NÃO envolva a resposta com marcações de blocos de código como \`\`\`html.
+  `;
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: [
+      { text: "Por favor, realize a transcrição clínica estruturada deste áudio." },
+      { inlineData: { mimeType, data: audioBase64 } }
+    ],
+    config: { systemInstruction }
+  });
+  return response.text || "";
+}
+
 export async function clinicalInsight(patientHistory: string, currentSession: string, approach: string = 'Geral') {
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -60,6 +103,8 @@ export async function clinicalInsight(patientHistory: string, currentSession: st
   const prompt = `
     Analise a evolução deste paciente com base na abordagem: ${approach}.
     
+    ${CLINICAL_FRAMEWORK_PROMPT}
+
     Histórico Recente:
     ${patientHistory}
     
@@ -67,16 +112,16 @@ export async function clinicalInsight(patientHistory: string, currentSession: st
     ${currentSession}
     
     Por favor, forneça uma análise estruturada contendo:
-    1. Temas Centrais e Recorrências.
-    2. Dinâmica Transferencial/Contratransferencial (se aplicável à abordagem).
-    3. Hipóteses Diagnósticas ou Estruturais.
-    4. Sugestões de Manejo para a próxima sessão.
+    1. Temas Centrais e Recorrências (identificando EIDs ativados, distorções cognitivas ocorridas e necessidades frustradas).
+    2. Dinâmica de Modos Esquemáticos e Coping (resignação, evitação, hipercompensação vs. Adulto Saudável).
+    3. Hipóteses Diagnósticas ou Estruturais (DSM/CID e MDCF).
+    4. Sugestões de Manejo e Treinamento de Habilidades Psicológicas (HPs) para a próxima sessão.
     
     Linguagem técnica e precisa. Responda em Markdown.
   `;
 
-    const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -90,22 +135,24 @@ export async function processClinicalAudio(audioBase64: string, approach: string
   const systemInstruction = `
     Você é um Especialista em Documentação Clínica Psicológica de alto nível.
     Sua tarefa é transcrever e formatar de forma estruturada uma sessão de psicologia.
+    
+    ${CLINICAL_FRAMEWORK_PROMPT}
 
     REGRAS DE OURO:
-    1. ESTRUTURA CLÍNICA: Divida o texto em seções claras se necessário (ex: Queixa Principal, Dinâmica Observada, Intervenções Realizadas).
-    2. ABORDAGEM ${approach}: Utilize o vocabulário técnico e o foco analítico específico desta linha (ex: Se TCC, foque em pensamentos automáticos e crenças; se Psicanálise, foque em associações e transferência).
-    3. FILTRAGEM: Remova 100% de conversa fiada, hesitações (hã, é...) e ruídos sem valor terapêutico.
+    1. ESTRUTURA CLÍNICA: Divida o texto em seções claras se necessário (ex: Queixa Principal, Dinâmica de Esquemas e Crenças, Coping/Modos, Intervenções Realizadas).
+    2. ABORDAGEM ${approach}: Utilize o vocabulário técnico e o foco analítico específico desta linha (ex: Se TCC, foque em pensamentos automáticos, crenças e distorções; se Psicanálise, foque em associações e transferência).
+    3. FILTRAGEM: Remova 100% de conversa fiada, hesitações e ruídos sem valor terapêutico.
     4. FORMATAÇÃO: Use Markdown. Use **negrito** para conceitos-chave. Use > para citações literais importantes do paciente.
     5. IDENTIFICAÇÃO: Use "P:" para Paciente e "Psi:" para Profissional.
     6. MODO ${mode}: 
-       - Se Primeira Consulta: Foque na Anamnese, histórico e demanda inicial.
-       - Se Evolução: Foque no progresso, resistência e temas recorrentes.
+       - Se Primeira Consulta: Foque na Anamnese, histórico formativo, necessidades emocionais frustradas e demanda inicial.
+       - Se Evolução: Foque no progresso das HPs, estilo de enfrentamento, resistência e temas recorrentes.
 
     O resultado deve parecer um registro profissional pronto para um prontuário médico-hospitalar de elite.
   `;
 
-    const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
     contents: [
       { text: "Por favor, realize a transcrição clínica estruturada deste áudio." },
       { inlineData: { mimeType: "audio/webm", data: audioBase64 } }
@@ -121,14 +168,18 @@ export async function charcotConsult(query: string, patientContext: string) {
   const ai = new GoogleGenAI({ apiKey });
 
   const systemInstruction = `
-    Você é o módulo "Charcot", um consultor de segunda opinião baseado em Prática Baseada em Evidências (PBE).
-    Forneça orientações sobre sinais de alarme, hipóteses diagnósticas e intervenções validadas.
+    Você é o módulo "Charcot", um consultor de segunda opinião baseado em Prática Baseada em Evidências (PBE) e no Manual Diagnóstico Contextual-Funcional dos Transtornos Psicológicos (MDCF).
+    Forneça orientações sobre sinais de alarme, hipóteses diagnósticas (DSM/CID e MDCF) e intervenções validadas.
     Sempre cite referências estatísticas ou científicas quando possível.
+    Identifique déficits em Habilidades Psicológicas (HPs) e recomende exercícios de reabilitação.
+    
+    ${CLINICAL_FRAMEWORK_PROMPT}
+
     Contexto do paciente atual: ${patientContext}
   `;
 
-    const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
     contents: query,
     config: { systemInstruction }
   });
@@ -144,10 +195,12 @@ export async function analyzeClinicalFiles(files: { data: string, mimeType: stri
     inlineData: { data: f.data.split(',')[1] || f.data, mimeType: f.mimeType }
   }));
 
-  parts.push({ text: "Analise estes documentos clínicos (laudos, exames ou registros). Extraia os dados relevantes, conclusões e possíveis implicações clínicas. Formate em Markdown." } as any);
+  parts.push({ 
+    text: `Analise estes documentos clínicos (laudos, exames ou registros). Extraia os dados relevantes, conclusões e possíveis implicações clínicas sob a ótica dos parâmetros clínicos de TCC e Esquemas (como déficits de habilidades sociais/regulação, hipóteses de EDIs subjacentes e fatores de risco/manutenção). Formate em Markdown. \n\n ${CLINICAL_FRAMEWORK_PROMPT}` 
+  } as any);
 
-    const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
     contents: { parts } as any,
   });
 
@@ -162,21 +215,23 @@ export async function generateLongitudinalProfile(historyText: string, approach:
     Aja como um psicólogo sênior realizando uma supervisão clínica baseada na abordagem: ${approach}.
     Crie um "Perfil Longitudinal" deste paciente com base em todo o histórico da linha do tempo fornecido abaixo.
     
+    ${CLINICAL_FRAMEWORK_PROMPT}
+
     HISTÓRICO:
     ${historyText}
     
     OBJETIVO:
     Fornecer um perfil completo que cruze os dados, identificando:
-    1. EVOLUÇÃO E PROGRESSO: Como o paciente estava no início vs. agora.
-    2. PADRÕES COMPORTAMENTAIS E DINÂMICOS: Recorrências observadas ao longo do tempo sob a ótica da abordagem ${approach}.
-    3. ADERÊNCIA AO TRATAMENTO: Análise de faltas ou engajamento.
-    4. SÍNTESE DIAGNÓSTICA ATUALIZADA: Visão sistêmica baseada no histórico longo.
+    1. EVOLUÇÃO E PROGRESSO: Como o paciente estava no início vs. agora em relação às 8 Habilidades Psicológicas (HPs).
+    2. PADRÕES COMPORTAMENTAIS E DINÂMICOS: Evolução dos Esquemas Iniciais Desadaptativos (EIDs), estilo de enfrentamento habitual (resignação, evitação, hipercompensação) e ativação de modos esquemáticos disfuncionais.
+    3. ADERÊNCIA AO TRATAMENTO: Análise de faltas, engajamento e qualidade da aliança terapêutica.
+    4. SÍNTESE DIAGNÓSTICA ATUALIZADA: Visão sistêmica baseada no histórico longo (DSM/CID e MDCF).
     
     Responda em Markdown elegante e profissional, utilizando terminologia técnica adequada.
   `;
 
-    const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
     contents: prompt
   });
 
@@ -193,6 +248,8 @@ export async function analyzeIhsAssessment(
   const prompt = `
 Tarefa: Analisar os resultados do Inventário de Habilidades Sociais (IHS-Del-Prette) e gerar um Relatório Psicológico Profissional.
 
+${CLINICAL_FRAMEWORK_PROMPT}
+
 Dados do Paciente:
 Nome: ${patient.name}
 Idade: ${patient.age}
@@ -202,27 +259,27 @@ ${answersText}
 
 ESTRUTURA DO RELATÓRIO (Conforme Diretrizes do Conselho Federal de Psicologia - CFP):
 1. IDENTIFICAÇÃO (Nome e idade)
-2. DESCRIÇÃO DA DEMANDA (Motivo da avaliação baseado nos resultados do IHS)
+2. DESCRIÇÃO DA DEMANDA (Motivo da avaliação baseado nos resultados do IHS correlacionado com Habilidades Psicológicas de Sociabilidade, Imunidade e Sensibilidade Social)
 3. PROCEDIMENTO (Uso do IHS e entrevista de triagem)
-4. ANÁLISE (Agrupar por fatores de habilidades sociais:
+4. ANÁLISE (Agrupar por fatores de habilidades sociais, associando os déficits detectados aos correspondentes EIDs e estratégias de coping disfuncionais:
    - Fator 1: Enfrentamento e autoafirmação com risco
    - Fator 2: Autoafirmação na expressão de sentimento positivo
    - Fator 3: Conversação e desenvoltura social
    - Fator 4: Autoexposição a desconhecidos e falar em público
    - Fator 5: Autocontrole da agressividade)
-5. CONCLUSÃO/PROGNÓSTICO
-6. RECOMENDAÇÕES TERAPÊUTICAS
+5. CONCLUSÃO/PROGNÓSTICO (Vinculado ao nível de insight, flexibilidade psicológica e tolerância à incerteza)
+6. RECOMENDAÇÕES TERAPÊUTICAS (Diretrizes para treino de HPs, reestruturação de crenças centrais e experimentos comportamentais)
 
 Instruções importantes:
 - Tom clínico, ético e empático.
 - Use linguagem profissional (Ex: "O examinando demonstra...", "Observa-se um déficit em...").
 - NÃO seja determinista; use termos como "sugere", "indica tendência a".
 - Formate em Markdown com títulos em negrito.
-- IMPORTANTE: NÃO inclua campos vazios como "Local:", "Data:", "Assinatura:" ou rodapés, pois estes são gerados automaticamente pelo sistema no cabeçalho e rodapé do documento.
+- IMPORTANTE: NÃO inclua campos vazios como "Local:", "Data:", "Assinatura:" ou rodapés, pois estes são gerados automaticamente pelo sistema.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -240,6 +297,8 @@ export async function analyzeYsqAssessment(
   const prompt = `
 Tarefa: Analisar os resultados do Questionário de Esquemas de Young (YSQ-S3 - 90 itens) e gerar um Relatório Clínico Psicológico sobre o perfil de Esquemas Iniciais Desadaptativos (EIDs).
 
+${CLINICAL_FRAMEWORK_PROMPT}
+
 Dados do Paciente:
 Nome: ${patient.name}
 Idade: ${patient.age} Anos
@@ -253,19 +312,19 @@ ${answersText}
 ESTRUTURA DO RELATÓRIO:
 1. IDENTIFICAÇÃO (Nome e idade)
 2. DEMANDA E OBJETIVO DA AVALIAÇÃO (Análise de esquemas cognitivos desadaptativos)
-3. ANÁLISE DOS DOMÍNIOS E ESQUEMAS ATIVOS (Explorar os domínios afetados e como os esquemas desadaptativos identificados como ativos se manifestam no comportamento e nas relações baseados na teoria de Jeffrey Young)
-4. CORRELAÇÕES E IMPLICAÇÕES CLÍNICAS (Intersecção entre os esquemas ativos e potenciais mecanismos de enfrentamento/estilos de coping - resignação, evitação, hipercompensação)
-5. CONCLUSÃO E DIRETRIZES PARA A TERAPIA FOCADA EM ESQUEMAS (Sugestão de focos de intervenção terapêutica, como reestruturação cognitiva, vivências emocionais e quebra de padrões comportamentais)
+3. ANÁLISE DOS DOMÍNIOS E ESQUEMAS ATIVOS (Explorar os domínios afetados e como os EIDs identificados como ativos se manifestam no comportamento e nas relações. Mapeie também os Esquemas Adaptativos latentes que podem ser estimulados)
+4. CORRELAÇÕES E IMPLICAÇÕES CLÍNICAS (Intersecção entre os esquemas ativos, crenças centrais disfuncionais, distorções cognitivas comuns e os estilos de enfrentamento - resignação, evitação, hipercompensação)
+5. CONCLUSÃO E DIRETRIZES PARA A TERAPIA FOCADA EM ESQUEMAS (Sugestão de focos de intervenção terapêutica, reabilitação do passado, metáfora do ônibus/desfusão, treinamento ativo de HPs correspondentes)
 
 Instruções importantes:
 - Tom estritamente clínico, acadêmico, ético e empático.
-- Evitar determinismo ("O paciente é..." vs "O paciente apresenta forte ativação do esquema de...").
+- Evitar determinismo ("O paciente apresenta ativação do esquema de..." vs "O paciente é...").
 - Formate em Markdown com títulos bem definidos.
-- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são injetados de forma automática no cabeçalho e rodapé do documento de exportação.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -282,6 +341,8 @@ export async function analyzeAttendanceRecord(
   const prompt = `
 Tarefa: Analisar as anotações estruturadas de uma sessão de atendimento psicológico e gerar um Resumo Clínico Integrativo profissional em Markdown.
 
+${CLINICAL_FRAMEWORK_PROMPT}
+
 Dados do Paciente:
 Nome: ${patient.name}
 Idade: ${patient.age} Anos
@@ -290,20 +351,20 @@ Anotações da Sessão:
 ${recordText}
 
 Por favor, forneça um Resumo Clínico Integrativo contendo:
-1. SÍNTESE DOS CONTEÚDOS TRAZIDOS (Principais demandas, queixas e sentimentos expressos)
-2. DINÂMICA COMPORTAMENTAL E EVOLUTIVA (Padrões observados na sessão de hoje em comparação ao histórico)
-3. INTERVENÇÕES REALIZADAS E RESPOSTA DO PACIENTE (Eficácia das técnicas aplicadas)
-4. PLANEJAMENTO PARA AS PRÓXIMAS CONSULTAS (Foco clínico recomendado)
+1. SÍNTESE DOS CONTEÚDOS TRAZIDOS (Demandas, queixas principais, necessidades emocionais frustradas identificadas e sentimentos nucleares ativados)
+2. DINÂMICA COMPORTAMENTAL E EVOLUTIVA (Padrões observados, EIDs/crenças centrais ativados, distorções cognitivas e estilo de enfrentamento/modo esquemático adotado na sessão de hoje)
+3. INTERVENÇÕES REALIZADAS E RESPOSTA DO PACIENTE (Eficácia das técnicas de 3ª/4ª Geração aplicadas e reestruturação cognitiva)
+4. PLANEJAMENTO E PDP (Plano de Desenvolvimento Psicológico de HPs e foco clínico recomendado para a continuidade)
 
 Instruções importantes:
 - Tom estritamente ético, profissional e empático.
 - Use terminologia técnica apropriada.
 - Formate em Markdown com títulos em negrito.
-- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados automaticamente pelo sistema no cabeçalho e rodapé do documento de exportação.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -314,7 +375,7 @@ export async function analyzePciAssessment(data: any) {
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
-  const prompt = `**Tarefa:** Agir como um supervisor clínico especialista. Analise os dados do Plano Clínico Integrado (PCI) a seguir e gere uma análise consolidada e um projeto terapêutico estruturado.
+  const prompt = `**Tarefa:** Agir como um supervisor clínico especialista em TCC de quarta geração e Terapia do Esquema. Analise os dados do Plano Clínico Integrado (PCI) a seguir e gere uma análise consolidada e um projeto terapêutico estruturado.
 
 **Dados do PCI:**
 - **Paciente:** ${data.patient?.name || data.pacienteNome || ''}
@@ -330,7 +391,7 @@ export async function analyzePciAssessment(data: any) {
 - **Satisfação (IMF):** Pessoal(${data.satisfacaoPessoal || 50}%), Interpessoal(${data.satisfacaoInterpessoal || 50}%), Ocupacional(${data.satisfacaoOcupacional || 50}%), Material(${data.satisfacaoMaterial || 50}%), Recreativa(${data.satisfacaoRecreativa || 50}%), Existencial(${data.satisfacaoExistencial || 50}%)
 - **Esquemas Cognitivos:** ${data.esquemasCognitivos || ''}
 - **Crenças Centrais:** ${data.crencasCentrais || ''}
-- **Crenças Periféricas:** ${data.crencasPerifericas || ''}
+- **Crenças Perifericas:** ${data.crencasPerifericas || ''}
 - **Excessos Comportamentais:** ${data.excessosComp || ''}
 - **Déficits em Habilidades:** ${data.deficitsHab || ''}
 - **Histórico Formativo:** ${data.historicoFormativo || ''}
@@ -338,16 +399,20 @@ export async function analyzePciAssessment(data: any) {
 - **Diagnóstico Funcional (MDCF):** ${data.diagFunc || ''}
 - **Projeto Terapêutico:** ${data.projetoTerap || ''}
 
+**Orientações Teórico-Clínicas de Análise:**
+Avalie a formulação de caso utilizando o framework completo de parâmetros clínicos avançados:
+${CLINICAL_FRAMEWORK_PROMPT}
+
 Sua resposta DEVE ser em formato HTML (sem tags <html> ou <body>, apenas <h4>, <p>, <ul> e <li>) estruturada em 4 partes:
-1. Síntese Diagnóstica Integrativa
-2. Análise Funcional e de Esquemas
-3. Proposta de Projeto Terapêutico (Metas e Intervenções)
-4. Recomendações e Pontos de Atenção
+1. Síntese Diagnóstica Integrativa (Correlacionando queixas, diagnóstico topográfico e fatores de manutenção)
+2. Análise Funcional e de Esquemas (Conectando histórico formativo, necessidades frustradas, EIDs/Esquemas Adaptativos, distorções/vieses e modos esquemáticos)
+3. Proposta de Projeto Terapêutico (Metas, Habilidades Psicológicas a treinar, intervenções cognitivo-comportamentais focadas em valores e fatores protetivos)
+4. Recomendações e Pontos de Atenção (Metacognições, estágio de mudança, aliança terapêutica e tolerância à incerteza)
 
 Use linguagem profissional e científica de acordo com as diretrizes do CRP/CFP.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -363,16 +428,18 @@ export async function analyzeIhpAssessment(
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
-Você é um assistente de IA especializado em psicologia, atuando como suporte para um(a) psicólogo(a). Sua tarefa é gerar uma análise qualitativa e interpretativa dos resultados do "Inventário de Habilidades Psicológicas – Poubel e Rodrigues (IHP-PR)", com base nos resultados quantitativos e nas respostas brutas de um(a) avaliando(a).
+Você é um assistente de IA especializado em psicologia. Sua tarefa é gerar uma análise qualitativa e interpretativa dos resultados do "Inventário de Habilidades Psicológicas – Poubel e Rodrigues (IHP-PR)" correlacionando-as diretamente com as HPs de 4ª Geração do Cortex.
+
+${CLINICAL_FRAMEWORK_PROMPT}
 
 **INSTRUÇÕES IMPORTANTES:**
-1. **Base da Análise:** Sua análise deve ser uma interpretação dos resultados quantitativos fornecidos. Use os escores e as classificações como ponto de partida principal. As respostas brutas podem ser usadas para dar exemplos específicos ou aprofundar a análise de uma habilidade específica.
-2. **Estrutura do Relatório:** Gere um relatório em português do Brasil, utilizando Markdown para formatação (títulos com # ou ##, negrito), com as seguintes seções:
-    * **Resumo Geral e Interpretação do QIP:** Inicie com uma síntese das tendências gerais, interpretando o Quociente de Inteligência Psicológica (QIP).
-    * **Análise das Habilidades Psicológicas (Subescalas):** Discorra sobre as 10 subescalas. Agrupe habilidades com classificações similares. Explique o que cada habilidade significa.
-    * **Potenciais Pontos Fortes:** Destaque as habilidades com pontuações mais altas (Satisfatório/Proficiente).
-    * **Áreas para Desenvolvimento:** Identifique habilidades com pontuações mais baixas (Deficitário/Insuficiente).
-    * **Sugestões e Encaminhamentos:** Ofereça sugestões gerais e hipotéticas de intervenções clínicas.
+1. **Base da Análise:** Sua análise deve ser uma interpretação dos resultados quantitativos fornecidos. Use os escores e as classificações como ponto de partida principal. As respostas brutas podem ser usadas para dar exemplos específicos ou aprofundar a análise.
+2. **Estrutura do Relatório:** Gere um relatório em português do Brasil, utilizando Markdown para formatação:
+    * **Resumo Geral e Interpretação do QIP:** Quociente de Inteligência Psicológica (QIP) correlacionado a flexibilidade psicológica e inteligência emocional.
+    * **Análise das Habilidades Psicológicas (Subescalas):** Discorra sobre as 10 subescalas (Autoconhecimento, Autorregulação, Raciocínio Realista, Autoestima, Resolutividade, Autocontrole, Sociabilidade, Imunidade Social, Sensibilidade Social, Hedonismo). Correlacione-as a EIDs e crenças centrais latentes.
+    * **Potenciais Pontos Fortes:** Habilidades com pontuações mais altas (Satisfatório/Proficiente).
+    * **Áreas para Desenvolvimento:** Habilidades com pontuações mais baixas (Deficitário/Insuficiente) que exigem treino ativo.
+    * **Sugestões e Encaminhamentos:** Ofereça propostas de intervenções clínicas baseadas em TCC/PDP.
 3. **Tom e Linguagem:** Mantenha um tom clínico, profissional, empático e não-julgador.
 4. **Disclaimer Obrigatório:** Conclua com: "Este relatório é uma análise gerada por IA com base nos resultados do IHP-PR e deve ser interpretado por um(a) psicólogo(a) qualificado(a). Não constitui um diagnóstico psicológico."
 
@@ -388,7 +455,7 @@ ${rawAnswersSummary}
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -405,6 +472,8 @@ export async function analyzeLinhaVidaAssessment(
   const prompt = `
 Tarefa: Analisar a Linha da Vida de um paciente sob a perspectiva clínica e estruturar um Relatório Clínico de Avaliação Autobiográfica.
 
+${CLINICAL_FRAMEWORK_PROMPT}
+
 Dados do Paciente:
 Nome: ${patient.name}
 Idade: ${patient.age} Anos
@@ -414,21 +483,21 @@ ${eventsText}
 
 ESTRUTURA DO RELATÓRIO:
 1. IDENTIFICAÇÃO (Nome e idade)
-2. SÍNTESE DO HISTÓRICO DE VIDA (Análise geral da distribuição de eventos positivos, negativos e neutros ao longo do ciclo vital - infância, adolescência e fase adulta)
-3. ANÁLISE DE PICOS E VALES EMOCIONAIS (Mapeamento dos pontos de maior impacto emocional positivo e dos vales de maior impacto negativo ou traumático, explorando as dinâmicas associadas)
-4. INTERPRETAÇÃO PSICOLÓGICA E ABORDAGEM DOS ESQUEMAS/CRENÇAS (Análise qualitativa de como estes eventos podem ter moldado crenças centrais, esquemas cognitivos iniciais desadaptativos ou padrões de enfrentamento/coping recorrentes no paciente)
-5. RECURSOS DE RESILIÊNCIA E FORÇA PESSOAL (Identificação de recursos de enfretamento saudáveis e momentos de superação observados na história)
-6. RECOMENDAÇÕES TERAPÊUTICAS (Diretrizes para o manejo clínico, intervenções cognitivas e emocionais direcionadas)
+2. SÍNTESE DO HISTÓRICO DE VIDA (Análise geral da distribuição de eventos positivos, negativos e neutros ao longo do ciclo vital. Identificação das necessidades emocionais básicas da infância frustradas nessas fases)
+3. ANÁLISE DE PICOS E VALES EMOCIONAIS (Mapeamento dos pontos de maior impacto emocional positivo e dos vales de maior impacto negativo ou traumático)
+4. INTERPRETAÇÃO PSICOLÓGICA E ABORDAGEM DOS ESQUEMAS/CRENÇAS (Análise de como estes eventos modelaram as crenças centrais disfuncionais/intermediárias, Esquemas Iniciais Desadaptativos (EIDs) e estratégias de coping disfuncionais no presente)
+5. RECURSOS DE RESILIÊNCIA E FORÇA PESSOAL (Identificação de fatores protetivos, momentos de superação, reserva cognitiva e Esquemas Adaptativos desenvolvidos)
+6. RECOMENDAÇÕES TERAPÊUTICAS (Diretrizes para o tratamento focado em esquemas, PDP de HPs e reestruturação de regras condicionais)
 
 Instruções importantes:
-- Tom estritamente ético, profissional, analítico e empático.
-- Evite determinismos. Use expressões como "indica tendência a", "pode sugerir a formação de", "correlaciona-se com".
+- Tom estritamente clínico, profissional, analítico e empático.
+- Evite determinismos. Use "indica tendência a", "pode sugerir a formação de".
 - Formate em Markdown com títulos em negrito.
-- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados automaticamente pelo sistema no cabeçalho e rodapé do documento de exportação.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -447,31 +516,31 @@ export async function analyzePsidiagnosticAssessment(
   const prompt = `
 Tarefa: Realizar uma análise psicodiagnóstica clínica e elaborar um Relatório de Laudo Técnico Psicológico.
 
+${CLINICAL_FRAMEWORK_PROMPT}
+
 Dados do Paciente:
 Nome: ${patient.name}
 Idade: ${patient.age} Anos
 
 FONTES DE INFORMAÇÃO ANALISADAS:
-
 ${prontuarioText ? `--- HISTÓRICO DE PRONTUÁRIO CLÍNICO (Sessões e Evoluções): ---\n${prontuarioText}\n` : ''}
-
 ${filesText ? `--- DOCUMENTOS ANEXOS (Laudos, Exames e Triagens): ---\n${filesText}\n` : ''}
 
 Considere também o conteúdo de quaisquer arquivos multimídia ou PDFs anexados a esta chamada para complementar a análise diagnóstica.
 
 ESTRUTURA DO RELATÓRIO:
 1. IDENTIFICAÇÃO (Nome e idade do paciente)
-2. DESCRIÇÃO DA DEMANDA (Principais queixas, sintomas, motivos da consulta e demandas observadas nas fontes)
-3. ANÁLISE INTEGRATIVA DAS FONTES (Cruzamento de dados entre o histórico clínico e documentos externos para fundamentar a avaliação)
-4. EXAME DE FUNÇÕES PSÍQUICAS E ASPECTOS COGNITIVOS (Sintetizar as manifestações emocionais, cognitivas, dinâmicas de humor e esquemas cognitivos)
-5. DIAGNÓSTICO E ENQUADRAMENTO (Formular hipóteses diagnósticas com referências ao DSM-5 ou CID-11 de forma não-determinista, correlacionando os sintomas observados)
-6. PLANEJAMENTO DE DIRETRIZES TERAPÊUTICAS (Sugestão de condutas, focos de intervenção e eventuais encaminhamentos a outros especialistas)
+2. DESCRIÇÃO DA DEMANDA (Principais queixas, sintomas, motivos e necessidades emocionais frustradas identificadas)
+3. ANÁLISE INTEGRATIVA DAS FONTES (Cruzamento de dados entre o histórico clínico e documentos para fundamentar a avaliação)
+4. EXAME DE FUNÇÕES PSÍQUICAS E ASPECTOS COGNITIVOS (Sintetizar as manifestações emocionais, cognitivas, crenças centrais disfuncionais, distorções cognitivas frequentes, estilo de enfrentamento e modos esquemáticos ativados)
+5. DIAGNÓSTICO E ENQUADRAMENTO (Formular hipóteses diagnósticas com referências ao DSM-5 ou CID-11 e Diagnóstico Funcional conforme o MDCF, de forma não-determinista, correlacionando os sintomas)
+6. PLANEJAMENTO DE DIRETRIZES TERAPÊUTICAS (Sugestão de condutas baseadas em PDP de HPs, metas de vida, valores pessoais e eventuais encaminhamentos)
 
 Instruções importantes:
 - Tom estritamente profissional, ético, analítico, acadêmico e empático.
-- Evite determinismos diagnósticos. Use termos como "corresponde a um perfil de", "sugere forte ativação de", "indica compatibilidade com".
+- Evite determinismos. Use "corresponde a um perfil de", "sugere forte ativação de".
 - Formate em Markdown com títulos em negrito.
-- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados de forma automática no cabeçalho e rodapé do documento de exportação.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés.
 `;
 
   const contents: any[] = [
@@ -488,7 +557,7 @@ Instruções importantes:
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: contents as any,
   });
 
@@ -505,6 +574,8 @@ export async function analyzeDfcAssessment(
   const prompt = `
 Tarefa: Realizar uma supervisão clínica e elaboração de laudo com base no Diagrama de Funcionamento Cognitivo (DFC / DCC) preenchido sob os preceitos da Terapia Cognitivo-Comportamental (TCC).
 
+${CLINICAL_FRAMEWORK_PROMPT}
+
 Dados do Paciente:
 Nome: ${patient.name}
 Idade: ${patient.age} Anos
@@ -514,20 +585,20 @@ ${dfcText}
 
 ESTRUTURA DO RELATÓRIO CLÍNICO:
 1. IDENTIFICAÇÃO E SUMÁRIO DE CASO (Identificação e breve resumo estrutural)
-2. ANÁLISE DE HISTÓRICO DE DESENVOLVIMENTO (Foco em como as experiências relevantes da infância geraram as crenças centrais identificadas)
-3. CORRELAÇÕES ENTRE REGRAS E ESTRATÉGIAS DE ENFRENTAMENTO (Explicação de como as regras condicionais 'Se... então...' determinam as estratégias compensatórias utilizadas para proteger o paciente da ativação das crenças nucleares)
-4. DINÂMICA DAS SITUAÇÕES MAPEADAS (Análise funcional de como as situações típicas desencadeiam os pensamentos automáticos, significados pessoais, emoções associadas e comportamentos de esquiva/reação)
-5. DIRETRIZES DE REESTRUTURAÇÃO E EXPERIMENTOS COMPORTAMENTAIS (Sugestão de intervenções específicas baseadas em TCC, técnicas de conceituação, questionamento socrático e delineamento de experimentos comportamentais para testar as regras condicionais)
+2. ANÁLISE DE HISTÓRICO DE DESENVOLVIMENTO (Foco em como as experiências relevantes da infância geraram crenças centrais disfuncionais e ativaram EDIs)
+3. CORRELAÇÕES ENTRE REGRAS E ESTRATÉGIAS DE ENFRENTAMENTO (Explicação de como as regras condicionais "Se... então..." determinam as estratégias compensatórias disfuncionais - resignação, evitação, hipercompensação - para proteger o paciente da dor da ativação das crenças)
+4. DINÂMICA DAS SITUAÇÕES MAPEADAS (Análise funcional de como as situações típicas ativam pensamentos automáticos disfuncionais, distorções cognitivas de Beck, emoções nucleares e reações comportamentais)
+5. DIRETRIZES DE REESTRUTURAÇÃO COGNITIVA E EXPERIMENTOS COMPORTAMENTAIS (Sugestão de intervenções específicas para testar as regras condicionais, reestruturar crenças e treinar HPs)
 
 Instruções importantes:
 - Tom clínico qualificado, empático, analítico e profissional.
-- Evite determinismos diagnósticos. Use expressões como "sugere um padrão de", "indica reatividade a", "correlaciona-se com".
+- Evite determinismos. Use "sugere um padrão de", "indica reatividade a".
 - Formate em Markdown com títulos em negrito.
-- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados de forma automática no cabeçalho e rodapé do documento de exportação.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -548,6 +619,8 @@ export async function analyzeThpAssessment(
   const prompt = `
 Tarefa: Realizar supervisão clínica e elaborar um laudo de evolução psicoterapêutica com base no Treinamento de Habilidades Psicológicas (THP) do paciente.
 
+${CLINICAL_FRAMEWORK_PROMPT}
+
 Dados do Paciente:
 Nome: ${patient.name}
 Idade: ${patient.age} Anos
@@ -564,23 +637,23 @@ ${exercisesText}
 - Diários/Sessões de Treinamento Executadas:
 ${sessionLogsText}
 
-${additionalContext ? `Contexto Clínico Adicional (Prontuário/Evoluções): \n${additionalContext}\n` : ""}
+${additionalContext ? `Contexto Clínico Adicional: \n${additionalContext}\n` : ""}
 
 ESTRUTURA DO RELATÓRIO CLÍNICO / LAUDO DE EVOLUÇÃO THP:
-1. ANÁLISE QUANTITATIVA E EVOLUTIVA (Análise do progresso atual do nível de habilidade e nível alvo, contextualizando o comprometimento do paciente)
-2. AVALIAÇÃO DE EXERCÍCIOS E ADERÊNCIA (Discussão sobre a realização dos exercícios recomendados, o que funcionou e o que não funcionou)
-3. DINÂMICA DOS OBSTÁCULOS E ESTRATÉGIAS DE ENFRENTAMENTO (Análise sutil das principais barreiras encontradas, como resistências cognitivas, esquemas ativados ou contingências ambientais, e a eficácia das estratégias usadas para superá-las)
-4. CONCLUSÃO CLÍNICA E RECOMENDAÇÕES (Diretrizes terapêuticas para o paciente continuar evoluindo nessa habilidade ou se já é o momento de iniciar o treinamento de outra habilidade psicológica)
+1. ANÁLISE QUANTITATIVA E EVOLUTIVA (Análise do progresso atual da HP treinada, nível de flexibilidade e engajamento)
+2. AVALIAÇÃO DE EXERCÍCIOS E ADERÊNCIA (Discussão sobre a realização dos exercícios de imersão, o que funcionou e barreiras encontradas)
+3. DINÂMICA DOS OBSTÁCULOS E ESTRATÉGIAS DE ENFRENTAMENTO (Análise sutil das barreiras, resistências cognitivas, EIDs/crenças ativados, distorções de Beck e estilo de coping adotado)
+4. CONCLUSÃO CLÍNICA E RECOMENDAÇÕES (Diretrizes baseadas em valores, frase de poder de mentalidade saudável, e se o paciente está pronto para outra HP ou precisa continuar)
 
 Instruções importantes:
 - Tom clínico qualificado, empático, analítico e profissional.
-- Evite julgamentos de valor ou determinismos. Use expressões adequadas de hipóteses clínicas.
+- Evite julgamentos de valor ou determinismos.
 - Formate em Markdown com títulos claros em negrito.
-- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés, pois estes são gerados de forma automática no cabeçalho e rodapé do documento de exportação.
+- IMPORTANTE: NÃO inclua campos manuais de data, local, assinatura ou rodapés.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
   });
 
@@ -616,7 +689,7 @@ Retorne os dados em formato JSON estrito conforme o schema especificado. Seja pr
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -674,7 +747,9 @@ export async function generatePsicometrikReport(
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
-Você é um neurocientista clínico sênior e psicoterapeuta ph.D especialista em Terapia Cognitivo-Comportamental de 4ª Geração (ACT, DBT, Mindfulness, Autocompaixão, etc). Visando emitir um laudo técnico extremamente aprofundado, de alta qualidade acadêmica e clínica, analise os seguintes dados fornecidos da avaliação psicológica digital do paciente.
+Você é um neurocientista clínico sênior e psicoterapeuta ph.D especialista em Terapia Cognitivo-Comportamental de 4ª Geração. Visando emitir um laudo técnico extremamente aprofundado, de alta qualidade acadêmica e clínica, analise os seguintes dados fornecidos da avaliação psicológica digital do paciente.
+
+${CLINICAL_FRAMEWORK_PROMPT}
 
 --- DADOS DO PACIENTE ---
 Nome: ${patientInfo.name}
@@ -697,15 +772,15 @@ Sua tarefa é redigir um Relatório de Avaliação Clínica/Intervenção de pon
 
 1. **Sumário Executivo & Perfil Psicométrico**: Apresente uma análise objetiva das pontuações obtidas na ferramenta, explicando detalhadamente o perfil do paciente e o significado das pontuações globais e subescalas. 
 
-2. **Análise de Flexibilidade Psicológica (TCC de 4ª Geração)**: Interprete o comportamento do paciente sob a luz da TCC de 4ª Geração (ex: processos do hexaflex da ACT como fusão cognitiva, esquiva experiencial, deficit de autocompaixão, clareza sobre valores ou déficit de regulação na DBT). Explique como esse perfil de sintomas do teste retroalimenta os padrões de sofrimento psíquico.
+2. **Análise de Flexibilidade Psicológica (TCC de 4ª Geração)**: Interprete o comportamento do paciente sob a luz da TCC de 4ª Geração (ex: processos do hexaflex da ACT como fusão cognitiva, esquiva experiencial, deficit de autocompaixão, clareza sobre valores ou déficit de regulação na DBT). Explique como esse perfil de sintomas do teste retroalimenta os padrões de sofrimento psíquico, identificando hipóteses de EIDs e crenças centrais latentes correspondentes.
 
 3. **Mecanismos Neurobiológicos & Neurociência Clínica**: Explique os sistemas neurais provavelmente implicados nesse padrão psicopatológico ou cognitivo (ex: atividade da amígdala versus controle inibitório pelo córtex pré-frontal dorsolateral/ventromedial, vias de regulação de neurotransmissores como serotonina, dopamina ou cortisol sob estresse crônico). Relacione os dados do teste à biologia do sistema nervoso.
 
-4. **Prognóstico Estatístico-Clínico & Reserva de Resiliência**: Com base na idade, histórico e resultados, forneça uma análise prognóstica qualitativa sobre a evolução do quadro clínico. Destaque quais fatores representam potencial de reserva cognitiva e de resiliência neurológica que atuarão positivamente no tratamento.
+4. **Prognóstico Estatístico-Clínico & Reserva de Resiliência**: Com base na idade, histórico e resultados, forneça uma análise prognóstica qualitativa sobre a evolução do quadro clínico. Destaque quais fatores representam potencial de reserva cognitiva e de resiliência neurológica (fatores protetivos, Esquemas Adaptativos) que atuarão positivamente no tratamento.
 
-5. **Diretrizes e Protocolo de Intervenção Personalizada**: Apresente propostas práticas de intervenção. Inclua estratégias específicas de TCC de 4ª Geração (exercícios de mindfulness, desfusão cognitiva baseada na ACT, estratégias de efetividade interpessoal ou tolerância ao mal-estar da DBT, treinos de reestruturação ativa) ou exercícios práticos de treinamento cognitivo/neuropsicológico específicos ao déficit avaliado.
+5. **Diretrizes e Protocolo de Intervenção Personalizada**: Apresente propostas práticas de intervenção. Inclua estratégias específicas de TCC de 4ª Geração (exercícios de mindfulness, desfusão cognitiva baseada na ACT, estratégias de efetividade interpessoal ou tolerância ao mal-estar da DBT, treinos de reestruturação ativa) ou exercícios práticos de treinamento cognitivo/neuropsicológico específicos ao déficit avaliado para treino das HPs.
 
-6. **Orientações e Conduta Multidisciplinar**: Detalhe recomendações de higiene neurobiológica (adequação de cronobiologia, higiene do sono, estimulação física e alimentação), bem como possíveis encaminhamentos e necessidades de exames médicos adicionais (Ex: polissonografia, painel metabólico, avaliação com psiquiatra ou exames de imagem se necessário).
+6. **Orientações e Conduta Multidisciplinar**: Detalhe recomendações de higiene neurobiológica (adequação de cronobiologia, higiene do sono, estimulação física e alimentação), bem como possíveis encaminhamentos e necessidades de exames médicos adicionais.
 
 Por favor, escreva de maneira compassiva, ética, com jargão técnico refinado e rigor acadêmico, mas mantendo a utilidade prática para o terapeuta. Use o idioma português do Brasil. O relatório deve ser rico e conter análises densas e detalhadas.
 `;
@@ -717,181 +792,3 @@ Por favor, escreva de maneira compassiva, ética, com jargão técnico refinado 
 
   return response.text;
 }
-
-export async function extractRidFromText(text: string) {
-  const apiKey = await getApiKey();
-  const ai = new GoogleGenAI({ apiKey });
-
-  const prompt = `
-    Você é um psicólogo clínico experiente especializado em Terapia Cognitivo-Comportamental (TCC) e Terapia do Esquema.
-    Sua tarefa é ler as notas de atendimento ou relatos clínicos a seguir e extrair os dados estruturados para preencher um Registro Dialético-Cognitivo (RID).
-    
-    TEXTO PARA ANÁLISE:
-    """
-    ${text}
-    """
-    
-    Por favor, extraia de forma precisa e retorne o JSON com as seguintes propriedades:
-    1. situacao: A situação/contexto gatilho (onde, quando, o que aconteceu).
-    2. pensamento: Os pensamentos automáticos disfuncionais que passaram pela mente do paciente.
-    3. necessidade: Lista de necessidades emocionais básicas insatisfeitas (ex: aceitação, validação, competência, conexão, segurança, etc.).
-    4. esquema: Lista de esquemas cognitivos disfuncionais ativados (ex: fracasso, defectividade, abandono, isolamento social, padrões inflexíveis, etc.).
-    5. emocao: A emoção principal com seu nome e intensidade (0 a 100).
-    6. comportamento: O comportamento ou reação motora diante do gatilho (evitação, fuga, confronto, etc.).
-    7. consequenciasCurtoPrazo: As consequências imediatas do comportamento (geralmente alívio temporário).
-    8. consequenciasLongoPrazo: Os prejuízos ou consequências a longo prazo.
-  `;
-
-  const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          situacao: { type: Type.STRING },
-          pensamento: { type: Type.STRING },
-          necessidade: { type: Type.ARRAY, items: { type: Type.STRING } },
-          esquema: { type: Type.ARRAY, items: { type: Type.STRING } },
-          emocao: {
-            type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING },
-              intensity: { type: Type.INTEGER }
-            },
-            required: ["name", "intensity"]
-          },
-          comportamento: { type: Type.STRING },
-          consequenciasCurtoPrazo: { type: Type.STRING },
-          consequenciasLongoPrazo: { type: Type.STRING }
-        },
-        required: [
-          "situacao",
-          "pensamento",
-          "necessidade",
-          "esquema",
-          "emocao",
-          "comportamento",
-          "consequenciasCurtoPrazo",
-          "consequenciasLongoPrazo"
-        ]
-      }
-    }
-  });
-
-  return JSON.parse(response.text || "{}");
-}
-
-export async function extractPciFromText(text: string) {
-  const apiKey = await getApiKey();
-  const ai = new GoogleGenAI({ apiKey });
-
-  const prompt = `
-    Você é um psicólogo clínico supervisor experiente em Terapia Cognitivo-Comportamental (TCC).
-    Sua tarefa é ler as notas de atendimento ou relatos clínicos a seguir e extrair os dados estruturados para preencher um Plano Clínico Integrado (PCI).
-    
-    TEXTO PARA ANÁLISE:
-    """
-    ${text}
-    """
-    
-    Por favor, extraia de forma precisa e retorne o JSON com as seguintes propriedades:
-    1. approach: Abordagem teórica (ex: "Terapia Cognitivo-Comportamental (TCC)").
-    2. phase: Fase atual da terapia ("triagem", "intervencao", "alta", "recaida").
-    3. idade: Idade aproximada ou citada.
-    4. escolaridade: Escolaridade ou profissão do paciente.
-    5. estadoCivil: Estado civil ("Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável").
-    6. familiaOrigem: Contexto familiar e histórico da família de origem.
-    7. rotina: Hábitos de rotina, sono, lazer, exercícios, etc.
-    8. eventoQueixas: A queixa principal ou evento precipitador do sofrimento.
-    9. ridSituacao: Situação-gatilho típica descrita.
-    10. ridPensamento: Pensamentos automáticos associados.
-    11. ridEmocao: Emoções e sentimentos corporais.
-    12. ridEmocaoIntensidade: Intensidade da emoção de 0 a 100.
-    13. ridComportamento: Comportamento ou reação demonstrada.
-    14. ridConsequencias: Consequência de curto prazo.
-    15. ridConsequenciasLP: Consequência de longo prazo.
-    16. satisfacaoPessoal: Nível de satisfação Pessoal de 0 a 100.
-    17. satisfacaoInterpessoal: Nível de satisfação Interpessoal de 0 a 100.
-    18. satisfacaoOcupacional: Nível de satisfação Ocupacional de 0 a 100.
-    19. satisfacaoMaterial: Nível de satisfação Material de 0 a 100.
-    20. satisfacaoRecreativa: Nível de satisfação Recreativa de 0 a 100.
-    21. satisfacaoExistencial: Nível de satisfação Existencial de 0 a 100.
-    22. necessidadesIdentificadas: Necessidades emocionais básicas insatisfeitas (separadas por "; ").
-    23. esquemasCognitivos: Esquemas iniciais desadaptativos (separados por "; ").
-    24. crencasCentrais: Crenças centrais/nucleares (separadas por "; ").
-    25. crencasPerifericas: Regras condicionais e crenças intermediárias (separadas por "; ").
-    26. excessosComp: Comportamentos em excesso (separados por "; ").
-    27. deficitsHab: Déficits de habilidades (separados por "; ").
-    28. historicoFormativo: Histórico de infância/formação das crenças (separado por "; ").
-    29. instrumentos: Instrumentos de avaliação e testes citados.
-    30. diagTopo: Diagnósticos topográficos DSM-5/CID-11 (ex: depressão, ansiedade, etc.).
-    31. diagFunc: Diagnóstico funcional clínico (manutenção).
-    32. projetoTerap: Intervenções planejadas (separadas por "; ").
-    33. relacionamentoTerap: Postura terapêutica indicada.
-    34. evolucao: Resumo da evolução e andamento do caso.
-  `;
-
-  const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          approach: { type: Type.STRING },
-          phase: { type: Type.STRING },
-          idade: { type: Type.STRING },
-          escolaridade: { type: Type.STRING },
-          estadoCivil: { type: Type.STRING },
-          familiaOrigem: { type: Type.STRING },
-          rotina: { type: Type.STRING },
-          eventoQueixas: { type: Type.STRING },
-          ridSituacao: { type: Type.STRING },
-          ridPensamento: { type: Type.STRING },
-          ridEmocao: { type: Type.STRING },
-          ridEmocaoIntensidade: { type: Type.INTEGER },
-          ridComportamento: { type: Type.STRING },
-          ridConsequencias: { type: Type.STRING },
-          ridConsequenciasLP: { type: Type.STRING },
-          satisfacaoPessoal: { type: Type.INTEGER },
-          satisfacaoInterpessoal: { type: Type.INTEGER },
-          satisfacaoOcupacional: { type: Type.INTEGER },
-          satisfacaoMaterial: { type: Type.INTEGER },
-          satisfacaoRecreativa: { type: Type.INTEGER },
-          satisfacaoExistencial: { type: Type.INTEGER },
-          necessidadesIdentificadas: { type: Type.STRING },
-          esquemasCognitivos: { type: Type.STRING },
-          crencasCentrais: { type: Type.STRING },
-          crencasPerifericas: { type: Type.STRING },
-          excessosComp: { type: Type.STRING },
-          deficitsHab: { type: Type.STRING },
-          historicoFormativo: { type: Type.STRING },
-          instrumentos: { type: Type.STRING },
-          diagTopo: { type: Type.STRING },
-          diagFunc: { type: Type.STRING },
-          projetoTerap: { type: Type.STRING },
-          relacionamentoTerap: { type: Type.STRING },
-          evolucao: { type: Type.STRING }
-        },
-        required: [
-          "approach", "phase", "idade", "escolaridade", "estadoCivil",
-          "familiaOrigem", "rotina", "eventoQueixas", "ridSituacao",
-          "ridPensamento", "ridEmocao", "ridEmocaoIntensidade", "ridComportamento",
-          "ridConsequencias", "ridConsequenciasLP", "satisfacaoPessoal",
-          "satisfacaoInterpessoal", "satisfacaoOcupacional", "satisfacaoMaterial",
-          "satisfacaoRecreativa", "satisfacaoExistencial", "necessidadesIdentificadas",
-          "esquemasCognitivos", "crencasCentrais", "crencasPerifericas",
-          "excessosComp", "deficitsHab", "historicoFormativo", "instrumentos",
-          "diagTopo", "diagFunc", "projetoTerap", "relacionamentoTerap", "evolucao"
-        ]
-      }
-    }
-  });
-
-  return JSON.parse(response.text || "{}");
-}
-
-

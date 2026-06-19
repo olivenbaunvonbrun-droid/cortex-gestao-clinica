@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CLINICAL_SUGGESTIONS_DB } from "../BibliotecaAvaliacao/components/ClinicalSuggestionsHelper";
+
 export const SCHEMAS_DATA = [
   {
     domain: "Domínio 1 – Desconexão e Rejeição",
@@ -57,48 +59,83 @@ export const SCHEMAS_DATA = [
 export const NEEDS_DATA = [
   {
     category: "Necessidades Infantis",
-    needs: [
-      "Atenção", "Carinho", "Reconhecimento", "Vinculação", "Proteção", 
-      "Cuidado", "Autonomia", "Socialização", "Conversação", "Instrução", 
-      "Brincar", "Limites", "Gregária", "Autoconceito", "Compreensão"
-    ]
+    needs: CLINICAL_SUGGESTIONS_DB.necessidades_infantil.items.map(item => item.key)
   },
   {
     category: "Estilos Parentais",
-    needs: ["Negligente", "Permissivo", "Autoritário", "Participativo"]
+    needs: CLINICAL_SUGGESTIONS_DB.estilos_parentais.items.map(item => item.key)
   },
   {
     category: "Necessidades Parentais",
-    needs: [
-      "Honra", "Respeito", "Carinho", "Reconhecimento", "Vinculação", 
-      "Autoridade", "Autonomia", "Conversação", "Compreensão", "Sabedoria"
-    ]
+    needs: CLINICAL_SUGGESTIONS_DB.necessidades_parental.items.map(item => item.key)
   },
   {
     category: "Necessidades Conjugais",
-    needs: [
-      "Atenção", "Admiração", "Conversa íntima", "Carinho", "Atração física", 
-      "Sexo", "Romantismo", "Apoio doméstico", "Apoio financeiro", "Lazer", "Individualidade"
-    ]
+    needs: CLINICAL_SUGGESTIONS_DB.necessidades_conjugal.items.map(item => item.key)
   },
   {
     category: "Necessidades Adultas",
-    needs: [
-      "Atenção", "Carinho", "Reconhecimento", "Autoestima", "Vínculo", 
-      "Confiança", "Socialização", "Desejabilidade", "Realização", "Autonomia", 
-      "Proteção", "Asserção", "Gregária", "Compreensão", "Responsabilidade", 
-      "Liberdade e poder", "Aprovação", "Otimismo", "Reflexividade", "Controle", 
-      "Recreatividade", "Enfrentamento", "Intimidade", "Correspondência", "Feedback", "Merecimento"
-    ]
+    needs: CLINICAL_SUGGESTIONS_DB.necessidades_adulto.items.map(item => item.key)
   },
   {
     category: "Esquemas Desadaptativos",
+    needs: CLINICAL_SUGGESTIONS_DB.esquemas.items.map(item => item.key)
+  },
+  {
+    category: "Esquemas Adaptativos",
+    needs: CLINICAL_SUGGESTIONS_DB.esquemas_adaptativos.items.map(item => item.key)
+  },
+  {
+    category: "Crenças Centrais Disfuncionais",
+    needs: CLINICAL_SUGGESTIONS_DB.crencas_centrais.items.map(item => item.key)
+  },
+  {
+    category: "Crenças Centrais Funcionais",
+    needs: CLINICAL_SUGGESTIONS_DB.crencas_centrais_funcionais.items.map(item => item.key)
+  },
+  {
+    category: "Crenças Intermediárias",
     needs: [
-      "Privação emocional", "Abandono", "Desconfiança", "Defectividade", 
-      "Indesejabilidade social", "Fracasso", "Dependência/incompetência", 
-      "Vulnerabilidade", "Emaranhamento", "Subjugação", "Autossacrifício", 
-      "Inibição emocional", "Padrões inflexíveis", "Grandiosidade", "Autocontrole insuficiente"
+      ...CLINICAL_SUGGESTIONS_DB.crencas_intermediarias.items.map(item => item.key),
+      ...CLINICAL_SUGGESTIONS_DB.crencas_intermediarias_adaptativas.items.map(item => item.key)
     ]
+  },
+  {
+    category: "Pensamentos Automáticos",
+    needs: [
+      ...CLINICAL_SUGGESTIONS_DB.pensamentos_automaticos_negativos.items.map(item => item.key),
+      ...CLINICAL_SUGGESTIONS_DB.pensamentos_automaticos_positivos.items.map(item => item.key)
+    ]
+  },
+  {
+    category: "Modos Esquemáticos",
+    needs: CLINICAL_SUGGESTIONS_DB.modos_esquematicos.items.map(item => item.key)
+  },
+  {
+    category: "Vieses Cognitivos",
+    needs: CLINICAL_SUGGESTIONS_DB.vieses_cognitivos.items.map(item => item.key)
+  },
+  {
+    category: "Padrões Comportamentais",
+    needs: [
+      ...CLINICAL_SUGGESTIONS_DB.padroes_comportamentais_disfuncionais.items.map(item => item.key),
+      ...CLINICAL_SUGGESTIONS_DB.padroes_comportamentais_funcionais.items.map(item => item.key)
+    ]
+  },
+  {
+    category: "Emoções Nucleares",
+    needs: [
+      ...CLINICAL_SUGGESTIONS_DB.sentimentos.items.map(item => item.key),
+      ...CLINICAL_SUGGESTIONS_DB.sentimentos_funcionais.items.map(item => item.key)
+    ]
+  },
+  {
+    category: "Fatores Protetivos",
+    needs: CLINICAL_SUGGESTIONS_DB.fatores_protetivos.items.map(item => item.key)
+  },
+  {
+    category: "Parâmetros Avançados",
+    needs: CLINICAL_SUGGESTIONS_DB.parametros_avancados.items.map(item => item.key)
   },
   {
     category: "Habilidades Psicológicas",
@@ -131,7 +168,7 @@ export const BASIC_EMOTIONS = [
   { name: "Medo", symptoms: "Taquicardia (coração disparado), respiração curta/ofegante, tremores, suor frio, boca seca." },
   { name: "Nojo", symptoms: "Náusea, contração na região do estômago, careta/expressão facial de repulsa, salivação excessiva." },
   { name: "Surpresa", symptoms: "Sobressalto, olhos arregalados/elevação das sobrancelhas, inspiração rápida e retenção do ar." },
-  { name: "Ansiedade", symptoms: "Aperto no peito, inquietação motora, suor nas mãos, nó no estômago, tremores, tensão nos ombros." },
+  { name: "Ansiedade", symptoms: "Aperto no peito, inquietação motora, suor nas mãos, nó no estômago, tremores, tensionamento de ombros." },
   { name: "Culpa", symptoms: "Sensação de peso nos ombros/peito, nó na garganta, evitação do olhar, desconforto no estômago." },
   { name: "Vergonha", symptoms: "Rubor facial (corar), calor súbito, aumento cardíaco repentino, evitação do contato visual." },
   { name: "Frustração", symptoms: "Tensão na mandíbula/ombros, suspiros frequentes, sensação de calor na cabeça, impaciência." },
@@ -139,16 +176,10 @@ export const BASIC_EMOTIONS = [
   { name: "Amor", symptoms: "Sensação de calor/acolhimento no peito, sorriso fácil, expressão suave, leve frio no estômago." }
 ];
 
-export const COGNITIVE_DISTORTIONS = [
-  { name: "Catastrofização", description: "Imaginar o pior cenário possível sem considerar outras alternativas." },
-  { name: "Tudo ou Nada", description: "Ver as coisas em categorias de preto ou branco, sem meio-termo." },
-  { name: "Leitura de Mente", description: "Acreditar saber o que os outros estão pensando, geralmente de forma negativa." },
-  { name: "Supergeneralização", description: "Ver um único evento negativo como um padrão interminável de derrotas." },
-  { name: "Personalização", description: "Assumir a responsabilidade por eventos negativos externos sem base factual." },
-  { name: "Raciocínio Emocional", description: "Presumir que suas emoções negativas refletem a realidade das coisas." },
-  { name: "Imperativos (Devo/Tenho que)", description: "Autoimpor regras rígidas que geram culpa ou frustração." },
-  { name: "Rotulação", description: "Atribuir rótulos globais negativos a si mesmo ou aos outros." }
-];
+export const COGNITIVE_DISTORTIONS = CLINICAL_SUGGESTIONS_DB.distorcoes.items.map(item => ({
+  name: item.key,
+  description: item.explanation
+}));
 
 export const SITUATION_SUGGESTIONS = [
   "Receber uma crítica ou feedback negativo",

@@ -26,6 +26,9 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
   const [history, setHistory] = useState<RidEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<RidEntry | undefined>(undefined);
   const [comparisonEntries, setComparisonEntries] = useState<[RidEntry, RidEntry] | null>(null);
+  const [comparisonMinimized, setComparisonMinimized] = useState(false);
+  const [comparisonMaximized, setComparisonMaximized] = useState(false);
+  const [comparisonSnapState, setComparisonSnapState] = useState<any>(null);
   const [settings, setSettings] = useState<AppSettings>({
     theme: 'dark',
     fontSize: '14px',
@@ -259,9 +262,37 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
       {comparisonEntries && (
         <ComparisonView 
           entries={comparisonEntries} 
-          onClose={() => setComparisonEntries(null)} 
+          isMinimized={comparisonMinimized}
+          isMaximized={comparisonMaximized}
+          snapState={comparisonSnapState}
+          onSnapChange={setComparisonSnapState}
+          onClose={() => {
+            setComparisonEntries(null);
+            setComparisonMinimized(false);
+            setComparisonMaximized(false);
+            setComparisonSnapState(null);
+          }}
+          onMinimize={() => setComparisonMinimized(true)}
+          onMaximize={() => setComparisonMaximized(!comparisonMaximized)}
           settings={settings}
         />
+      )}
+
+      {comparisonEntries && comparisonMinimized && (
+        <div className="fixed bottom-20 right-6 z-[120] bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-3 flex items-center gap-3 animate-in slide-in-from-bottom-5">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-main">Comparação RID (Minimizada)</span>
+          </div>
+          <button 
+            onClick={() => setComparisonMinimized(false)}
+            className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline cursor-pointer bg-primary/10 border border-primary/20 px-2.5 py-1.5 rounded-lg transition-all"
+          >
+            Restaurar
+          </button>
+        </div>
       )}
 
       <Toaster 

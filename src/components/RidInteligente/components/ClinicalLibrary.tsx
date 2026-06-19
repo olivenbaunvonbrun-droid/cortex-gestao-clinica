@@ -1,33 +1,43 @@
 import React from 'react';
-import { X, BookOpen, ChevronRight, Info } from 'lucide-react';
+import { ChevronRight, Info } from 'lucide-react';
 import { SCHEMAS_DATA, NEEDS_DATA, COPING_STYLES } from '../constants';
+import { Window } from '../../ui/Window';
 
 interface ClinicalLibraryProps {
   onClose: () => void;
+  isMinimized: boolean;
+  isMaximized: boolean;
+  snapState?: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null;
+  onSnapChange?: (snap: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null) => void;
+  onMinimize: () => void;
+  onMaximize: () => void;
 }
 
-export function ClinicalLibrary({ onClose }: ClinicalLibraryProps) {
+export function ClinicalLibrary({ 
+  onClose, 
+  isMinimized, 
+  isMaximized, 
+  snapState = null, 
+  onSnapChange, 
+  onMinimize, 
+  onMaximize 
+}: ClinicalLibraryProps) {
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-bg-card border border-border-subtle w-full max-w-4xl h-[80vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-        <header className="p-6 border-b border-border-subtle flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/20 p-2 rounded-xl text-primary border border-primary/20">
-              <BookOpen size={20} />
-            </div>
-            <div>
-              <h2 className="text-sm font-black text-text-main uppercase tracking-wider">Biblioteca Clínica</h2>
-              <p className="text-[10px] text-text-dim font-bold uppercase tracking-widest mt-0.5">Referência Técnica TCC / Esquema</p>
-            </div>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-white/5 rounded-full transition-colors cursor-pointer text-text-dim hover:text-text-main"
-          >
-            <X size={20} />
-          </button>
-        </header>
-
+    <Window
+      title="Biblioteca Clínica - Referência TCC / Esquema"
+      isMinimized={isMinimized}
+      isMaximized={isMaximized}
+      snapState={snapState}
+      onSnapChange={onSnapChange}
+      zIndex={110}
+      onClose={onClose}
+      onMinimize={onMinimize}
+      onMaximize={onMaximize}
+      onFocus={() => {}}
+      defaultWidth={850}
+      defaultHeight={600}
+    >
+      <div className="flex-1 flex flex-col min-h-0 bg-bg-card overflow-hidden">
         <div className="flex-1 overflow-y-auto p-8 space-y-12 scroller-hide">
           {/* SCHEMAS */}
           <section>
@@ -97,7 +107,7 @@ export function ClinicalLibrary({ onClose }: ClinicalLibraryProps) {
           </section>
         </div>
 
-        <footer className="p-6 bg-bg-deep border-t border-border-subtle flex items-center gap-3">
+        <footer className="p-6 bg-bg-deep border-t border-border-subtle flex items-center gap-3 shrink-0">
           <Info size={16} className="text-text-dim shrink-0" />
           <p className="text-[10px] text-text-dim font-medium leading-relaxed">
             Esta biblioteca baseia-se no modelo original de Jeffrey Young e nos Parâmetros Clínicos de TCC. 
@@ -105,6 +115,6 @@ export function ClinicalLibrary({ onClose }: ClinicalLibraryProps) {
           </p>
         </footer>
       </div>
-    </div>
+    </Window>
   );
 }

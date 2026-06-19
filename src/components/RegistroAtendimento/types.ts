@@ -7,7 +7,7 @@ export interface PatientData {
   signatureUrl?: string;
 }
 
-export type AttendanceTemplateType = 'soap' | 'evolution' | 'screening';
+export type AttendanceTemplateType = 'soap' | 'evolution' | 'screening' | 'completo';
 
 export interface AttendanceRecord {
   id: string;

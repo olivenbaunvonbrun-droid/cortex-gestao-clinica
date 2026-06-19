@@ -68,6 +68,9 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
   const [analysis, setAnalysis] = useState<string | undefined>(initialData?.analysis);
   const [error, setError] = useState<string | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [libraryMinimized, setLibraryMinimized] = useState(false);
+  const [libraryMaximized, setLibraryMaximized] = useState(false);
+  const [librarySnapState, setLibrarySnapState] = useState<any>(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
   const [lastGeneratedReport, setLastGeneratedReport] = useState<string | null>(null);
@@ -363,7 +366,7 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
               <Upload size={12} /> Importar Registros
             </button>
             <button 
-              onClick={() => setShowLibrary(true)}
+              onClick={() => { setShowLibrary(true); setLibraryMinimized(false); }}
               className="text-[10px] font-black text-primary hover:text-primary-hover uppercase tracking-widest flex items-center gap-1 transition-colors cursor-pointer"
             >
               <BookOpen size={12} /> Biblioteca
@@ -906,12 +909,40 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
         </AnimatePresence>
       </section>
 
-      {/* LIBRARY MODAL */}
-      <AnimatePresence>
-        {showLibrary && (
-          <ClinicalLibrary onClose={() => setShowLibrary(false)} />
-        )}
-      </AnimatePresence>
+      {/* LIBRARY WINDOW */}
+      {showLibrary && (
+        <ClinicalLibrary 
+          isMinimized={libraryMinimized}
+          isMaximized={libraryMaximized}
+          snapState={librarySnapState}
+          onSnapChange={setLibrarySnapState}
+          onClose={() => {
+            setShowLibrary(false);
+            setLibraryMinimized(false);
+            setLibraryMaximized(false);
+            setLibrarySnapState(null);
+          }}
+          onMinimize={() => setLibraryMinimized(true)}
+          onMaximize={() => setLibraryMaximized(!libraryMaximized)}
+        />
+      )}
+
+      {showLibrary && libraryMinimized && (
+        <div className="fixed bottom-6 right-6 z-[120] bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-3 flex items-center gap-3 animate-in slide-in-from-bottom-5">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-text-main">Biblioteca Clínica (Minimizada)</span>
+          </div>
+          <button 
+            onClick={() => setLibraryMinimized(false)}
+            className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline cursor-pointer bg-primary/10 border border-primary/20 px-2.5 py-1.5 rounded-lg transition-all"
+          >
+            Restaurar
+          </button>
+        </div>
+      )}
 
       {/* CONFIRMATION MODALS */}
       <ConfirmationModal 
