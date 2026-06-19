@@ -1,4 +1,4 @@
-import { Assessment } from '../types';
+import { Assessment, HP_DETAILS, IHP_QUESTIONS, FREQUENCY_LABELS } from '../types';
 import { calculateAssessment } from '../lib/scoring';
 import { db } from '../../../lib/db';
 
@@ -296,6 +296,37 @@ export async function exportToHtml(assessment: Assessment) {
               </div>
           </div>
         ` : ''}
+
+        <div class="section" style="page-break-before: always;">
+            <div class="section-header">Espelho de Respostas do Examinando</div>
+            <div class="content-area">
+                <table style="width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 11px; margin-top: 15px;">
+                    <thead>
+                        <tr style="background: var(--primary); color: white; text-align: left;">
+                            <th style="padding: 8px 10px; width: 8%;">Item</th>
+                            <th style="padding: 8px 10px; width: 52%;">Questão</th>
+                            <th style="padding: 8px 10px; width: 20%;">Habilidade</th>
+                            <th style="padding: 8px 10px; width: 20%; text-align: right;">Resposta Selecionada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${IHP_QUESTIONS.map(q => {
+                            const ans = assessment.answers[q.id];
+                            const label = ans ? `${ans} - ${FREQUENCY_LABELS[ans]}` : 'Não respondida';
+                            const catName = HP_DETAILS[q.categoryKey]?.name || q.categoryKey;
+                            return `
+                                <tr style="border-bottom: 1px solid var(--border); background: ${q.id % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+                                    <td style="padding: 8px 10px; font-weight: 700; color: var(--primary);">${q.id}</td>
+                                    <td style="padding: 8px 10px; color: #475569;">${q.text}</td>
+                                    <td style="padding: 8px 10px; color: var(--accent); font-weight: bold; font-size: 9px;">${catName}</td>
+                                    <td style="padding: 8px 10px; text-align: right; font-weight: 700; color: var(--primary); font-size: 9px;">${label}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
         <footer>
             <div style="display: inline-block; text-align: center; position: relative;">

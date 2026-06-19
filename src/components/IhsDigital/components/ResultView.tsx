@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Download, FileText, Calendar, User, Zap, Printer, Sparkles, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Assessment, Frequency } from '../types';
+import { Assessment, Frequency, IHS_QUESTIONS, FREQUENCY_LABELS } from '../types';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { cn } from '../../../lib/utils';
 import { analyzeIhsAssessment } from '../../../services/geminiService';
@@ -200,6 +200,38 @@ export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: R
               </div>
             )}
             
+            {/* Espelho de Respostas */}
+            <div className="mt-12 pt-8 border-t border-border-subtle font-sans space-y-4 text-left">
+              <h3 className="text-xs font-black uppercase text-primary tracking-widest mb-4">
+                Espelho de Respostas do Examinando
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[11px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-border-subtle text-text-dim uppercase tracking-wider font-bold">
+                      <th className="py-2 pr-4 w-12">Item</th>
+                      <th className="py-2 px-4">Questão</th>
+                      <th className="py-2 pl-4 text-right w-44">Resposta Selecionada</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {IHS_QUESTIONS.map((q) => {
+                      const ans = assessment.answers[q.id];
+                      return (
+                        <tr key={q.id} className="border-b border-border-subtle/40 hover:bg-bg-sidebar/20 text-text-main/90 font-medium">
+                          <td className="py-2 pr-4 font-bold text-text-dim">{q.id}</td>
+                          <td className="py-2 px-4">{q.text}</td>
+                          <td className="py-2 pl-4 text-right font-bold text-primary">
+                            {ans ? FREQUENCY_LABELS[ans] : 'Não respondida'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div className="mt-16 pt-8 border-t border-border-subtle font-sans">
                <div className="flex flex-col items-center">
                   <div className="w-48 h-[1px] bg-border-subtle mb-3" />

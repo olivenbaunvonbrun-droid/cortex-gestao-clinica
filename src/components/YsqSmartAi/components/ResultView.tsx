@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Download, FileText, Calendar, User, Zap, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Assessment, Frequency, SCHEMA_DETAILS, YSQ_QUESTIONS } from '../types';
+import { Assessment, Frequency, SCHEMA_DETAILS, YSQ_QUESTIONS, FREQUENCY_LABELS } from '../types';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { cn } from '../../../lib/utils';
 import { analyzeYsqAssessment } from '../../../services/geminiService';
@@ -238,6 +238,41 @@ export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: R
               </div>
             )}
             
+            {/* Espelho de Respostas */}
+            <div className="mt-12 pt-8 border-t border-border-subtle font-sans space-y-4 text-left">
+              <h3 className="text-xs font-black uppercase text-primary tracking-widest mb-4">
+                Espelho de Respostas do Examinando
+              </h3>
+              <div className="overflow-x-auto max-h-[400px] scroller-hide border border-border-subtle/50 rounded-2xl">
+                <table className="w-full text-left text-[11px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-border-subtle text-text-dim uppercase tracking-wider font-bold bg-bg-sidebar/40 sticky top-0">
+                      <th className="py-2.5 px-4 w-12">Item</th>
+                      <th className="py-2.5 px-4">Questão</th>
+                      <th className="py-2.5 px-4 w-28">Esquema</th>
+                      <th className="py-2.5 px-4 text-right w-48">Resposta Selecionada</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {YSQ_QUESTIONS.map((q) => {
+                      const ans = assessment.answers[q.id];
+                      const schemaName = SCHEMA_DETAILS[q.schemaKey]?.name || q.schemaKey;
+                      return (
+                        <tr key={q.id} className="border-b border-border-subtle/30 hover:bg-bg-sidebar/20 text-text-main/90 font-medium">
+                          <td className="py-2 px-4 font-bold text-text-dim">{q.id}</td>
+                          <td className="py-2 px-4">{q.text}</td>
+                          <td className="py-2 px-4 text-[10px] text-primary font-black uppercase tracking-wider">{schemaName}</td>
+                          <td className="py-2 px-4 text-right font-bold text-primary">
+                            {ans ? `${ans} - ${FREQUENCY_LABELS[ans]}` : 'Não respondida'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div className="mt-16 pt-8 border-t border-border-subtle font-sans">
                <div className="flex flex-col items-center">
                   <div className="w-48 h-[1px] bg-border-subtle mb-3" />

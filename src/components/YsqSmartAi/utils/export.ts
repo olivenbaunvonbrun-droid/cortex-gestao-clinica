@@ -1,4 +1,4 @@
-import { Assessment, SCHEMA_DETAILS, YSQ_QUESTIONS } from "../types";
+import { Assessment, SCHEMA_DETAILS, YSQ_QUESTIONS, FREQUENCY_LABELS } from "../types";
 import { db } from "../../../lib/db";
 
 function formatClinicalContent(markdown: string): string {
@@ -405,6 +405,37 @@ export async function exportToHtml(assessment: Assessment) {
               </div>
           </div>
         ` : ''}
+
+        <div class="section" style="page-break-before: always;">
+            <div class="section-header">Espelho de Respostas do Examinando</div>
+            <div class="content-area">
+                <table style="width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 10px; margin-top: 15px;">
+                    <thead>
+                        <tr style="background: var(--primary); color: white; text-align: left;">
+                            <th style="padding: 6px 8px; width: 6%;">Item</th>
+                            <th style="padding: 6px 8px; width: 64%;">Questão</th>
+                            <th style="padding: 6px 8px; width: 12%;">Esquema</th>
+                            <th style="padding: 6px 8px; width: 18%; text-align: right;">Resposta Selecionada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${YSQ_QUESTIONS.map(q => {
+                            const ans = assessment.answers[q.id];
+                            const label = ans ? `${ans} - ${FREQUENCY_LABELS[ans]}` : 'Não respondida';
+                            const schemaName = SCHEMA_DETAILS[q.schemaKey]?.name || q.schemaKey;
+                            return `
+                                <tr style="border-bottom: 1px solid var(--border); background: ${q.id % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+                                    <td style="padding: 6px 8px; font-weight: 700; color: var(--primary);">${q.id}</td>
+                                    <td style="padding: 6px 8px; color: #475569;">${q.text}</td>
+                                    <td style="padding: 6px 8px; color: var(--accent); font-weight: bold; font-size: 8px;">${schemaName}</td>
+                                    <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: var(--primary); font-size: 9px;">${label}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
         <footer>
             <div class="signature-block">

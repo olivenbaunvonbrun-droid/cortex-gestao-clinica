@@ -114,6 +114,118 @@ export function getRadarArcPath(cx: number, cy: number, r_in: number, r_out: num
   return `M ${x1_in} ${y1_in} L ${x1_out} ${y1_out} A ${r_out} ${r_out} 0 ${largeArcFlag} 1 ${x2_out} ${y2_out} L ${x2_in} ${y2_in} A ${r_in} ${r_in} 0 ${largeArcFlag} 0 ${x1_in} ${y1_in} Z`;
 }
 
+function renderAnswersMirrorHtml(toolId: string, rawAnswers: any): string {
+  if (!rawAnswers) return '';
+  
+  if (toolId === "idai") {
+    return `
+      <div style="margin-top: 30px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background-color: #fafafa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <h3 style="margin-top: 0; color: #111827; border-left: 4px solid #00A3FF; padding-left: 10px; font-size: 16px; text-transform: uppercase;">Espelho de Respostas do Examinando</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #e5e7eb; text-align: left; color: #4b5563; font-weight: bold;">
+              <th style="padding: 8px; width: 60%;">Item / Pergunta</th>
+              <th style="padding: 8px; width: 20%;">Subescala</th>
+              <th style="padding: 8px; text-align: right; width: 20%;">Resposta (0-3)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${IDAI_QUESTIONS.map(q => `
+              <tr style="border-bottom: 1px solid #f3f4f6;">
+                <td style="padding: 8px; color: #4b5563;">${q.text}</td>
+                <td style="padding: 8px; color: #6b7280; font-size: 11px;">${q.subscale}</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #111827;">${rawAnswers[q.id] ?? 0}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  if (toolId === "efca") {
+    return `
+      <div style="margin-top: 30px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background-color: #fafafa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <h3 style="margin-top: 0; color: #111827; border-left: 4px solid #00A3FF; padding-left: 10px; font-size: 16px; text-transform: uppercase;">Espelho de Respostas do Examinando</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #e5e7eb; text-align: left; color: #4b5563; font-weight: bold;">
+              <th style="padding: 8px; width: 60%;">Item / Pergunta</th>
+              <th style="padding: 8px; width: 20%;">Subescala</th>
+              <th style="padding: 8px; text-align: right; width: 20%;">Resposta (0-3)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${EFCA_QUESTIONS.map(q => `
+              <tr style="border-bottom: 1px solid #f3f4f6;">
+                <td style="padding: 8px; color: #4b5563;">${q.text}</td>
+                <td style="padding: 8px; color: #6b7280; font-size: 11px;">${q.subscale}</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #111827;">${rawAnswers[q.id] ?? 0}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  let content = '';
+  
+  const isPrimitive = (v: any) => typeof v !== 'object' || v === null;
+
+  const renderVal = (v: any): string => {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
+    if (isPrimitive(v)) return String(v);
+    if (Array.isArray(v)) {
+      if (v.length === 0) return 'Nenhum';
+      if (typeof v[0] === 'object') {
+        return `
+          <ul style="margin: 0; padding-left: 20px;">
+            ${v.map((item: any) => {
+              const itemStr = Object.entries(item)
+                .filter(([k]) => k !== 'id' && k !== 'done')
+                .map(([k, val]) => `<strong style="text-transform: capitalize;">${k.replace(/([A-Z])/g, ' $1')}:</strong> ${renderVal(val)}`)
+                .join(' | ');
+              return `<li style="margin-bottom: 4px;">${itemStr}</li>`;
+            }).join('')}
+          </ul>
+        `;
+      }
+      return v.map(renderVal).join(', ');
+    }
+    return `
+      <div style="padding-left: 10px; border-left: 2px solid #e5e7eb;">
+        ${Object.entries(v)
+          .filter(([k]) => k !== 'id' && k !== 'done')
+          .map(([k, val]) => `<div><strong>${k.replace(/([A-Z])/g, ' $1')}:</strong> ${renderVal(val)}</div>`)
+          .join('')}
+      </div>
+    `;
+  };
+
+  const entries = Object.entries(rawAnswers).filter(([k]) => k !== 'id');
+  if (entries.length === 0) return '';
+
+  return `
+    <div style="margin-top: 30px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background-color: #fafafa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; text-align: left;">
+      <h3 style="margin-top: 0; color: #111827; border-left: 4px solid #00A3FF; padding-left: 10px; font-size: 16px; text-transform: uppercase;">Espelho de Respostas do Examinando</h3>
+      <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px;">
+        ${entries.map(([key, val]) => `
+          <div style="border-bottom: 1px solid #f3f4f6; padding-bottom: 10px;">
+            <div style="font-weight: bold; color: #1f2937; text-transform: uppercase; font-size: 11px; margin-bottom: 5px; letter-spacing: 0.5px;">
+              ${key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+            </div>
+            <div style="color: #4b5563;">
+              ${renderVal(val)}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
 export default function AssessmentWizard({ 
   tool, 
   onClose, 
@@ -3231,6 +3343,78 @@ export default function AssessmentWizard({
           <div style="font-size: 14px; opacity: 0.8; margin-bottom: 20px;"><em>Este relatório foi gerado por IA calibrada com as orientações de Terapia Cognitivo-Comportamental de Quarta Geração e Neurociência Clínica.</em></div>
           ${aiReportText ? aiReportText.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>").replace(/## (.*)/g, "<h2>$1</h2>").replace(/### (.*)/g, "<h3>$1</h3>") : "<p>Laudo IA não anexado.</p>"}
         </div>
+        
+        ${renderAnswersMirrorHtml(tool.id, tool.id === "idai" ? idaiAnswers : tool.id === "efca" ? efcaAnswers : (
+          tool.id === "avaliacao_central"
+            ? { disfunctionalSituations, signatureStrengths, maladaptiveSchemes, psychologicalSkills, curativeSituations }
+            : tool.id === "genealogia_atributos"
+              ? { genealogyData }
+              : tool.id === "linha_vida"
+                ? { lifeLineEvents }
+                : tool.id === "satisfacao_multidimensional"
+                  ? { multidimSatisfaction, radarSubscales }
+                  : tool.id === "radar_multidimensional"
+                    ? { skillsRadarSubscales }
+                    : tool.id === "radar_habilidades"
+                      ? { skillsRadarSubscales }
+                      : tool.id === "exame_atributos_parentais"
+                        ? { parentalCaregivers }
+                        : tool.id === "exame_evidencias_cognicao"
+                          ? { cognitiveEvidence }
+                          : tool.id === "reestruturacao_semantica"
+                            ? { semanticRestructuring }
+                            : tool.id === "exame_desenvolvimento_autoestima"
+                              ? { selfEsteem }
+                              : tool.id === "cartao_enfrentamento"
+                                ? { copingCards }
+                                : tool.id === "despolarizacao_alternativas"
+                                  ? { despolarizacao }
+                                  : tool.id === "espectro_cognitivo"
+                                    ? { espectroCognitivo }
+                                    : tool.id === "rid_interacoes"
+                                      ? { ridInteracoes }
+                                      : tool.id === "transicao_mecanismo"
+                                        ? { transicaoMecanismo }
+                                        : tool.id === "exame_duplo_vantagens"
+                                          ? { exameDuploVantagens }
+                                          : tool.id === "exame_feedbacks_entrevista"
+                                            ? { exameFeedbacksEntrevista }
+                                            : tool.id === "exame_atributos_pessoais"
+                                              ? { exameAtributosPessoais }
+                                              : tool.id === "exame_singulares_compartilhadas"
+                                                ? { exameSingularesCompartilhadas }
+                                                : tool.id === "exame_provisao_emocional"
+                                                  ? { exameProvisaoEmocional }
+                                                  : tool.id === "exame_atitudes_dimensoes"
+                                                    ? { exameAtitudesDimensoes }
+                                                    : tool.id === "exame_reacoes_sociais"
+                                                      ? { exameReacoesSociais }
+                                                      : tool.id === "hierarquia_exposicao_enfrentamento"
+                                                        ? { exameHierarquiaExposicao }
+                                                        : tool.id === "analise_modelos_pessoais"
+                                                          ? { exameModelosPessoais }
+                                                          : tool.id === "mentalidades_hedonismo_responsavel"
+                                                            ? { mentalidadesHedonismo }
+                                                            : tool.id === "mentalidades_autoconhecimento"
+                                                              ? { mentalidadesAutoconhecimento }
+                                                              : tool.id === "mentalidades_autoestima"
+                                                                ? { mentalidadesAutoestima }
+                                                                : tool.id === "mentalidades_raciocinio_otimista"
+                                                                  ? { mentalidadesRaciocinioOtimista }
+                                                                  : tool.id === "mentalidades_autorregulacao_emocional"
+                                                                    ? { mentalidadesAutorregulacaoEmocional }
+                                                                    : tool.id === "mentalidades_imunidade_social"
+                                                                      ? { mentalidadesImunidadeSocial }
+                                                                      : tool.id === "mentalidades_resolutividade_enfrentamento"
+                                                                        ? { mentalidadesResolutividadeEnfrentamento }
+                                                                        : tool.id === "mentalidades_autocontrole"
+                                                                          ? { mentalidadesAutocontrole }
+                                                                          : tool.id === "mentalidades_sociabilidade"
+                                                                            ? { mentalidadesSociabilidade }
+                                                                            : tool.id === "mentalidades_sensibilidade_social"
+                                                                              ? { mentalidadesSensibilidadeSocial }
+                                                                              : {}
+        ))}
         
         <footer style="margin-top: 60px; text-align: center; page-break-inside: avoid; padding-top: 30px; border-top: 1px solid #e5e7eb;">
             <div class="signature-block">
@@ -7440,6 +7624,84 @@ export default function AssessmentWizard({
                 <div className="prose prose-sm max-w-none text-gray-800">
                   {renderMarkdown(aiReportText)}
                 </div>
+
+                {/* Espelho de Respostas */}
+                <div 
+                  className="prose prose-sm max-w-none text-gray-800"
+                  dangerouslySetInnerHTML={{
+                    __html: renderAnswersMirrorHtml(tool.id, tool.id === "idai" ? idaiAnswers : tool.id === "efca" ? efcaAnswers : (
+                      tool.id === "avaliacao_central"
+                        ? { disfunctionalSituations, signatureStrengths, maladaptiveSchemes, psychologicalSkills, curativeSituations }
+                        : tool.id === "genealogia_atributos"
+                          ? { genealogyData }
+                          : tool.id === "linha_vida"
+                            ? { lifeLineEvents }
+                            : tool.id === "satisfacao_multidimensional"
+                              ? { multidimSatisfaction, radarSubscales }
+                              : tool.id === "radar_multidimensional"
+                                ? { skillsRadarSubscales }
+                                : tool.id === "radar_habilidades"
+                                  ? { skillsRadarSubscales }
+                                  : tool.id === "exame_atributos_parentais"
+                                    ? { parentalCaregivers }
+                                    : tool.id === "exame_evidencias_cognicao"
+                                      ? { cognitiveEvidence }
+                                      : tool.id === "reestruturacao_semantica"
+                                        ? { semanticRestructuring }
+                                        : tool.id === "exame_desenvolvimento_autoestima"
+                                          ? { selfEsteem }
+                                          : tool.id === "cartao_enfrentamento"
+                                            ? { copingCards }
+                                            : tool.id === "despolarizacao_alternativas"
+                                              ? { despolarizacao }
+                                              : tool.id === "espectro_cognitivo"
+                                                ? { espectroCognitivo }
+                                                : tool.id === "rid_interacoes"
+                                                  ? { ridInteracoes }
+                                                  : tool.id === "transicao_mecanismo"
+                                                    ? { transicaoMecanismo }
+                                                    : tool.id === "exame_duplo_vantagens"
+                                                      ? { exameDuploVantagens }
+                                                      : tool.id === "exame_feedbacks_entrevista"
+                                                        ? { exameFeedbacksEntrevista }
+                                                        : tool.id === "exame_atributos_pessoais"
+                                                          ? { exameAtributosPessoais }
+                                                          : tool.id === "exame_singulares_compartilhadas"
+                                                            ? { exameSingularesCompartilhadas }
+                                                            : tool.id === "exame_provisao_emocional"
+                                                              ? { exameProvisaoEmocional }
+                                                              : tool.id === "exame_atitudes_dimensoes"
+                                                                ? { exameAtitudesDimensoes }
+                                                                : tool.id === "exame_reacoes_sociais"
+                                                                  ? { exameReacoesSociais }
+                                                                  : tool.id === "hierarquia_exposicao_enfrentamento"
+                                                                    ? { exameHierarquiaExposicao }
+                                                                    : tool.id === "analise_modelos_pessoais"
+                                                                      ? { exameModelosPessoais }
+                                                                      : tool.id === "mentalidades_hedonismo_responsavel"
+                                                                        ? { mentalidadesHedonismo }
+                                                                        : tool.id === "mentalidades_autoconhecimento"
+                                                                          ? { mentalidadesAutoconhecimento }
+                                                                          : tool.id === "mentalidades_autoestima"
+                                                                            ? { mentalidadesAutoestima }
+                                                                            : tool.id === "mentalidades_raciocinio_otimista"
+                                                                              ? { mentalidadesRaciocinioOtimista }
+                                                                              : tool.id === "mentalidades_autorregulacao_emocional"
+                                                                                ? { mentalidadesAutorregulacaoEmocional }
+                                                                                : tool.id === "mentalidades_imunidade_social"
+                                                                                  ? { mentalidadesImunidadeSocial }
+                                                                                  : tool.id === "mentalidades_resolutividade_enfrentamento"
+                                                                                    ? { mentalidadesResolutividadeEnfrentamento }
+                                                                                    : tool.id === "mentalidades_autocontrole"
+                                                                                      ? { mentalidadesAutocontrole }
+                                                                                      : tool.id === "mentalidades_sociabilidade"
+                                                                                        ? { mentalidadesSociabilidade }
+                                                                                        : tool.id === "mentalidades_sensibilidade_social"
+                                                                                          ? { mentalidadesSensibilidadeSocial }
+                                                                                          : {}
+                    ))
+                  }}
+                />
 
                 <div className="border-t border-gray-200 pt-6 text-center space-y-1">
                   <div className="text-[10px] text-gray-400 uppercase tracking-widest font-mono">Assinatura do Profissional Responsável</div>

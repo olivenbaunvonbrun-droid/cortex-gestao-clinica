@@ -1,4 +1,4 @@
-import { Assessment } from "../types";
+import { Assessment, IHS_QUESTIONS, FREQUENCY_LABELS } from "../types";
 import { db } from "../../../lib/db";
 
 function formatClinicalContent(markdown: string): string {
@@ -323,6 +323,34 @@ export async function exportToHtml(assessment: Assessment) {
             <div class="section-header">Conclusões Diagnósticas e Análise</div>
             <div class="content-area">
                 ${formatClinicalContent(assessment.aiAnalysis)}
+            </div>
+        </div>
+
+        <div class="section" style="page-break-before: always;">
+            <div class="section-header">Espelho de Respostas do Examinando</div>
+            <div class="content-area">
+                <table style="width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 11px; margin-top: 15px;">
+                    <thead>
+                        <tr style="background: var(--primary); color: white; text-align: left;">
+                            <th style="padding: 8px 10px; width: 8%;">Item</th>
+                            <th style="padding: 8px 10px; width: 62%;">Questão</th>
+                            <th style="padding: 8px 10px; width: 30%; text-align: right;">Resposta Selecionada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${IHS_QUESTIONS.map(q => {
+                            const ans = assessment.answers[q.id];
+                            const label = ans ? FREQUENCY_LABELS[ans] : 'Não respondida';
+                            return `
+                                <tr style="border-bottom: 1px solid var(--border); background: ${q.id % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+                                    <td style="padding: 8px 10px; font-weight: 700; color: var(--primary);">${q.id}</td>
+                                    <td style="padding: 8px 10px; color: #475569;">${q.text}</td>
+                                    <td style="padding: 8px 10px; text-align: right; font-weight: 700; color: var(--primary);">${label}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
             </div>
         </div>
 

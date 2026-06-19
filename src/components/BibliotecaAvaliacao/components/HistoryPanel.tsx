@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Report } from "../types";
 import { renderMarkdown } from "../utils/markdown";
 import { db } from "../../../lib/db";
+import { IDAI_QUESTIONS, EFCA_QUESTIONS } from "../data";
 import { 
   Trash2, Edit3, Save, Download, Upload, Search, Calendar, 
   User, Sparkles, FileText, Printer, CheckCircle, ChevronRight, X, GitCompare 
@@ -12,6 +13,118 @@ interface HistoryPanelProps {
   onDeleteReport: (id: string) => void;
   onUpdateReport: (report: Report) => void;
   onImportReports: (imported: Report[]) => void;
+}
+
+function renderAnswersMirrorHtml(toolId: string, rawAnswers: any): string {
+  if (!rawAnswers) return '';
+  
+  if (toolId === "idai") {
+    return `
+      <div style="margin-top: 30px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background-color: #fafafa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <h3 style="margin-top: 0; color: #111827; border-left: 4px solid #00A3FF; padding-left: 10px; font-size: 16px; text-transform: uppercase;">Espelho de Respostas do Examinando</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #e5e7eb; text-align: left; color: #4b5563; font-weight: bold;">
+              <th style="padding: 8px; width: 60%;">Item / Pergunta</th>
+              <th style="padding: 8px; width: 20%;">Subescala</th>
+              <th style="padding: 8px; text-align: right; width: 20%;">Resposta (0-3)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${IDAI_QUESTIONS.map(q => `
+              <tr style="border-bottom: 1px solid #f3f4f6;">
+                <td style="padding: 8px; color: #4b5563;">${q.text}</td>
+                <td style="padding: 8px; color: #6b7280; font-size: 11px;">${q.subscale}</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #111827;">${rawAnswers[q.id] ?? 0}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  if (toolId === "efca") {
+    return `
+      <div style="margin-top: 30px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background-color: #fafafa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <h3 style="margin-top: 0; color: #111827; border-left: 4px solid #00A3FF; padding-left: 10px; font-size: 16px; text-transform: uppercase;">Espelho de Respostas do Examinando</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #e5e7eb; text-align: left; color: #4b5563; font-weight: bold;">
+              <th style="padding: 8px; width: 60%;">Item / Pergunta</th>
+              <th style="padding: 8px; width: 20%;">Subescala</th>
+              <th style="padding: 8px; text-align: right; width: 20%;">Resposta (0-3)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${EFCA_QUESTIONS.map(q => `
+              <tr style="border-bottom: 1px solid #f3f4f6;">
+                <td style="padding: 8px; color: #4b5563;">${q.text}</td>
+                <td style="padding: 8px; color: #6b7280; font-size: 11px;">${q.subscale}</td>
+                <td style="padding: 8px; text-align: right; font-weight: bold; color: #111827;">${rawAnswers[q.id] ?? 0}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  let content = '';
+  
+  const isPrimitive = (v: any) => typeof v !== 'object' || v === null;
+
+  const renderVal = (v: any): string => {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
+    if (isPrimitive(v)) return String(v);
+    if (Array.isArray(v)) {
+      if (v.length === 0) return 'Nenhum';
+      if (typeof v[0] === 'object') {
+        return `
+          <ul style="margin: 0; padding-left: 20px;">
+            ${v.map((item: any) => {
+              const itemStr = Object.entries(item)
+                .filter(([k]) => k !== 'id' && k !== 'done')
+                .map(([k, val]) => `<strong style="text-transform: capitalize;">${k.replace(/([A-Z])/g, ' $1')}:</strong> ${renderVal(val)}`)
+                .join(' | ');
+              return `<li style="margin-bottom: 4px;">${itemStr}</li>`;
+            }).join('')}
+          </ul>
+        `;
+      }
+      return v.map(renderVal).join(', ');
+    }
+    return `
+      <div style="padding-left: 10px; border-left: 2px solid #e5e7eb;">
+        ${Object.entries(v)
+          .filter(([k]) => k !== 'id' && k !== 'done')
+          .map(([k, val]) => `<div><strong>${k.replace(/([A-Z])/g, ' $1')}:</strong> ${renderVal(val)}</div>`)
+          .join('')}
+      </div>
+    `;
+  };
+
+  const entries = Object.entries(rawAnswers).filter(([k]) => k !== 'id');
+  if (entries.length === 0) return '';
+
+  return `
+    <div style="margin-top: 30px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background-color: #fafafa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; text-align: left;">
+      <h3 style="margin-top: 0; color: #111827; border-left: 4px solid #00A3FF; padding-left: 10px; font-size: 16px; text-transform: uppercase;">Espelho de Respostas do Examinando</h3>
+      <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px;">
+        ${entries.map(([key, val]) => `
+          <div style="border-bottom: 1px solid #f3f4f6; padding-bottom: 10px;">
+            <div style="font-weight: bold; color: #1f2937; text-transform: uppercase; font-size: 11px; margin-bottom: 5px; letter-spacing: 0.5px;">
+              ${key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+            </div>
+            <div style="color: #4b5563;">
+              ${renderVal(val)}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
 }
 
 export default function HistoryPanel({
@@ -198,6 +311,8 @@ export default function HistoryPanel({
           <div style="font-size: 14px; opacity: 0.8; margin-bottom: 20px;"><em>Este relatório foi gerado por IA calibrada com as orientações de Terapia Cognitivo-Comportamental de Quarta Geração e Neurociência Clínica.</em></div>
           ${report.aiReportText ? report.aiReportText.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>").replace(/## (.*)/g, "<h2>$1</h2>").replace(/### (.*)/g, "<h3>$1</h3>") : "<p>Laudo IA não anexado.</p>"}
         </div>
+
+        ${renderAnswersMirrorHtml(report.toolId, report.rawAnswers)}
         
         <footer style="margin-top: 60px; text-align: center; page-break-inside: avoid; padding-top: 30px; border-top: 1px solid #e5e7eb;">
             <div class="signature-block">
@@ -493,6 +608,12 @@ export default function HistoryPanel({
                       <div className="text-sm text-gray-800 leading-relaxed font-sans mt-4">
                         {activeReport.aiReportText ? renderMarkdown(activeReport.aiReportText) : <span className="text-gray-400 italic">Nenhum laudo IA gerado para este prontuário.</span>}
                       </div>
+
+                      {/* Espelho de Respostas */}
+                      <div 
+                        className="prose prose-sm max-w-none text-gray-800 border-t border-gray-200 mt-6 pt-6"
+                        dangerouslySetInnerHTML={{ __html: renderAnswersMirrorHtml(activeReport.toolId, activeReport.rawAnswers) }}
+                      />
                     </div>
                   )}
                 </div>
