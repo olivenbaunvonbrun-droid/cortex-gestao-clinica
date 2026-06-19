@@ -21,6 +21,10 @@ function cleanUndefinedFields(obj: any): any {
     const newObj: any = {};
     for (const key of Object.keys(obj)) {
       if (obj[key] !== undefined) {
+        // Strip heavy base64 logo/signature to fit Firestore 1MB limits
+        if ((key === 'logoUrl' || key === 'signatureUrl') && typeof obj[key] === 'string' && obj[key].startsWith('data:')) {
+          continue;
+        }
         newObj[key] = typeof obj[key] === 'object' ? cleanUndefinedFields(obj[key]) : obj[key];
       }
     }
@@ -186,6 +190,13 @@ export const syncService = {
         pacienteId: item.pacienteId ? String(item.pacienteId) : undefined,
         ownerId: item.ownerId ? String(item.ownerId) : undefined
       });
+
+      const estimatedSize = JSON.stringify(itemToUpload).length;
+      if (estimatedSize > 1048576) {
+        console.warn(`[SyncService] Documento da tabela ${tableName} com ID ${key} excede 1MB (${estimatedSize} bytes). Sincronização em nuvem pulada.`);
+        return;
+      }
+
       await setDoc(doc(firestore, tableName, String(key)), itemToUpload);
     } catch (e) {
       console.error(`Erro ao salvar documento em tempo real no Cloud (${tableName}):`, e);
@@ -204,26 +215,42 @@ export const syncService = {
   saveToCloudBatch: async (userId: string, tableName: string, items: any[]) => {
     if (!userId || userId.length < 10 || items.length === 0) return;
     try {
-      for (let i = 0; i < items.length; i += 400) {
-        const chunk = items.slice(i, i + 400);
-        const batch = writeBatch(firestore);
-        chunk.forEach(item => {
-          const key = tableName === 'prontuarios' ? item.pacienteId : (tableName === 'settings' ? item.key : item.id);
-          if (key) {
-            const itemToUpload = cleanUndefinedFields({ 
-              ...item, 
-              userId,
-              id: item.id ? String(item.id) : undefined,
-              pacienteId: item.pacienteId ? String(item.pacienteId) : undefined,
-              ownerId: item.ownerId ? String(item.ownerId) : undefined
-            });
-            batch.set(doc(firestore, tableName, String(key)), itemToUpload);
+      const chunkSize = tableName === 'anexos' ? 1 : 100;
+      for (let i = 0; i < items.length; i += chunkSize) {
+        const chunk = items.slice(i, i + chunkSize);
+        try {
+          const batch = writeBatch(firestore);
+          let hasOp = false;
+          chunk.forEach(item => {
+            const key = tableName === 'prontuarios' ? item.pacienteId : (tableName === 'settings' ? item.key : item.id);
+            if (key) {
+              const itemToUpload = cleanUndefinedFields({ 
+                ...item, 
+                userId,
+                id: item.id ? String(item.id) : undefined,
+                pacienteId: item.pacienteId ? String(item.pacienteId) : undefined,
+                ownerId: item.ownerId ? String(item.ownerId) : undefined
+              });
+              
+              const estimatedSize = JSON.stringify(itemToUpload).length;
+              if (estimatedSize > 1048576) {
+                console.warn(`[SyncService] Documento da tabela ${tableName} com ID ${key} possui tamanho estimado de ${estimatedSize} bytes, excedendo o limite de 1MB do Firestore. Sincronização em nuvem pulada.`);
+                return;
+              }
+              
+              batch.set(doc(firestore, tableName, String(key)), itemToUpload);
+              hasOp = true;
+            }
+          });
+          if (hasOp) {
+            await batch.commit();
           }
-        });
-        await batch.commit();
+        } catch (e) {
+          console.error(`Erro ao salvar lote de documentos na tabela (${tableName}) no intervalo [${i} - ${i + chunk.length}]:`, e);
+        }
       }
     } catch (e) {
-      console.error(`Erro ao salvar documentos em lote no Cloud (${tableName}):`, e);
+      console.error(`Erro ao processar saveToCloudBatch na tabela (${tableName}):`, e);
     }
   },
 
