@@ -1,0 +1,24 @@
+name: Deploy Firebase Rules
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'firestore.rules'
+      - 'firebase.json'
+
+jobs:
+  deploy-rules:
+    name: Deploy Firestore Security Rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy Firestore rules
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only firestore:rules --project cortex-clinica
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
