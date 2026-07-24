@@ -172,5 +172,19 @@ service cloud.firestore {
         && incoming().userId == existing().userId;
       allow delete: if isSignedIn() && isOwner(existing().userId);
     }
+
+    // Tombstone deletion records for sync conflict prevention
+    // Each document tracks an item that was deleted, preventing other devices from re-uploading it.
+    match /_deletions/{tombstoneId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn()
+        && incoming().keys().hasAll(['userId', 'tableName', 'itemId', 'deletedAt'])
+        && incoming().userId == request.auth.uid
+        && incoming().tableName is string && incoming().tableName.size() <= 64
+        && incoming().itemId is string && incoming().itemId.size() <= 256
+        && incoming().deletedAt is number;
+      allow update: if isSignedIn() && isOwner(existing().userId);
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
   }
 }

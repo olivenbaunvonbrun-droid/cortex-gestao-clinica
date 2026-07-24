@@ -102,6 +102,14 @@ export interface Attachment {
   conteudoArquivo: string;
 }
 
+// Tombstone record: tracks items deleted locally so syncAll never re-uploads them
+export interface DeletedRecord {
+  id: string;        // composite key: "tableName:itemId"
+  tableName: string;
+  itemId: string;
+  deletedAt: number; // Unix timestamp ms
+}
+
 export class PsiGestDB extends Dexie {
   pacientes!: Table<Patient>;
   agendamentos!: Table<Appointment>;
@@ -111,6 +119,7 @@ export class PsiGestDB extends Dexie {
   actionLog!: Table<ActionLog>;
   settings!: Table<Setting>;
   anexos!: Table<Attachment>;
+  deletedIds!: Table<DeletedRecord>;
 
   constructor() {
     super('PsiGestDB_v9_React');
@@ -123,6 +132,18 @@ export class PsiGestDB extends Dexie {
       actionLog: '++id',
       settings: 'key',
       anexos: '++id, ownerId, ownerType'
+    });
+    // Version 3: add tombstone table for sync conflict prevention
+    this.version(3).stores({
+      pacientes: 'id, nome',
+      agendamentos: 'id, data, pacienteId, recorrenciaPaiId',
+      prontuarios: 'pacienteId',
+      transacoes: 'id, data, tipo, pacienteId',
+      users: 'id, &username',
+      actionLog: '++id',
+      settings: 'key',
+      anexos: '++id, ownerId, ownerType',
+      deletedIds: 'id, tableName, deletedAt'
     });
   }
 }

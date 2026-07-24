@@ -42,6 +42,9 @@ const TABLES = [
   { name: 'anexos', localTable: localDB.anexos }
 ];
 
+// TTL for tombstone records: 90 days in ms
+const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+
 export interface SyncState {
   status: 'idle' | 'syncing' | 'synced' | 'error';
   lastSync: Date | null;
@@ -67,6 +70,76 @@ const getLatestProntuarioTimestamp = (item: any) => {
   return Math.max(...item.entradas.map((e: any) => e.timestamp || 0));
 };
 
+/**
+ * Records a deletion tombstone locally (IndexedDB) so syncAll never
+ * re-uploads this item if the local cache hasn't been cleaned yet.
+ */
+async function recordLocalTombstone(tableName: string, itemId: string) {
+  try {
+    await localDB.deletedIds.put({
+      id: `${tableName}:${itemId}`,
+      tableName,
+      itemId,
+      deletedAt: Date.now()
+    });
+  } catch (e) {
+    console.error('[SyncService] Failed to record local tombstone:', e);
+  }
+}
+
+/**
+ * Records a deletion tombstone in Firestore `_deletions` collection so that
+ * other devices' syncAll can learn about this deletion and clean their IndexedDB.
+ */
+async function recordCloudTombstone(userId: string, tableName: string, itemId: string) {
+  if (!userId || userId.length < 10) return;
+  try {
+    const tombstoneId = `${userId}_${tableName}_${itemId}`;
+    await setDoc(doc(firestore, '_deletions', tombstoneId), {
+      userId,
+      tableName,
+      itemId,
+      deletedAt: Date.now()
+    });
+  } catch (e) {
+    console.error('[SyncService] Failed to record cloud tombstone:', e);
+  }
+}
+
+async function recordCloudTombstoneBatch(userId: string, tableName: string, itemIds: string[]) {
+  if (!userId || userId.length < 10 || itemIds.length === 0) return;
+  try {
+    for (let i = 0; i < itemIds.length; i += 400) {
+      const chunk = itemIds.slice(i, i + 400);
+      const batch = writeBatch(firestore);
+      chunk.forEach(itemId => {
+        const tombstoneId = `${userId}_${tableName}_${itemId}`;
+        batch.set(doc(firestore, '_deletions', tombstoneId), {
+          userId,
+          tableName,
+          itemId,
+          deletedAt: Date.now()
+        });
+      });
+      await batch.commit();
+    }
+  } catch (e) {
+    console.error('[SyncService] Failed to record cloud tombstone batch:', e);
+  }
+}
+
+/**
+ * Prunes expired tombstone records from IndexedDB (older than 90 days).
+ */
+async function pruneExpiredTombstones() {
+  try {
+    const cutoff = Date.now() - TOMBSTONE_TTL_MS;
+    await localDB.deletedIds.where('deletedAt').below(cutoff).delete();
+  } catch (e) {
+    // Non-critical, ignore
+  }
+}
+
 export const syncService = {
   getSyncState: () => currentSyncState,
 
@@ -86,10 +159,66 @@ export const syncService = {
     try {
       console.log('Iniciando sincronização para usuário:', userId);
 
+      // --- STEP 0: Apply remote deletions first ---
+      // Download all tombstones from Firestore for this user, apply to local DB,
+      // so we don't re-upload items that were deleted on another device.
+      try {
+        const deletionsQuery = query(
+          collection(firestore, '_deletions'),
+          where('userId', '==', userId)
+        );
+        const deletionsSnapshot = await getDocs(deletionsQuery);
+
+        if (!deletionsSnapshot.empty) {
+          // Group by tableName for efficient local batch delete
+          const remoteDeleteMap = new Map<string, string[]>();
+          deletionsSnapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.tableName && data.itemId) {
+              const list = remoteDeleteMap.get(data.tableName) || [];
+              list.push(data.itemId);
+              remoteDeleteMap.set(data.tableName, list);
+            }
+          });
+
+          for (const tableConfig of TABLES) {
+            const idsToDelete = remoteDeleteMap.get(tableConfig.name);
+            if (!idsToDelete || idsToDelete.length === 0) continue;
+
+            for (const itemId of idsToDelete) {
+              try {
+                const key = tableConfig.name === 'prontuarios' ? itemId : itemId;
+                if (tableConfig.name === 'prontuarios') {
+                  await (tableConfig.localTable as any).delete(itemId);
+                } else {
+                  await (tableConfig.localTable as any).delete(itemId);
+                }
+                // Record local tombstone so we don't re-upload in this same sync
+                await recordLocalTombstone(tableConfig.name, itemId);
+              } catch (_) { /* item may not exist locally, safe to ignore */ }
+            }
+          }
+        }
+      } catch (e: any) {
+        // _deletions may not yet exist or permission issue — non-fatal, continue sync
+        console.warn('[SyncService] Could not apply remote deletions (non-fatal):', e?.message);
+      }
+
+      // --- STEP 1: Prune expired local tombstones ---
+      await pruneExpiredTombstones();
+
+      // --- STEP 2: Load all local tombstones into a Set for O(1) lookup ---
+      const localTombstones = new Set<string>(); // "tableName:itemId"
+      try {
+        const allTombstones = await localDB.deletedIds.toArray();
+        allTombstones.forEach(t => localTombstones.add(`${t.tableName}:${t.itemId}`));
+      } catch (_) { /* ignore if table not ready */ }
+
+      // --- STEP 3: Per-table bidirectional sync (with tombstone awareness) ---
       for (const tableConfig of TABLES) {
         const { name, localTable } = tableConfig;
         try {
-          // 1. Fetch remote items for this collection
+          // Fetch remote items for this collection
           const q = query(collection(firestore, name), where('userId', '==', userId));
           let remoteSnapshot;
           try {
@@ -101,12 +230,11 @@ export const syncService = {
             throw e;
           }
           const remoteItemsMap = new Map<string, any>();
-          
           remoteSnapshot.forEach(docSnap => {
             remoteItemsMap.set(docSnap.id, docSnap.data());
           });
 
-          // 2. Fetch local items
+          // Fetch local items
           const localItems = await localTable.toArray();
           const localItemsMap = new Map<string, any>();
           localItems.forEach(item => {
@@ -114,11 +242,20 @@ export const syncService = {
             if (key) localItemsMap.set(String(key), item);
           });
 
-          // 3. Upload local-only or newer items to Cloud
+          // Upload local-only or newer items to Cloud
+          // SKIP items that have a local tombstone (they were deleted on this or another device)
           const itemsToUpload: any[] = [];
           for (const [key, localItem] of localItemsMap.entries()) {
+            // Tombstone check: never re-upload a deleted item
+            if (localTombstones.has(`${name}:${key}`)) {
+              // Clean up local DB if the item still exists there (stale data)
+              try { await (localTable as any).delete(key); } catch (_) {}
+              continue;
+            }
+
             const remoteItem = remoteItemsMap.get(key);
             if (!remoteItem) {
+              // No tombstone + not in cloud → genuinely new local item, upload it
               itemsToUpload.push(localItem);
             } else if (name === 'prontuarios') {
               const localMax = getLatestProntuarioTimestamp(localItem);
@@ -139,10 +276,19 @@ export const syncService = {
             }
           }
 
-          // 4. Download remote-only or newer items to Local DB
+          // Download remote-only or newer items to Local DB
+          // SKIP items that have a local tombstone (we deleted them, skip re-download)
           for (const [key, remoteItem] of remoteItemsMap.entries()) {
+            if (localTombstones.has(`${name}:${key}`)) {
+              // Item was deleted locally — remove from cloud too (deferred cleanup)
+              // This handles the case where deletion cloud-write failed earlier
+              try {
+                await deleteDoc(doc(firestore, name, String(key)));
+              } catch (_) {}
+              continue;
+            }
+
             const localItem = localItemsMap.get(key);
-            
             if (!localItem) {
               await localTable.put(remoteItem);
             } else if (name === 'prontuarios') {
@@ -206,6 +352,10 @@ export const syncService = {
   removeFromCloud: async (userId: string, tableName: string, itemId: string) => {
     if (!userId || userId.length < 10) return;
     try {
+      // Record tombstone BEFORE deleting, so even if the cloud delete fails,
+      // the local tombstone prevents re-upload on next sync.
+      await recordLocalTombstone(tableName, itemId);
+      await recordCloudTombstone(userId, tableName, itemId);
       await deleteDoc(doc(firestore, tableName, itemId));
     } catch (e) {
       console.error(`Erro ao remover documento em tempo real no Cloud (${tableName}):`, e);
@@ -257,6 +407,12 @@ export const syncService = {
   deleteFromCloudBatch: async (userId: string, tableName: string, ids: string[]) => {
     if (!userId || userId.length < 10 || ids.length === 0) return;
     try {
+      // Record tombstones for all IDs before batch deleting
+      for (const id of ids) {
+        await recordLocalTombstone(tableName, id);
+      }
+      await recordCloudTombstoneBatch(userId, tableName, ids);
+
       for (let i = 0; i < ids.length; i += 400) {
         const chunk = ids.slice(i, i + 400);
         const batch = writeBatch(firestore);
