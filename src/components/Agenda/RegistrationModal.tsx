@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn, getLocalDateString } from '../../lib/utils';
 import RichTextEditor from '../RichTextEditor';
 import { processClinicalAudio, clinicalInsight, charcotConsult, analyzeClinicalFiles } from '../../services/geminiService';
+import { toast } from 'react-hot-toast';
 
 interface RegistrationModalProps {
   appointment: Appointment | null;
@@ -715,8 +716,13 @@ export default function RegistrationModal({ appointment, isOpen, onClose }: Regi
                              try {
                                const result = await clinicalInsight('', notes, selectedApproach);
                                setAiAnalysis(result);
-                             } catch (err) { console.error(err); }
-                             finally { setIsProcessingAi(false); }
+                               toast.success("Análise técnica concluída!");
+                             } catch (err) {
+                               console.error(err);
+                               toast.error("Falha ao obter análise técnica da IA. Verifique as configurações de chave de API.");
+                             } finally {
+                               setIsProcessingAi(false);
+                             }
                            }}
                            disabled={!notes || isProcessingAi}
                            className="flex items-center gap-2 px-6 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-xl text-[9px] font-black uppercase tracking-widest text-primary transition-all group"

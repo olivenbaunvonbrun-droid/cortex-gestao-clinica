@@ -36,6 +36,7 @@ import { useFirebase } from './hooks/useFirebase';
 import { auth } from './lib/firebase';
 import { signOut } from 'firebase/auth';
 import { syncService } from './lib/syncService';
+import { Toaster } from 'react-hot-toast';
 
 export default function App() {
   const { user: firebaseUser, loading: firebaseLoading } = useFirebase();
@@ -770,6 +771,13 @@ export default function App() {
           }} 
         />
       )}
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          className: 'bg-bg-sidebar border border-border-subtle text-text-main font-sans text-xs',
+          duration: 4000,
+        }}
+      />
     </>
   );
 }

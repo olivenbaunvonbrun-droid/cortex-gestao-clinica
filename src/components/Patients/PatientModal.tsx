@@ -6,6 +6,7 @@ import RichTextEditor from '../RichTextEditor';
 import { CONTRACT_TEMPLATES, type ContractType } from '../../constants/contracts';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
+import { toast } from 'react-hot-toast';
 
 const BRAZILIAN_STATES = [
   { value: 'AC', label: 'Acre (AC)' },
@@ -147,10 +148,102 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
     }
   };
 
+  const validateCPF = (cpfValue: string) => {
+    const clean = (cpfValue || '').replace(/\D/g, '');
+    if (!clean) return true;
+    if (clean.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(clean)) return false;
+    let sum = 0;
+    let remainder;
+    for (let i = 1; i <= 9; i++) {
+      sum += parseInt(clean.substring(i - 1, i)) * (11 - i);
+    }
+    remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(clean.substring(9, 10))) return false;
+    sum = 0;
+    for (let i = 1; i <= 10; i++) {
+      sum += parseInt(clean.substring(i - 1, i)) * (12 - i);
+    }
+    remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(clean.substring(10, 11))) return false;
+    return true;
+  };
+
+  const validateEmail = (emailValue: string) => {
+    if (!emailValue) return true;
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(emailValue);
+  };
+
+  const validatePhone = (phoneValue: string) => {
+    const clean = (phoneValue || '').replace(/\D/g, '');
+    if (!clean) return true;
+    return clean.length >= 10 && clean.length <= 11;
+  };
+
+  const validateName = (nameValue: string) => {
+    const trimmed = (nameValue || '').trim();
+    if (!trimmed) return false;
+    const nameRegex = /^[a-zA-ZÀ-ÿ\s'\-]+$/;
+    return trimmed.length >= 3 && nameRegex.test(trimmed);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSaving) return;
-    if (!formData.nome) return alert("O nome é obrigatório!");
+
+    if (!formData.nome) {
+      toast.error("O nome é obrigatório!");
+      return;
+    }
+    if (!validateName(formData.nome)) {
+      toast.error("O nome do paciente deve conter pelo menos 3 caracteres e conter apenas letras.");
+      return;
+    }
+
+    if (formData.cpf && !validateCPF(formData.cpf)) {
+      toast.error("O CPF do paciente é inválido.");
+      return;
+    }
+
+    if (formData.email && !validateEmail(formData.email)) {
+      toast.error("O e-mail do paciente é inválido.");
+      return;
+    }
+
+    if (formData.telefone && !validatePhone(formData.telefone)) {
+      toast.error("O telefone do paciente é inválido (deve conter DDD e 10 a 11 dígitos).");
+      return;
+    }
+
+    if (formData.isMenor) {
+      if (!formData.responsavelNome) {
+        toast.error("O nome do responsável é obrigatório para menor de idade.");
+        return;
+      }
+      if (!validateName(formData.responsavelNome)) {
+        toast.error("O nome do responsável deve ter no mínimo 3 caracteres e conter apenas letras.");
+        return;
+      }
+      if (!formData.responsavelCpf) {
+        toast.error("O CPF do responsável é obrigatório para menor de idade.");
+        return;
+      }
+      if (!validateCPF(formData.responsavelCpf)) {
+        toast.error("O CPF do responsável é inválido.");
+        return;
+      }
+      if (formData.responsavelEmail && !validateEmail(formData.responsavelEmail)) {
+        toast.error("O e-mail do responsável é inválido.");
+        return;
+      }
+      if (formData.responsavelTelefone && !validatePhone(formData.responsavelTelefone)) {
+        toast.error("O telefone do responsável é inválido.");
+        return;
+      }
+    }
 
     setIsSaving(true);
     try {
@@ -246,10 +339,11 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
           }
         }
       }
+      toast.success(patient ? "Dados do paciente atualizados!" : "Novo paciente cadastrado com sucesso!");
       onClose();
     } catch (error) {
       console.error("Erro ao salvar paciente:", error);
-      alert("Erro ao salvar paciente.");
+      toast.error("Erro ao salvar paciente. Verifique se o espaço local está cheio ou se há conflito nos dados.");
     } finally {
       setIsSaving(false);
     }

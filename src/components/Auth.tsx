@@ -91,6 +91,10 @@ export default function Auth({ onLogin }: AuthProps) {
 
   const handleRecover = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.newPassword) {
+      setFeedback({ message: 'Por razões de segurança, defina uma nova senha para sua conta.', type: 'error' });
+      return;
+    }
     try {
       const user = await db.users.where({ 
         username: formData.username, 
@@ -98,19 +102,15 @@ export default function Auth({ onLogin }: AuthProps) {
       }).first();
 
       if (user) {
-        const updates: any = {};
-        if (formData.newPassword) updates.password = formData.newPassword;
+        const updates: any = { password: formData.newPassword };
         if (formData.newCRP) updates.crp = formData.newCRP;
         if (formData.newKeyword) updates.keyword = formData.newKeyword;
 
-        if (Object.keys(updates).length > 0) {
-          await db.users.update(user.id, updates);
-          setFeedback({ message: 'Dados atualizados com sucesso!', type: 'success' });
-        } else {
-          setFeedback({ message: `Sua senha é: ${user.password}`, type: 'info' });
-        }
+        await db.users.update(user.id, updates);
+        setFeedback({ message: 'Senha redefinida com sucesso! Faça login com a nova senha.', type: 'success' });
+        setMode('login');
       } else {
-        setFeedback({ message: 'Usuário ou palavra-chave inválidos!', type: 'error' });
+        setFeedback({ message: 'Usuário ou palavra-chave de recuperação inválidos!', type: 'error' });
       }
     } catch (error) {
       setFeedback({ message: 'Erro ao recuperar conta.', type: 'error' });
@@ -222,6 +222,63 @@ export default function Auth({ onLogin }: AuthProps) {
                     placeholder="Em caso de perda da senha"
                   />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'recover' && (
+            <div className="animate-in fade-in duration-300 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest ml-1">Palavra-Chave de Recuperação</label>
+                <div className="relative group">
+                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim group-focus-within:text-primary transition-colors" size={18} />
+                  <input
+                    type="text"
+                    name="currentKeyword"
+                    value={formData.currentKeyword}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full pl-12 pr-4 py-3 bg-bg-sidebar border border-border-subtle rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all text-sm placeholder:text-text-dim/30"
+                    placeholder="Sua palavra-chave cadastrada"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest ml-1">Nova Senha Segura</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim group-focus-within:text-primary transition-colors" size={18} />
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={formData.newPassword}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full pl-12 pr-4 py-3 bg-bg-sidebar border border-border-subtle rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all text-sm placeholder:text-text-dim/30"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest ml-1">Novo CRP (Opcional)</label>
+                <input
+                  type="text"
+                  name="newCRP"
+                  value={formData.newCRP}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-bg-sidebar border border-border-subtle rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all text-sm"
+                  placeholder="00/00000"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest ml-1">Nova Palavra-Chave (Opcional)</label>
+                <input
+                  type="text"
+                  name="newKeyword"
+                  value={formData.newKeyword}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-bg-sidebar border border-border-subtle rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all text-sm placeholder:text-text-dim/30"
+                  placeholder="Nova palavra-chave"
+                />
               </div>
             </div>
           )}

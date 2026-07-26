@@ -6,6 +6,7 @@ import { cn, getLocalDateString, safeUUID } from '../../lib/utils';
 import { getHoliday } from '../../utils/holidays';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
+import { toast } from 'react-hot-toast';
 
 export const checkBookingOverlap = async (dataStr: string, horaStr: string, excludeAppId?: string): Promise<boolean> => {
   const appsOnDate = await db.agendamentos.where('data').equals(dataStr).toArray();
@@ -111,9 +112,11 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
           console.warn("Cloud sync failed (cancel appointment):", err);
         }
       }
+      toast.success("Agendamento cancelado com sucesso!");
       onClose();
     } catch (error) {
       console.error(error);
+      toast.error("Erro ao cancelar o agendamento.");
     }
   };
 
@@ -160,7 +163,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
       // Prevent double bookings
       const hasOverlap = await checkBookingOverlap(formData.data, formData.hora, isRescheduling ? undefined : appointment?.id);
       if (hasOverlap) {
-        alert("Conflito de agenda: Já existe um agendamento para este mesmo dia e horário.");
+        toast.error("Conflito de agenda: Já existe um agendamento para este mesmo dia e horário.");
         return;
       }
 
@@ -197,6 +200,7 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
       await handleSaveConfirmed(false, false);
     } catch (error) {
       console.error(error);
+      toast.error("Erro ao validar o agendamento.");
     }
   };
 
@@ -370,11 +374,13 @@ export default function AppointmentModal({ appointment, initialDate, isOpen, onC
         logAction(currentUser, `Criou agendamento para: ${formData.pacienteId}`);
       }
 
+      toast.success(appointment ? "Agendamento atualizado com sucesso!" : "Sessão agendada com sucesso!");
       setShowUpdateSeriesConfirm(false);
       setShowRecurrenceDocConfirm(false);
       onClose();
     } catch (error) {
       console.error(error);
+      toast.error("Erro ao salvar o agendamento no banco de dados.");
     } finally {
       setIsSaving(false);
     }

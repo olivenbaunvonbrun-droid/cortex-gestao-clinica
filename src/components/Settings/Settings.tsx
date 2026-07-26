@@ -7,6 +7,7 @@ import ConfirmModal from '../ui/ConfirmModal';
 import useConfirm from '../../hooks/useConfirm';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
+import { toast } from 'react-hot-toast';
 
 const BRAZILIAN_STATES = [
   { value: 'AC', label: 'Acre (AC)' },
@@ -123,66 +124,72 @@ export default function Settings({ onUpdateSettings }: SettingsProps) {
 
   const handleSaveSettings = async () => {
     setCryptoStatus('Auditando e Criptografando Dados...');
-    
-    await db.transaction('rw', db.settings, async () => {
-      await db.settings.put({ key: 'appTitle', value: appTitle });
-      await db.settings.put({ key: 'psychCrp', value: psychCrp });
-      await db.settings.put({ key: 'appLogo', value: appLogo });
-      await db.settings.put({ key: 'psychSignature', value: psychSignature });
-      await db.settings.put({ key: 'appointmentMessageTemplate', value: appointmentMessageTemplate });
-      await db.settings.put({ key: 'sessionDuration', value: sessionDuration });
-      await db.settings.put({ key: 'abordagens', value: abordagens });
-      await db.settings.put({ key: 'workDays', value: workDays });
-      await db.settings.put({ key: 'workStart', value: workStart });
-      await db.settings.put({ key: 'workEnd', value: workEnd });
-      await db.settings.put({ key: 'lunchStart', value: lunchStart });
-      await db.settings.put({ key: 'lunchEnd', value: lunchEnd });
-      await db.settings.put({ key: 'hasLunchBreak', value: hasLunchBreak });
-      await db.settings.put({ key: 'layoutScale', value: layoutScale });
-      await db.settings.put({ key: 'ufState', value: ufState });
-      
-      if (geminiKey) {
-        const encrypted = encryptData(geminiKey);
-        await db.settings.put({ key: 'gemini_api_key', value: encrypted });
-      } else {
-        await db.settings.delete('gemini_api_key');
+    try {
+      await db.transaction('rw', db.settings, async () => {
+        await db.settings.put({ key: 'appTitle', value: appTitle });
+        await db.settings.put({ key: 'psychCrp', value: psychCrp });
+        await db.settings.put({ key: 'appLogo', value: appLogo });
+        await db.settings.put({ key: 'psychSignature', value: psychSignature });
+        await db.settings.put({ key: 'appointmentMessageTemplate', value: appointmentMessageTemplate });
+        await db.settings.put({ key: 'sessionDuration', value: sessionDuration });
+        await db.settings.put({ key: 'abordagens', value: abordagens });
+        await db.settings.put({ key: 'workDays', value: workDays });
+        await db.settings.put({ key: 'workStart', value: workStart });
+        await db.settings.put({ key: 'workEnd', value: workEnd });
+        await db.settings.put({ key: 'lunchStart', value: lunchStart });
+        await db.settings.put({ key: 'lunchEnd', value: lunchEnd });
+        await db.settings.put({ key: 'hasLunchBreak', value: hasLunchBreak });
+        await db.settings.put({ key: 'layoutScale', value: layoutScale });
+        await db.settings.put({ key: 'ufState', value: ufState });
+        
+        if (geminiKey) {
+          const encrypted = encryptData(geminiKey);
+          await db.settings.put({ key: 'gemini_api_key', value: encrypted });
+        } else {
+          await db.settings.delete('gemini_api_key');
+        }
+      });
+
+      onUpdateSettings({ appTitle, appLogo, layoutScale });
+
+      // Sync all clinic-wide settings to cloud immediately (gemini key excluded - device-specific)
+      const firebaseUid = auth.currentUser?.uid;
+      if (firebaseUid) {
+        const settingsToSync = [
+          { key: 'appTitle', value: appTitle },
+          { key: 'psychCrp', value: psychCrp },
+          { key: 'appLogo', value: appLogo },
+          { key: 'psychSignature', value: psychSignature },
+          { key: 'appointmentMessageTemplate', value: appointmentMessageTemplate },
+          { key: 'sessionDuration', value: sessionDuration },
+          { key: 'abordagens', value: abordagens },
+          { key: 'workDays', value: workDays },
+          { key: 'workStart', value: workStart },
+          { key: 'workEnd', value: workEnd },
+          { key: 'lunchStart', value: lunchStart },
+          { key: 'lunchEnd', value: lunchEnd },
+          { key: 'hasLunchBreak', value: hasLunchBreak },
+          { key: 'layoutScale', value: layoutScale },
+          { key: 'ufState', value: ufState },
+        ];
+        await Promise.all(
+          settingsToSync.map(s => syncService.saveToCloud(firebaseUid, 'settings', s))
+        );
       }
-    });
 
-    onUpdateSettings({ appTitle, appLogo, layoutScale });
-
-    // Sync all clinic-wide settings to cloud immediately (gemini key excluded - device-specific)
-    const firebaseUid = auth.currentUser?.uid;
-    if (firebaseUid) {
-      const settingsToSync = [
-        { key: 'appTitle', value: appTitle },
-        { key: 'psychCrp', value: psychCrp },
-        { key: 'appLogo', value: appLogo },
-        { key: 'psychSignature', value: psychSignature },
-        { key: 'appointmentMessageTemplate', value: appointmentMessageTemplate },
-        { key: 'sessionDuration', value: sessionDuration },
-        { key: 'abordagens', value: abordagens },
-        { key: 'workDays', value: workDays },
-        { key: 'workStart', value: workStart },
-        { key: 'workEnd', value: workEnd },
-        { key: 'lunchStart', value: lunchStart },
-        { key: 'lunchEnd', value: lunchEnd },
-        { key: 'hasLunchBreak', value: hasLunchBreak },
-        { key: 'layoutScale', value: layoutScale },
-        { key: 'ufState', value: ufState },
-      ];
-      await Promise.all(
-        settingsToSync.map(s => syncService.saveToCloud(firebaseUid, 'settings', s))
-      );
+      setSaveStatus('Configurações salvas e protegidas!');
+      toast.success('Configurações salvas com sucesso!');
+      setShowSavedModal(true);
+      setTimeout(() => setSaveStatus(''), 3000);
+      
+      const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
+      logAction(currentUser, 'Atualizou configurações e chaves de segurança');
+    } catch (error) {
+      console.error("Erro ao salvar configurações:", error);
+      toast.error("Erro ao salvar as configurações. Verifique o banco de dados.");
+    } finally {
+      setCryptoStatus('');
     }
-
-    setCryptoStatus('');
-    setSaveStatus('Configurações salvas e protegidas!');
-    setShowSavedModal(true);
-    setTimeout(() => setSaveStatus(''), 3000);
-    
-    const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
-    logAction(currentUser, 'Atualizou configurações e chaves de segurança');
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn, safeUUID } from '../../lib/utils';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
+import { toast } from 'react-hot-toast';
 
 interface TransactionModalProps {
   transaction: Transaction | null;
@@ -89,9 +90,11 @@ export default function TransactionModal({ transaction, isOpen, onClose }: Trans
           }
         }
       }
+      toast.success(transaction ? "Lançamento atualizado com sucesso!" : "Lançamento cadastrado com sucesso!");
       onClose();
     } catch (error) {
       console.error(error);
+      toast.error("Erro ao salvar o lançamento financeiro.");
     } finally {
       setIsSaving(false);
     }
