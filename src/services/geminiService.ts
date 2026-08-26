@@ -63,6 +63,7 @@ DIRETRIZES DO FRAMEWORK DE PARÂMETROS CLÍNICOS AVANÇADOS (MÉTODO DE 4ª GERA
 5. NECESSIDADES EMOCIONAIS BÁSICAS: Identificar as necessidades primárias frustradas ou atendidas (Infantis, Parentais, Conjugais ou Adultas).
 6. HABILIDADES PSICOLÓGICAS (HPs): Identificar déficits ou progressos nas 8 HPs centrais (Autoconhecimento, Autorregulação Emocional, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade/Enfrentamento, Autocontrole, Sociabilidade, Imunidade Social).
 7. PARÂMETROS CLÍNICOS AVANÇADOS: Valores pessoais, propósito existencial, nível de insight, metacognições, tolerância à incerteza/frustração e sensibilidade à rejeição/fracasso.
+8. INTERPRETAÇÃO DE ITENS INVERTIDOS/NEGATIVOS (CRÍTICO): Vários inventários contêm itens com enunciados negativos ou deficitários (ex: "fico encabulado(a) sem saber o que dizer", "evito falar em público", "concordo com pedidos abusivos"). Se o paciente responder "Nunca ou Raramente" ou pontuar muito baixo nesses itens, significa que ele NÃO apresenta a dificuldade descrita, o que indica comportamento SAUDÁVEL e assertivo. Não confunda a menção de um comportamento negativo com a presença dele se a resposta do paciente indicar baixa frequência.
 `;
 
 export async function generateContentWithSystemInstruction(prompt: string, systemInstruction: string) {
