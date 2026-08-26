@@ -48,12 +48,29 @@ export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: R
         >
           <ArrowLeft size={14} /> Voltar para Edição
         </button>
-        <button 
-          onClick={onExport}
-          className="flex items-center gap-2 bg-[#6366f1] hover:bg-[#4f46e5] text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#6366f1]/10 transition-all active:scale-95 cursor-pointer"
-        >
-          <Download size={14} /> Exportar Relatório HTML
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={handleRegenerate}
+            disabled={isGenerating}
+            className="flex items-center gap-2 bg-bg-card hover:bg-bg-sidebar text-text-main px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest border border-border-subtle transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 size={12} className="animate-spin" /> Gerando...
+              </>
+            ) : (
+              <>
+                <Sparkles size={12} /> Refazer Análise com IA
+              </>
+            )}
+          </button>
+          <button 
+            onClick={onExport}
+            className="flex items-center gap-2 bg-[#6366f1] hover:bg-[#4f46e5] text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#6366f1]/10 transition-all active:scale-95 cursor-pointer"
+          >
+            <Download size={14} /> Exportar Relatório HTML
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
