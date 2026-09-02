@@ -10,48 +10,120 @@ export const SCHEMAS_DATA = [
     domain: "Domínio 1 – Desconexão e Rejeição",
     description: "Crença de que necessidades básicas de segurança, amor, estabilidade, empatia e respeito não serão atendidas",
     schemas: [
-      { name: "Abandono/Instabilidade", definition: "Medo de perder pessoas importantes." },
-      { name: "Desconfiança/Abuso", definition: "Expectativa de ser enganado, maltratado ou abusado." },
-      { name: "Privação Emocional", definition: "Crença de que apoio e afeto nunca estarão disponíveis." },
-      { name: "Defectividade/Vergonha", definition: "Sensação de ser defeituoso, indigno de amor." },
-      { name: "Isolamento Social/Alienação", definition: "Sentir-se diferente, não pertencente." }
+      { 
+        name: "Abandono/Instabilidade", 
+        definition: "Medo de perder pessoas importantes e de ficar desamparado.",
+        question: "Você costuma sentir um medo constante ou aflição de que as pessoas que você ama vão te deixar, se afastar, falecer ou encontrar alguém melhor que você?"
+      },
+      { 
+        name: "Desconfiança/Abuso", 
+        definition: "Expectativa de ser enganado, maltratado, traído ou abusado.",
+        question: "Você sente que precisa estar sempre em guarda porque, cedo ou tarde, as pessoas vão mentir para você, te prejudicar, trair sua confiança ou tirar vantagem?"
+      },
+      { 
+        name: "Privação Emocional", 
+        definition: "Crença de que apoio, afeto, escuta e carinho nunca estarão disponíveis de verdade.",
+        question: "Você sente um vazio de que ninguém nunca vai realmente te compreender no fundo, te dar o carinho que precisa ou cuidar de você de verdade?"
+      },
+      { 
+        name: "Defectividade/Vergonha", 
+        definition: "Sensação íntima de ser defeituoso, falho, inferior ou indigno de amor.",
+        question: "Você guarda uma sensação íntima de que tem algum 'defeito' ou imperfeição que, se as pessoas descobrirem como você realmente é por dentro, vão te rejeitar ou sentir vergonha?"
+      },
+      { 
+        name: "Isolamento Social/Alienação", 
+        definition: "Sentir-se diferente, não pertencente a grupos ou à comunidade.",
+        question: "Você se sente um estranho ou um 'peixe fora d'água' nos ambientes, como se fosse diferente das outras pessoas e não pertencesse a lugar nenhum?"
+      }
     ]
   },
   {
     domain: "Domínio 2 – Autonomia e Desempenho Prejudicados",
     description: "Crença de incapacidade de viver de forma independente e competente",
     schemas: [
-      { name: "Dependência/Incompetência", definition: "Crença de não conseguir lidar sozinho." },
-      { name: "Vulnerabilidade a Danos ou Doenças", definition: "Medo excessivo de catástrofes, doenças, acidentes." },
-      { name: "Emaranhamento/Self Subdesenvolvido", definition: "Fusão excessiva com figuras significativas, perda de identidade própria." },
-      { name: "Fracasso", definition: "Sensação de ser inadequado, inferior, incapaz de ter sucesso." }
+      { 
+        name: "Dependência/Incompetência", 
+        definition: "Crença de não conseguir lidar com as tarefas e decisões do dia a dia sozinho.",
+        question: "Você sente que não dá conta da vida sozinho e que precisa sempre que alguém te oriente, decida por você ou assuma a responsabilidade para você não errar?"
+      },
+      { 
+        name: "Vulnerabilidade a Danos ou Doenças", 
+        definition: "Medo excessivo de catástrofes, doenças súbitas, acidentes ou ruína financeira.",
+        question: "Você vive com uma sensação de perigo iminente, temendo que uma tragédia de saúde, financeira ou familiar possa acontecer a qualquer instante sem você poder evitar?"
+      },
+      { 
+        name: "Emaranhamento/Self Subdesenvolvido", 
+        definition: "Fusão excessiva com figuras significativas, perda de identidade própria e autonomia.",
+        question: "Você sente que sua vida é tão ligada aos seus pais (ou parceiro) que é difícil saber quem você é de verdade sozinho, ou sente que se afastar seria uma traição?"
+      },
+      { 
+        name: "Fracasso", 
+        definition: "Sensação de ser inadequado, inferior, incapaz de ter sucesso nos estudos ou carreira.",
+        question: "Você se sente inferior ou menos capaz que as outras pessoas da sua idade, acreditando que na carreira ou nos estudos você é um fracasso ou uma fraude que logo será descoberta?"
+      }
     ]
   },
   {
     domain: "Domínio 3 – Limites Prejudicados",
     description: "Dificuldade em respeitar limites, direitos e responsabilidades",
     schemas: [
-      { name: "Grandiosidade/Arrogância", definition: "Sensação de superioridade, privilégios especiais." },
-      { name: "Autocontrole/Autodisciplina Insuficientes", definition: "Dificuldade em controlar impulsos ou adiar gratificação." }
+      { 
+        name: "Grandiosidade/Arrogância", 
+        definition: "Sensação de superioridade, privilégios especiais e desrespeito a regras comuns.",
+        question: "Você se irrita facilmente quando as coisas não saem exatamente do seu jeito ou sente que as regras comuns do dia a dia não deveriam se aplicar a você?"
+      },
+      { 
+        name: "Autocontrole/Autodisciplina Insuficientes", 
+        definition: "Dificuldade em controlar impulsos, adiar gratificação ou tolerar rotina e frustração.",
+        question: "Você tem muita dificuldade de terminar o que começa, cede fácil a impulsos imediatos ou desiste rápido quando uma tarefa fica chata, cansativa ou frustrante?"
+      }
     ]
   },
   {
     domain: "Domínio 4 – Orientação para os Outros",
     description: "Excesso de foco em atender às necessidades alheias para ser aceito",
     schemas: [
-      { name: "Subjugação", definition: "Submissão excessiva para evitar rejeição ou raiva." },
-      { name: "Auto-sacrifício", definition: "Foco excessivo em ajudar os outros, negligenciando a si mesmo." },
-      { name: "Busca de Aprovação/Reconhecimento", definition: "Necessidade exagerada de aprovação externa." }
+      { 
+        name: "Subjugação", 
+        definition: "Submissão excessiva e anulação das próprias vontades para evitar rejeição ou raiva.",
+        question: "Você costuma ceder às vontades dos outros ou engolir o que pensa e sente apenas para evitar que a outra pessoa fique com raiva, chateada ou se afaste de você?"
+      },
+      { 
+        name: "Auto-sacrifício", 
+        definition: "Foco excessivo em ajudar e salvar os outros, negligenciando a si mesmo por culpa.",
+        question: "Você se sente culpado se colocar suas próprias necessidades em primeiro lugar, priorizando sempre cuidar e resolver os problemas dos outros antes de você mesmo?"
+      },
+      { 
+        name: "Busca de Aprovação/Reconhecimento", 
+        definition: "Necessidade exagerada de aprovação externa, elogios e validação para ter valor.",
+        question: "O quanto a opinião e a validação dos outros definem como você se sente consigo mesmo? Você muda seu jeito de ser para se encaixar e ser admirado?"
+      }
     ]
   },
   {
     domain: "Domínio 5 – Supervigilância e Inibição",
     description: "Excesso de repressão de sentimentos e busca rígida de padrões",
     schemas: [
-      { name: "Negatividade/Pessimismo", definition: "Foco no lado negativo da vida, medo de fracasso e sofrimento." },
-      { name: "Inibição Emocional", definition: "Dificuldade em expressar emoções, preferindo controle." },
-      { name: "Padrões Inflexíveis/Crítica Exagerada", definition: "Busca rígida de perfeição, altos padrões e crítica interna severa." },
-      { name: "Punitividade", definition: "Crença de que erros merecem punição, pouca compaixão consigo/outros." }
+      { 
+        name: "Negatividade/Pessimismo", 
+        definition: "Foco no lado negativo da vida, minimizando conquistas e esperando catástrofes.",
+        question: "Mesmo quando algo dá certo, você logo pensa no que pode dar errado em seguida, como se uma coisa boa sempre fosse acompanhada de um desastre iminente?"
+      },
+      { 
+        name: "Inibição Emocional", 
+        definition: "Dificuldade em expressar emoções espontâneas, preferindo autocontrole e frieza.",
+        question: "Você acha muito difícil demonstrar afeto, chorar na frente de alguém ou expressar o que sente abertamente, preferindo manter uma postura fria, racional e controlada?"
+      },
+      { 
+        name: "Padrões Inflexíveis/Crítica Exagerada", 
+        definition: "Busca rígida de perfeição, regras inflexíveis e autocrítica interna implacável.",
+        question: "Você se cobra de forma implacável para que tudo seja perfeito, sentindo que nada do que você faz está bom o suficiente e se martirizando duramente pelos mínimos erros?"
+      },
+      { 
+        name: "Punitividade", 
+        definition: "Crença de que erros merecem punição severa, com pouca tolerância ou compaixão.",
+        question: "Você tem dificuldade em perdoar seus próprios erros ou os erros dos outros, achando que quem erra tem que pagar o preço e ser duramente castigado?"
+      }
     ]
   }
 ];
@@ -59,23 +131,48 @@ export const SCHEMAS_DATA = [
 export const NEEDS_DATA = [
   {
     category: "Necessidades Infantis",
-    needs: CLINICAL_SUGGESTIONS_DB.necessidades_infantil.items.map(item => item.key)
+    needs: CLINICAL_SUGGESTIONS_DB.necessidades_infantil.items.map(item => item.key),
+    items: CLINICAL_SUGGESTIONS_DB.necessidades_infantil.items.map(item => ({
+      name: item.key,
+      desc: item.value,
+      question: item.question
+    }))
   },
   {
     category: "Estilos Parentais",
-    needs: CLINICAL_SUGGESTIONS_DB.estilos_parentais.items.map(item => item.key)
+    needs: CLINICAL_SUGGESTIONS_DB.estilos_parentais.items.map(item => item.key),
+    items: CLINICAL_SUGGESTIONS_DB.estilos_parentais.items.map(item => ({
+      name: item.key,
+      desc: item.value,
+      question: item.question
+    }))
   },
   {
     category: "Necessidades Parentais",
-    needs: CLINICAL_SUGGESTIONS_DB.necessidades_parental.items.map(item => item.key)
+    needs: CLINICAL_SUGGESTIONS_DB.necessidades_parental.items.map(item => item.key),
+    items: CLINICAL_SUGGESTIONS_DB.necessidades_parental.items.map(item => ({
+      name: item.key,
+      desc: item.value,
+      question: item.question
+    }))
   },
   {
     category: "Necessidades Conjugais",
-    needs: CLINICAL_SUGGESTIONS_DB.necessidades_conjugal.items.map(item => item.key)
+    needs: CLINICAL_SUGGESTIONS_DB.necessidades_conjugal.items.map(item => item.key),
+    items: CLINICAL_SUGGESTIONS_DB.necessidades_conjugal.items.map(item => ({
+      name: item.key,
+      desc: item.value,
+      question: item.question
+    }))
   },
   {
     category: "Necessidades Adultas",
-    needs: CLINICAL_SUGGESTIONS_DB.necessidades_adulto.items.map(item => item.key)
+    needs: CLINICAL_SUGGESTIONS_DB.necessidades_adulto.items.map(item => item.key),
+    items: CLINICAL_SUGGESTIONS_DB.necessidades_adulto.items.map(item => ({
+      name: item.key,
+      desc: item.value,
+      question: item.question
+    }))
   },
   {
     category: "Esquemas Desadaptativos",

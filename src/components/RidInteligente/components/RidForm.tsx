@@ -473,7 +473,7 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
                 {activeSuggestionField === 'necessidade' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2 max-h-80 overflow-y-auto space-y-3"
+                    className="absolute z-20 top-full left-0 right-0 mt-1 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2.5 max-h-80 overflow-y-auto space-y-3"
                   >
                     {[
                       { key: "Necessidades Infantis", label: "Infantis", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
@@ -483,24 +483,36 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
                     ].map(group => {
                       const groupData = NEEDS_DATA.find(c => c.category === group.key);
                       if (!groupData) return null;
+                      const itemsList = (groupData as any).items || groupData.needs.map(n => ({ name: n, question: '' }));
                       return (
-                        <div key={group.key} className="space-y-1.5 p-1 border-b border-border-subtle/30 last:border-0 pb-2.5 last:pb-1">
+                        <div key={group.key} className="space-y-2 p-1 border-b border-border-subtle/30 last:border-0 pb-2.5 last:pb-1">
                           <div className="flex items-center gap-1.5 px-1">
                             <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded border ${group.color}`}>
                               {group.label}
                             </span>
                           </div>
-                          <div className="flex flex-wrap gap-1">
-                            {groupData.needs.map(n => (
-                              <button 
-                                key={n}
-                                type="button"
-                                onClick={() => handleSelectSuggestion('necessidade', n)}
-                                className="px-2 py-1 text-[10px] font-semibold text-text-main bg-bg-deep border border-border-subtle hover:border-primary hover:text-primary rounded-lg transition-colors cursor-pointer"
-                              >
-                                {n}
-                              </button>
-                            ))}
+                          <div className="grid grid-cols-1 gap-1.5">
+                            {itemsList.map((nItem: any) => {
+                              const name = typeof nItem === 'string' ? nItem : nItem.name;
+                              const question = typeof nItem === 'string' ? '' : nItem.question;
+                              return (
+                                <button 
+                                  key={name}
+                                  type="button"
+                                  onClick={() => handleSelectSuggestion('necessidade', name)}
+                                  className="w-full text-left p-2 bg-bg-sidebar/50 hover:bg-bg-sidebar border border-border-subtle/50 hover:border-primary/40 rounded-xl transition-all group cursor-pointer"
+                                >
+                                  <span className="block text-[11px] font-black text-text-main group-hover:text-primary transition-colors uppercase tracking-wider">
+                                    {name}
+                                  </span>
+                                  {question && (
+                                    <div className="mt-1 p-1.5 bg-primary/10 border border-primary/20 rounded-lg text-[9.5px] text-primary/95 leading-relaxed font-medium italic">
+                                      💬 <span className="font-bold not-italic">Pergunta ao paciente:</span> "{question}"
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -540,16 +552,22 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
                 {activeSuggestionField === 'esquema' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2 max-h-40 overflow-y-auto grid grid-cols-1 gap-1"
+                    className="absolute z-20 top-full left-0 right-0 mt-1 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2.5 max-h-72 overflow-y-auto grid grid-cols-1 gap-1.5"
                   >
-                    {flatSchemas.map(s => (
+                    {flatSchemas.map((s: any) => (
                       <button 
                         key={s.name}
+                        type="button"
                         onClick={() => handleSelectSuggestion('esquema', s.name)}
-                        className="text-left px-3 py-1.5 hover:bg-bg-sidebar rounded-lg transition-colors group cursor-pointer"
+                        className="w-full text-left p-2.5 bg-bg-sidebar/50 hover:bg-bg-sidebar border border-border-subtle/50 hover:border-amber-500/40 rounded-xl transition-all group cursor-pointer"
                       >
-                        <span className="block text-[10px] font-black text-amber-400 uppercase tracking-wider group-hover:text-amber-300">{s.name}</span>
-                        <span className="block text-[9px] text-text-dim truncate">{s.definition}</span>
+                        <span className="block text-[11px] font-black text-amber-400 uppercase tracking-wider group-hover:text-amber-300">{s.name}</span>
+                        <span className="block text-[10px] text-text-dim leading-relaxed mt-0.5">{s.definition}</span>
+                        {s.question && (
+                          <div className="mt-1.5 p-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[9.5px] text-amber-300/95 leading-relaxed font-medium italic">
+                            💬 <span className="font-bold not-italic text-amber-400">Pergunta ao paciente:</span> "{s.question}"
+                          </div>
+                        )}
                       </button>
                     ))}
                   </motion.div>

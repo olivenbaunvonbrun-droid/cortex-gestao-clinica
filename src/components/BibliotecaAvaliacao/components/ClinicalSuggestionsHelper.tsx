@@ -33,6 +33,7 @@ export interface ClinicalSuggestionItem {
   key: string;
   value: string; // The text to be inserted
   explanation: string; // Clinical detailed description/explanation
+  question?: string; // Pergunta investigativa para o terapeuta fazer ao paciente
 }
 
 export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: string; items: ClinicalSuggestionItem[] }> = {
@@ -42,92 +43,110 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
       {
         key: "Privação Emocional",
         value: "Privação Emocional (Expectativa de que as necessidades de afeto, empatia e proteção não serão supridas)",
-        explanation: "Vivência de carência de apoio emocional primário. O paciente sente que ninguém se importa de modo profundo com ele, compreende suas dores ou o protege de perigos."
+        explanation: "Vivência de carência de apoio emocional primário. O paciente sente que ninguém se importa de modo profundo com ele, compreende suas dores ou o protege de perigos.",
+        question: "Você sente um vazio de que ninguém nunca vai realmente te compreender no fundo, te dar o carinho que precisa ou cuidar de você de verdade?"
       },
       {
         key: "Abandono / Instabilidade",
         value: "Abandono / Instabilidade (Percepção de que as pessoas significativas são instáveis, não confiáveis ou irão falecer/ir embora)",
-        explanation: "Medo crônico de separação, divórcio ou morte das figuras de apego. Sentimento de que conexões humanas são frágeis e que murcharão a qualquer momento."
+        explanation: "Medo crônico de separação, divórcio ou morte das figuras de apego. Sentimento de que conexões humanas são frágeis e que murcharão a qualquer momento.",
+        question: "Você costuma sentir um medo constante ou aflição de que as pessoas que você ama vão te deixar, se afastar, falecer ou encontrar alguém melhor que você?"
       },
       {
         key: "Desconfiança / Abuso",
         value: "Desconfiança / Abuso (Expectativa de que os outros irão mentir, enganar, humilhar ou se aproveitar deliberadamente)",
-        explanation: "Sensação constante de estar sob mira de má futilidade alheia. Tende a agir defensivamente ou a pressupor más intenções ocultas em atitudes neutras."
+        explanation: "Sensação constante de estar sob mira de má futilidade alheia. Tende a agir defensivamente ou a pressupor más intenções ocultas em atitudes neutras.",
+        question: "Você sente que precisa estar sempre em guarda porque, cedo ou tarde, as pessoas vão mentir para você, te prejudicar, trair sua confiança ou tirar vantagem?"
       },
       {
         key: "Isolamento Social / Alienação",
         value: "Isolamento Social / Alienação (Sensação de inadequação cultural, alienação ou de que é fundamentalmente diferente dos outros humana e socialmente)",
-        explanation: "Sensação subjetiva de solidão. O indivíduo sente que é um estranho, incompreendido pelo seu círculo social e que não pertence a comunidade alguma."
+        explanation: "Sensação subjetiva de solidão. O indivíduo sente que é um estranho, incompreendido pelo seu círculo social e que não pertence a comunidade alguma.",
+        question: "Você se sente um estranho ou um 'peixe fora d'água' nos ambientes, como se fosse diferente das outras pessoas e não pertencesse a lugar nenhum?"
       },
       {
         key: "Defectividade / Vergonha",
         value: "Defectividade / Vergonha (Crença de ser falho, indesejado, defeituoso por dentro ou moralmente inadequado se descoberto)",
-        explanation: "Hipersensibilidade a críticas e forte autocrítica. Medo paralisante de que seus supostos segredos feios venham à tona e causem humilhação definitiva."
+        explanation: "Hipersensibilidade a críticas e forte autocrítica. Medo paralisante de que seus supostos segredos feios venham à tona e causem humilhação definitiva.",
+        question: "Você guarda uma sensação íntima de que tem algum 'defeito' ou imperfeição que, se as pessoas descobrirem como você realmente é por dentro, vão te rejeitar ou sentir vergonha?"
       },
       {
         key: "Fracasso",
         value: "Fracasso (Fracasso de realização, sensação de incompetência ou de inferioridade técnica nos estudos em relação aos pares)",
-        explanation: "Certeza apriorística de que fracassará na carreira profissional ou acadêmica. Tende a se sabotar por acreditar que não possui intelecto ou capacidade."
+        explanation: "Certeza apriorística de que fracassará na carreira profissional ou acadêmica. Tende a se sabotar por acreditar que não possui intelecto ou capacidade.",
+        question: "Você se sente inferior ou menos capaz que as outras pessoas da sua idade, acreditando que na carreira ou nos estudos você é um fracasso ou uma fraude que logo será descoberta?"
       },
       {
         key: "Dependência / Incompetência",
         value: "Dependência / Incompetência (Atitude de desamparo operacional, incapacidade de gerir as obrigações corriqueiras de forma autônoma)",
-        explanation: "Sensação de incompetência física ou executiva. O paciente delega decisões vitais a parceiros ou pais por acreditar que não se vira sozinho."
+        explanation: "Sensação de incompetência física ou executiva. O paciente delega decisões vitais a parceiros ou pais por acreditar que não se vira sozinho.",
+        question: "Você sente que não dá conta da vida sozinho e que precisa sempre que alguém te oriente, decida por você ou assuma a responsabilidade para você não errar?"
       },
       {
         key: "Vulnerabilidade a Danos ou Doenças",
         value: "Vulnerabilidade a Danos ou Doenças (Temores catastróficos infundados quanto a colapsos médicos, acidentes, crimes ou falência financeira imediata)",
-        explanation: "Fobia obsessiva voltada à segurança. Qualquer alteração orgânica ligeira é processada como prenúncio de infarto, câncer ou ruína monetária."
+        explanation: "Fobia obsessiva voltada à segurança. Qualquer alteração orgânica ligeira é processada como prenúncio de infarto, câncer ou ruína monetária.",
+        question: "Você vive com uma sensação de perigo iminente, temendo que uma tragédia de saúde, financeira ou familiar possa acontecer a qualquer instante sem você poder evitar?"
       },
       {
         key: "Emaranhamento / Self Subdesenvolvido",
         value: "Emaranhamento (Fusão de sentimentos e comportamentos com genitores, que solapa o desenvolvimento de uma individualidade consolidada)",
-        explanation: "Co-dependência neurótica. O paciente sente que não tem existência legal ou moral própria sem a aprovação diária de figuras parentais."
+        explanation: "Co-dependência neurótica. O paciente sente que não tem existência legal ou moral própria sem a aprovação diária de figuras parentais.",
+        question: "Você sente que sua vida é tão ligada aos seus pais (ou parceiro) que é difícil saber quem você é de verdade sozinho, ou sente que se afastar seria uma traição?"
       },
       {
         key: "Subjugação",
         value: "Subjugação (Controle cedido às pressões externas para evitar rompantes de ira, retaliações sociais ou perdas de vínculo)",
-        explanation: "Recomenda-se calar desejos pessoais para apaziguar parceiros ou familiares. Gera acumulação crônica de raiva reprimida que eclode de forma passivo-agressiva."
+        explanation: "Recomenda-se calar desejos pessoais para apaziguar parceiros ou familiares. Gera acumulação crônica de raiva reprimida que eclode de forma passivo-agressiva.",
+        question: "Você costuma ceder às vontades dos outros ou engolir o que pensa e sente apenas para evitar que a outra pessoa fique com raiva, chateada ou se afaste de você?"
       },
       {
         key: "Auto-sacrifício",
         value: "Auto-sacrifício (Foco excessivo involuntário em sanar as urgências alheias à custa da sua própria saúde física ou integridade psicológica)",
-        explanation: "O indivíduo sente-se culpado se focar em si mesmo. Sacrifica sua própria saúde e repouso para socorrer amigos, cônjuge ou familiares."
+        explanation: "O indivíduo sente-se culpado se focar em si mesmo. Sacrifica sua própria saúde e repouso para socorrer amigos, cônjuge ou familiares.",
+        question: "Você se sente culpado se colocar suas próprias necessidades em primeiro lugar, priorizando sempre cuidar e resolver os problemas dos outros antes de você mesmo?"
       },
       {
         key: "Busca de Aprovação / Reconhecimento",
         value: "Busca de Aprovação ou Reconhecimento (Necessidade crônica de aplausos, aceitação ou validação de terceiros para estabilizar seu valor próprio)",
-        explanation: "Perda da identidade autêntica. A prioridade existencial consiste em projetar aparências caras, riqueza ou títulos acadêmicos para angariar admiração alheia."
+        explanation: "Perda da identidade autêntica. A prioridade existencial consiste em projetar aparências caras, riqueza ou títulos acadêmicos para angariar admiração alheia.",
+        question: "O quanto a opinião e a validação dos outros definem como você se sente consigo mesmo? Você muda seu jeito de ser para se encaixar e ser admirado?"
       },
       {
         key: "Negatividade / Pessimismo",
         value: "Negatividade / Pessimismo (Minimização ou descarte de conquistas benéficas e foco persistente em dores, erros e catástrofes futuras)",
-        explanation: "Visão cinzenta de mundo. Há a crença de que qualquer conquista promissora naufragará rapidamente, resultando em ansiedade crônica."
+        explanation: "Visão cinzenta de mundo. Há a crença de que qualquer conquista promissora naufragará rapidamente, resultando em ansiedade crônica.",
+        question: "Mesmo quando algo dá certo, você logo pensa no que pode dar errado em seguida, como se uma coisa boa sempre fosse acompanhada de um desastre iminente?"
       },
       {
         key: "Inibição Emocional",
         value: "Inibição Emocional (Restrição deliberada e vigilante de manifestações emocionais espontâneas para manter autocontrole absoluto e polidez)",
-        explanation: "O paciente evita chorar, expressar afeto caloroso ou raiva legítima. Prefere parecer excessivamente lógico, racional e imune a sensibilidades."
+        explanation: "O paciente evita chorar, expressar afeto caloroso ou raiva legítima. Prefere parecer excessivamente lógico, racional e imune a sensibilidades.",
+        question: "Você acha muito difícil demonstrar afeto, chorar na frente de alguém ou expressar o que sente abertamente, preferindo manter uma postura fria, racional e controlada?"
       },
       {
         key: "Padrões Inflexíveis / Crítica Exagerada",
         value: "Padrões Inflexíveis / Crítica Exagerada (Cobrança obsessiva de metas inatingíveis de moralidade, estética ou trabalho com estresse crônico associado)",
-        explanation: "Rigidez perfeccionista de conduta. O indivíduo sente que nada é suficientemente bom e sacrifica seu repouso, prazer e relacionamentos em nome do dever."
+        explanation: "Rigidez perfeccionista de conduta. O indivíduo sente que nada é suficientemente bom e sacrifica seu repouso, prazer e relacionamentos em nome do dever.",
+        question: "Você se cobra de forma implacável para que tudo seja perfeito, sentindo que nada do que você faz está bom o suficiente e se martirizando duramente pelos mínimos erros?"
       },
       {
         key: "Punitividade",
         value: "Punitividade (Impaciência absoluta com erros alheios ou de si mesmo, exigindo castigo implacável sem compreensão de limites normativos)",
-        explanation: "Intolerância clínica extrema. Não há condescendência com falhas humanas comuns. O paciente culpa rigidamente e pune quem erra com silêncio ou hostilidade."
+        explanation: "Intolerância clínica extrema. Não há condescendência com falhas humanas comuns. O paciente culpa rigidamente e pune quem erra com silêncio ou hostilidade.",
+        question: "Você tem dificuldade em perdoar seus próprios erros ou os erros dos outros, achando que quem erra tem que pagar o preço e ser duramente castigado?"
       },
       {
         key: "Grandiosidade / Arrogância",
         value: "Grandiosidade / Arrogância (Sensação de ser superior, especial e intocável, demandando tratamento de exceção constante e violando regras sociais)",
-        explanation: "Falta de empatia pragmática e sensação de que as normas cotidianas que regem os outros não se aplicam a ele. Tende a subjugar e dominar parceiros."
+        explanation: "Falta de empatia pragmática e sensação de que as normas cotidianas que regem os outros não se aplicam a ele. Tende a subjugar e dominar parceiros.",
+        question: "Você se irrita facilmente quando as coisas não saem exatamente do seu jeito ou sente que as regras comuns do dia a dia não deveriam se aplicar a você?"
       },
       {
         key: "Autocontrole / Autodisciplina Insuficientes",
         value: "Autocontrole Insuficiente (Recusa de tolerar frustrações leves e de estender o esforço em prol de metas valiosas de longo prazo)",
-        explanation: "Tolerância nula a tédio ou repetição. O paciente sabota estudos, trabalhos ou cuidados com a saúde por não suportar processos penosos."
+        explanation: "Tolerância nula a tédio ou repetição. O paciente sabota estudos, trabalhos ou cuidados com a saúde por não suportar processos penosos.",
+        question: "Você tem muita dificuldade de terminar o que começa, cede fácil a impulsos imediatos ou desiste rápido quando uma tarefa fica chata, cansativa ou frustrante?"
       }
     ]
   },
@@ -399,83 +418,83 @@ export const CLINICAL_SUGGESTIONS_DB: Record<SuggestionsCategoryType, { title: s
   necessidades_infantil: {
     title: "Necessidades Clínicas - Parâmetros Infantis",
     items: [
-      { key: "Atenção", value: "Necessidade Infantil: Atenção (Sentir-se notada, vista, percebida fisicamente e socialmente)", explanation: "A criança se sente notada, vista, percebida pelos pais?" },
-      { key: "Carinho", value: "Necessidade Infantil: Carinho (Receber contato físico agradável, afeto, calor e ternura)", explanation: "Recebe contato físico agradável, afeto e abraços?" },
-      { key: "Admiração", value: "Necessidade Infantil: Admiração (Sente-se admirada, valorizada e encorajada na sua essência)", explanation: "Sente-se admirada, valorizada e elogiada pelos cuidadores?" },
-      { key: "Vínculo", value: "Necessidade Infantil: Vínculo (Sente-se conectada, pertencente e acolhida de forma incondicional)", explanation: "Sente-se conectada, pertencente à família nuclear e aos pais?" },
-      { key: "Proteção", value: "Necessidade Infantil: Proteção (Sente-se segura, livre de ameaças e fisicamente amparada)", explanation: "Sente-se segura, amparada nos momentos de angústia ou medo?" },
-      { key: "Cuidado", value: "Necessidade Infantil: Cuidado (Necessidades básicas como fome, sono e higiene atendidas)", explanation: "Suas necessidades básicas (alimentação, repouso, higiene) são atendidas?" },
-      { key: "Autonomia", value: "Necessidade Infantil: Autonomia (Estímulo sadio a ser independente e agir por si mesma)", explanation: "É incentivada a ser independente e a fazer coisas por si mesma?" },
-      { key: "Sociabilidade", value: "Necessidade Infantil: Sociabilidade (Interação horizontal e troca com outras crianças/pares)", explanation: "Consegue trocar, compartilhar e interagir com outras pessoas de forma sadia?" },
-      { key: "Conversação", value: "Necessidade Infantil: Conversação (Poder dialogar e expressar ideias e sentimentos livremente)", explanation: "Pode dialogar, expressar seus pensamentos e sentimentos sem repressões?" },
-      { key: "Instrução", value: "Necessidade Infantil: Instrução (Sente-se inteligente, capaz de aprender, raciocinar e refletir)", explanation: "Sente-se inteligente, capaz de aprender, receber ensino e refletir?" },
-      { key: "Diversão", value: "Necessidade Infantil: Diversão (Necessidade vital de brincar e explorar o mundo ludicamente)", explanation: "Tem a necessidade de brincar, recriar-se e explorar atendida?" },
-      { key: "Responsabilidade", value: "Necessidade Infantil: Responsabilidade (Carregar limites realistas e entender consequências)", explanation: "Carrega limites coerentes e entende as consequências de seus atos no convívio?" },
-      { key: "Gregariedade", value: "Necessidade Infantil: Gregariedade (Sentir que agrega valor à vida do outro, sendo boa e bondosa)", explanation: "Sente que agrega valor à vida do outro, sendo generosa, bondosa e cooperativa?" },
-      { key: "Identidade", value: "Necessidade Infantil: Identidade (Consegue se ver e ter um autoconceito claro apartada dos pais)", explanation: "Consegue se ver com clareza e ter um autoconceito nítido de sua individualidade?" },
-      { key: "Compreensão", value: "Necessidade Infantil: Compreensão (Sente-se compreendida em suas dores e empatizada)", explanation: "Sente-se compreendida e empatizada nas suas dificuldades diárias?" }
+      { key: "Atenção", value: "Necessidade Infantil: Atenção (Sentir-se notada, vista, percebida fisicamente e socialmente)", explanation: "Sentir-se notada, vista e percebida pelos cuidadores primários.", question: "Na sua infância, você sentia que seus pais realmente te olhavam e te davam atenção, ou você precisava aprontar/adoecer para ser notado?" },
+      { key: "Carinho", value: "Necessidade Infantil: Carinho (Receber contato físico agradável, afeto, calor e ternura)", explanation: "Recebimento de contato físico afetuoso, abraços, calor e ternura.", question: "Você recebia abraços, beijos, aconchego e afeto físico espontâneo dos seus cuidadores quando era criança?" },
+      { key: "Admiração", value: "Necessidade Infantil: Admiração (Sente-se admirada, valorizada e encorajada na sua essência)", explanation: "Sentir-se admirada, valorizada e elogiada pelos cuidadores em suas características.", question: "Seus pais elogiavam quem você era e comemoravam suas conquistas, ou focavam apenas nos seus defeitos e no que faltava?" },
+      { key: "Vínculo", value: "Necessidade Infantil: Vínculo (Sente-se conectada, pertencente e acolhida de forma incondicional)", explanation: "Sentir-se conectada, pertencente à família nuclear e aos pais de forma segura.", question: "Você sentia que pertencia e que tinha um lugar seguro e incondicional no coração da sua família?" },
+      { key: "Proteção", value: "Necessidade Infantil: Proteção (Sente-se segura, livre de ameaças e fisicamente amparada)", explanation: "Sentir-se segura e amparada nos momentos de perigo, medo ou angústia.", question: "Você se sentia física e emocionalmente seguro em casa, ou vivia com medo de brigas, abusos, abandono ou violência?" },
+      { key: "Cuidado", value: "Necessidade Infantil: Cuidado (Necessidades básicas como fome, sono e higiene atendidas)", explanation: "Atendimento consistente das necessidades básicas (alimentação, repouso, saúde, higiene).", question: "Suas necessidades básicas (comida, saúde, roupas limpas, sono) eram cuidadas com zelo e carinho pelos seus pais?" },
+      { key: "Autonomia", value: "Necessidade Infantil: Autonomia (Estímulo sadio a ser independente e agir por si mesma)", explanation: "Incentivo saudável a fazer escolhas, desenvolver independência e agir por si mesma.", question: "Seus pais te incentivavam a tentar fazer as coisas sozinho e ter suas próprias opiniões, ou controlavam tudo e te faziam sentir inseguro?" },
+      { key: "Sociabilidade", value: "Necessidade Infantil: Sociabilidade (Interação horizontal e troca com outras crianças/pares)", explanation: "Capacidade e oportunidade de conviver, compartilhar e interagir com outras crianças.", question: "Você era incentivado a ter amigos e brincar com outras crianças, ou sua família te isolava do convívio social?" },
+      { key: "Conversação", value: "Necessidade Infantil: Conversação (Poder dialogar e expressar ideias e sentimentos livremente)", explanation: "Liberdade para dialogar, expressar pensamentos e sentimentos sem censura punitiva.", question: "Você tinha liberdade para falar o que pensava e expressar seus sentimentos em casa sem ser ridicularizado ou mandado calar a boca?" },
+      { key: "Instrução", value: "Necessidade Infantil: Instrução (Sente-se inteligente, capaz de aprender, raciocinar e refletir)", explanation: "Sentir-se estimulado intelectualmente, capaz de aprender, raciocinar e refletir com paciência.", question: "Seus pais tinham paciência para te ensinar, tirar suas dúvidas e te estimular intelectualmente sem te chamar de burro?" },
+      { key: "Diversão", value: "Necessidade Infantil: Diversão (Necessidade vital de brincar e explorar o mundo ludicamente)", explanation: "Direito de brincar, recriar-se e explorar o mundo de forma lúdica e leve.", question: "Havia espaço na sua infância para simplesmente brincar, dar risada e ser criança, ou você já precisava agir como um adulto cheio de obrigações?" },
+      { key: "Responsabilidade", value: "Necessidade Infantil: Responsabilidade (Carregar limites realistas e entender consequências)", explanation: "Aprendizado de limites coerentes e compreensão das consequências de seus atos no convívio.", question: "Seus pais te ensinaram limites saudáveis e consequências claras com amor, ou oscilavam entre permissividade total e castigos desproporcionais?" },
+      { key: "Gregariedade", value: "Necessidade Infantil: Gregariedade (Sentir que agrega valor à vida do outro, sendo boa e bondosa)", explanation: "Sentir que agrega valor à vida do outro, sendo generosa, bondosa e cooperativa.", question: "Você aprendia a cooperar, ser gentil e compartilhar, sentindo que era valoroso fazer o bem para o próximo?" },
+      { key: "Identidade", value: "Necessidade Infantil: Identidade (Consegue se ver e ter um autoconceito claro apartada dos pais)", explanation: "Desenvolver um autoconceito nítido e seguro de sua individualidade, diferenciado dos pais.", question: "Você pôde desenvolver seus próprios gostos e personalidade, ou precisava ser uma cópia exata do que seus pais queriam?" },
+      { key: "Compreensão", value: "Necessidade Infantil: Compreensão (Sente-se compreendida em suas dores e empatizada)", explanation: "Sentir-se compreendida, acolhida e empatizada nas suas dores e dificuldades diárias.", question: "Quando você estava triste, com medo ou chorando, alguém sentava com você para te ouvir e acolher sua dor?" }
     ]
   },
   necessidades_parental: {
     title: "Necessidades Clínicas - Parâmetros Parentais",
     items: [
-      { key: "Honra", value: "Necessidade Parental: Honra (O filho honra os valores e orientações dos pais na ausência deles)", explanation: "O filho honra os valores e orientações dos pais, mesmo na ausência deles?" },
-      { key: "Respeito", value: "Necessidade Parental: Respeito (O filho respeita, acata e considera os pais na presença deles)", explanation: "O filho respeita e considera os pais e sua liderança na sua presença?" },
-      { key: "Acariciamento", value: "Necessidade Parental: Acariciamento (Troca de afeto físico sadio como carícias e abraços)", explanation: "Há uma troca de afeto físico mútuo (carícias, abraços) na relação com os filhos?" },
-      { key: "Admiração", value: "Necessidade Parental: Admiração (Os pais se sentem admirados e valorizados pelos filhos)", explanation: "Os pais se sentem admirados e reconhecidos pelos filhos em suas condutas?" },
-      { key: "Vínculo", value: "Necessidade Parental: Vínculo (Sentem-se conectados, próximos e afetivamente sintonizados)", explanation: "Os pais sentem-se conectados e próximos aos filhos?" },
-      { key: "Autoridade", value: "Necessidade Parental: Autoridade (Sentirem-se como a liderança firme e a referência vital)", explanation: "Sentem-se como a liderança legítima e a referência reguladora na vida dos filhos?" },
-      { key: "Autonomia Parental", value: "Necessidade Parental: Autonomia Parental (Exercer a parentalidade livre de intromissões)", explanation: "Sentem-se livres para exercer a parentalidade sem interferências de avós, vizinhos, etc.?" },
-      { key: "Diálogo", value: "Necessidade Parental: Diálogo (Conseguir conversar, orientar e trocar ideias abertamente)", explanation: "Conseguem conversar de forma bidirecional e trocar ideias com os filhos?" },
-      { key: "Compreensão", value: "Necessidade Parental: Compreensão (Sentirem-se compreendidos em suas limitações adultas)", explanation: "Sentem-se compreendidos pelos filhos em suas dificuldades e limitações pragmáticas?" },
-      { key: "Sabedoria", value: "Necessidade Parental: Sabedoria (Sentirem-se mentores capazes de instruir e guiar na vida)", explanation: "Sentem-se como mentores sadios, capazes de instruir e guiar os filhos para o futuro?" }
+      { key: "Honra", value: "Necessidade Parental: Honra (O filho honra os valores e orientações dos pais na ausência deles)", explanation: "Percepção de que os filhos respeitam e preservam os valores familiares mesmo longe.", question: "Você sente que seus filhos honram os ensinamentos e valores que você transmitiu, mesmo quando você não está por perto?" },
+      { key: "Respeito", value: "Necessidade Parental: Respeito (O filho respeita, acata e considera os pais na presença deles)", explanation: "Consideração, acatamento respeitoso e consideração à autoridade dos pais no dia a dia.", question: "Seus filhos te tratam com respeito e consideração, ou você se sente desrespeitado(a) na sua própria casa?" },
+      { key: "Acariciamento", value: "Necessidade Parental: Acariciamento (Troca de afeto físico sadio como carícias e abraços)", explanation: "Troca espontânea de carinho físico, abraços e acolhimento com os filhos.", question: "Há troca espontânea de carinho físico e afeto caloroso com seus filhos no cotidiano?" },
+      { key: "Admiração", value: "Necessidade Parental: Admiração (Os pais se sentem admirados e valorizados pelos filhos)", explanation: "Sentir que os filhos reconhecem a dedicação parental e admiram suas qualidades.", question: "Você sente que seus filhos reconhecem o seu esforço e admiram você como pai ou mãe?" },
+      { key: "Vínculo", value: "Necessidade Parental: Vínculo (Sentem-se conectados, próximos e afetivamente sintonizados)", explanation: "Conexão emocional viva, cumplicidade e proximidade genuína com os filhos.", question: "Você sente uma conexão afetiva calorosa e próxima com seus filhos, ou percebe um abismo de distância entre vocês?" },
+      { key: "Autoridade", value: "Necessidade Parental: Autoridade (Sentirem-se como a liderança firme e a referência vital)", explanation: "Capacidade de exercer liderança reguladora, firme e amorosa sem desespero.", question: "Você consegue exercer uma autoridade firme e amorosa, ou se sente impotente para estabelecer limites?" },
+      { key: "Autonomia Parental", value: "Necessidade Parental: Autonomia Parental (Exercer a parentalidade livre de intromissões)", explanation: "Liberdade para educar os filhos sem interferências depreciativas de familiares ou terceiros.", question: "Você tem liberdade para educar seus filhos conforme seus valores, ou sofre interferências constantes de parentes?" },
+      { key: "Diálogo", value: "Necessidade Parental: Diálogo (Conseguir conversar, orientar e trocar ideias abertamente)", explanation: "Canal aberto e bidirecional de comunicação franca e afetuosa com os filhos.", question: "Existe um canal aberto de conversa com seus filhos, onde ambos conseguem falar e ouvir com franqueza?" },
+      { key: "Compreensão", value: "Necessidade Parental: Compreensão (Sentirem-se compreendidos em suas limitações adultas)", explanation: "Ser compreendido pelos filhos em seu cansaço, limitações financeiras e falhas humanas.", question: "Seus filhos compreendem que você é um ser humano com limites e cansaço, ou esperam perfeição incondicional?" },
+      { key: "Sabedoria", value: "Necessidade Parental: Sabedoria (Sentirem-se mentores capazes de instruir e guiar na vida)", explanation: "Sentir-se apto e seguro para guiar e orientar os filhos nas escolhas existenciais cruciais.", question: "Você se sente confiante e sábio para orientar seus filhos nas decisões difíceis da vida?" }
     ]
   },
   necessidades_conjugal: {
     title: "Necessidades Clínicas - Parâmetros na Conjugalidade",
     items: [
-      { key: "Atenção Conjugal", value: "Necessidade Conjugal: Atenção (O casal se sente notado, visto e visível um para o outro)", explanation: "O casal se sente notado, visto e visível um para o outro na rotina?" },
-      { key: "Admiração Conjugal", value: "Necessidade Conjugal: Admiração (Sentirem-se admirados e reconhecidos por quem são)", explanation: "Sentem-se admirados e reconhecidos pelo que são e pelo que realizam na união?" },
-      { key: "Conversa Íntima", value: "Necessidade Conjugal: Conversa Íntima (Espaço para confidências, segredos e vulnerabilidades)", explanation: "Há um espaço seguro para troca de confidências, segredos e partilha de fraquezas?" },
-      { key: "Carinho Conjugal", value: "Necessidade Conjugal: Carinho (Troca de carícias, toques e afeto físico não sexual)", explanation: "Existe troca frequente de carícias, toques afetuosos e afeto físico não sexual?" },
-      { key: "Atração Física", value: "Necessidade Conjugal: Atração Física (Sentirem-se atraentes e desejados mutuamente)", explanation: "Sentem-se sexualmente atraentes e desejados um pelo outro?" },
-      { key: "Sexo", value: "Necessidade Conjugal: Sexo (Vida sexual satisfatória das preliminares ao orgasmo)", explanation: "A vida sexual é mutuamente satisfatória, desde as preliminares até o orgasmo?" },
-      { key: "Romantismo", value: "Necessidade Conjugal: Romantismo (Surpresas, gestos de afeto e lembrança na ausência)", explanation: "Há surpresas, gestos espontâneos de carinho e a sensação de ser lembrado na ausência?" },
-      { key: "Apoio Doméstico", value: "Necessidade Conjugal: Apoio Doméstico (Parceria e colaboração ativa nas tarefas da casa)", explanation: "Há parceria, divisão justa e colaboração nas tarefas domésticas diárias?" },
-      { key: "Apoio Financeiro", value: "Necessidade Conjugal: Apoio Financeiro (Parceria e transparência na gestão de finanças)", explanation: "Existe parceria, clareza e transparência na gestão das finanças do casal?" },
-      { key: "Lazer Conjugal", value: "Necessidade Conjugal: Lazer (Conseguirem se divertir, relaxar e se recriar juntos)", explanation: "O casal consegue se divertir, rir e ter momentos recreativos juntos?" },
-      { key: "Individualidade", value: "Necessidade Conjugal: Individualidade (Respeito à privacidade e interesses de cada um)", explanation: "A privacidade e os interesses individuais de cada um são respeitados sem ciúmes?" }
+      { key: "Atenção Conjugal", value: "Necessidade Conjugal: Atenção (O casal se sente notado, visto e visível um para o outro)", explanation: "Sentir-se visto, priorizado e notado pelo parceiro em meio à rotina diária.", question: "Você sente que seu(sua) parceiro(a) realmente te enxerga no dia a dia e se interessa por você, ou vivem como colegas de quarto invisíveis?" },
+      { key: "Admiração Conjugal", value: "Necessidade Conjugal: Admiração (Sentirem-se admirados e reconhecidos por quem são)", explanation: "Sentir-se valorizado, admirado e elogiado pelo cônjuge por seus atributos e feitos.", question: "Você se sente valorizado(a), elogiado(a) e admirado(a) pelo seu cônjuge, ou recebe apenas cobranças e indiferença?" },
+      { key: "Conversa Íntima", value: "Necessidade Conjugal: Conversa Íntima (Espaço para confidências, segredos e vulnerabilidades)", explanation: "Espaço seguro de partilha de fraquezas, sonhos, confidências e medos sem julgamentos.", question: "Vocês têm conversas profundas onde você pode se abrir e falar sobre suas fragilidades sem medo de deboche?" },
+      { key: "Carinho Conjugal", value: "Necessidade Conjugal: Carinho (Troca de carícias, toques e afeto físico não sexual)", explanation: "Toques carinhosos, abraços, cafuné e afeto físico espontâneo desvinculados do sexo.", question: "Existe afeto físico diário (beijo carinhoso, abraço, andar de mãos dadas, cafuné) fora do momento do sexo?" },
+      { key: "Atração Física", value: "Necessidade Conjugal: Atração Física (Sentirem-se atraentes e desejados mutuamente)", explanation: "Sentir-se sexualmente atraente, desejado e cortejado pela pessoa amada.", question: "Você se sente desejado(a) e atraente aos olhos do seu(sua) parceiro(a)?" },
+      { key: "Sexo", value: "Necessidade Conjugal: Sexo (Vida sexual satisfatória das preliminares ao orgasmo)", explanation: "Vida íntima e sexual satisfatória, prazerosa e consensual para ambos.", question: "A vida sexual de vocês é prazerosa e satisfatória para ambos, ou é fonte de frustração, obrigação ou cobrança?" },
+      { key: "Romantismo", value: "Necessidade Conjugal: Romantismo (Surpresas, gestos de afeto e lembrança na ausência)", explanation: "Gestos espontâneos de romantismo, celebração do amor, gentilezas e surpresas.", question: "Ainda existem gestos espontâneos de romantismo, surpresas e momentos a dois na relação de vocês?" },
+      { key: "Apoio Doméstico", value: "Necessidade Conjugal: Apoio Doméstico (Parceria e colaboração ativa nas tarefas da casa)", explanation: "Divisão justa, colaborativa e solidária na gestão do lar e das tarefas cotidianas.", question: "Existe uma divisão justa e companheirismo nas tarefas da casa, ou você se sente sobrecarregado(a) e sozinho(a)?" },
+      { key: "Apoio Financeiro", value: "Necessidade Conjugal: Apoio Financeiro (Parceria e transparência na gestão de finanças)", explanation: "Alinhamento, transparência e cooperação na construção e gestão do orçamento do casal.", question: "Existe diálogo transparente, confiança e parceria na gestão financeira do casal?" },
+      { key: "Lazer Conjugal", value: "Necessidade Conjugal: Lazer (Conseguirem se divertir, relaxar e se recriar juntos)", explanation: "Momentos de risada, descontração, viagens e passeios restauradores a dois.", question: "Vocês ainda conseguem se divertir, rir juntos e ter momentos prazerosos de lazer como casal?" },
+      { key: "Individualidade", value: "Necessidade Conjugal: Individualidade (Respeito à privacidade e interesses de cada um)", explanation: "Respeito mútuo à privacidade, amizades e projetos pessoais de cada um sem invasão.", question: "O seu espaço pessoal, amizades e gostos próprios são respeitados pelo seu parceiro sem ciúme excessivo ou controle?" }
     ]
   },
   necessidades_adulto: {
     title: "Necessidades Clínicas - Parâmetros Adultos (Individuais)",
     items: [
-      { key: "Atenção Adulta", value: "Necessidade Adulta: Atenção (Receber atenção das pessoas próximas de forma regulada)", explanation: "Recebe atenção das pessoas ao redor? Sente necessidade de muita ou pouca?" },
-      { key: "Carinho Adulto", value: "Necessidade Adulta: Carinho (Receber afeto físico e toques de forma confortável)", explanation: "Recebe afeto físico e acolhimento? É carente ou apresenta evitação ao toque?" },
-      { key: "Reconhecimento Adulto", value: "Necessidade Adulta: Reconhecimento (Sente-se admirado, valorizado e validado)", explanation: "Sente-se admirado e valorizado profissional ou socialmente?" },
-      { key: "Autoestima Adulta", value: "Necessidade Adulta: Autoestima (Sente-se valioso, digno e competente como pessoa)", explanation: "Sente-se valioso, seguro de si e merecedor de afeto/respeito?" },
-      { key: "Vínculo Adulto", value: "Necessidade Adulta: Vínculo (Sentir-se conectado e pertencente a círculos íntimos)", explanation: "Sente-se conectado emocionalmente a outras pessoas na sua vida?" },
-      { key: "Confiança", value: "Necessidade Adulta: Confiança (Capacidade de se abrir e confiar na lealdade alheia)", explanation: "Consegue confiar nos outros e estabelecer relações livres de suspeitas?" },
-      { key: "Sociabilidade Adulta", value: "Necessidade Adulta: Sociabilidade (Capacidade de interagir bem e se socializar)", explanation: "É sociável, comunica-se com facilidade e interage bem em grupos?" },
-      { key: "Atratividade", value: "Necessidade Adulta: Atratividade (Sentir-se desejável, atraente e esteticamente aceito)", explanation: "Sente-se desejável, bonito e atraente física ou socialmente?" },
-      { key: "Realização", value: "Necessidade Adulta: Realização (Sentir-se cumpridor de metas e tarefas propostas)", explanation: "Sente-se um realizador de tarefas, que executa o que planeja sem procrastinar?" },
-      { key: "Autonomia Adulta", value: "Necessidade Adulta: Autonomia (Independência para decidir e agir por si só)", explanation: "Sente-se independente e capaz de agir baseado no seu próprio repertório?" },
-      { key: "Proteção Adulta", value: "Necessidade Adulta: Proteção (Sentir-se seguro contra abusos, perigos e riscos)", explanation: "Sente-se seguro, em paz e livre de ameaças ou abusos de terceiros?" },
-      { key: "Asserção", value: "Necessidade Adulta: Asserção (Expressar opinião honestamente de forma assertiva)", explanation: "Consegue expressar sua opinião honestamente e colocar limites firmes?" },
-      { key: "Gregariedade Adulta", value: "Necessidade Adulta: Gregariedade (Sentir-se útil e agregador de valor à vida alheia)", explanation: "Sente-se útil no mundo, percebendo que agrega valor à vida das outras pessoas?" },
-      { key: "Compreensão Adulta", value: "Necessidade Adulta: Compreensão (Sentir-se ouvido, compreendido e empatizado)", explanation: "Sente-se compreendido, validado e ouvido em suas angústias?" },
-      { key: "Responsabilidade Adulta", value: "Necessidade Adulta: Responsabilidade (Tomar decisões maduras e arcar com consequências)", explanation: "Sabe tomar decisões pragmáticas na vida e arcar com as consequências delas?" },
-      { key: "Liberdade", value: "Necessidade Adulta: Liberdade (Agir livre de coações, chantagens ou subjugações)", explanation: "Sente-se livre para guiar sua vida sem coerção, chantagens ou culpas induzidas?" },
-      { key: "Aprovação", value: "Necessidade Adulta: Aprovação (Sentir-se aprovado pelo que realiza profissionalmente)", explanation: "Sente-se aprovado, validado e reconhecido pelo trabalho ou conduta?" },
-      { key: "Otimismo", value: "Necessidade Adulta: Otimismo (Manter visão esperançosa, realista e promissora do amanhã)", explanation: "Mantém uma visão de esperança, baseada em raciocínio realisticamente otimista?" },
-      { key: "Reflexão", value: "Necessidade Adulta: Reflexão (Sentir-se instruído, inteligente e capaz de discernimento)", explanation: "Sente-se inteligente, instruído e dotado de capacidade para refletir e discernir?" },
-      { key: "Controle", value: "Necessidade Adulta: Controle (Sentir capacidade de intervir e influenciar nos fatos)", explanation: "Sente que possui agência e capacidade de intervir nas coisas e na própria rotina?" },
-      { key: "Diversão Adulta", value: "Necessidade Adulta: Diversão (Sente-se alegre, recreativo e com tempo de lazer)", explanation: "Sente-se alegre, dotado de momentos recreativos e lazer autêntico?" },
-      { key: "Coragem", value: "Necessidade Adulta: Coragem (Sentir-se apto a enfrentar desafios e temores)", explanation: "Sente-se corajoso, proativo e enfrentador de desafios existenciais?" },
-      { key: "Intimidade Adulta", value: "Necessidade Adulta: Intimidade (Conseguir viver relacionamentos profundos)", explanation: "Consegue viver relacionamentos profundos, sem medo de abandono ou fusão?" },
-      { key: "Correspondência", value: "Necessidade Adulta: Correspondência (Corresponder a expectativas sociais de forma sadia)", explanation: "Sente que corresponde às expectativas de seus papéis sociais de forma equilibrada?" },
-      { key: "Retorno (Feedback)", value: "Necessidade Adulta: Retorno (Receber feedbacks claros sobre suas ações na vida)", explanation: "Recebe um retorno franco das pessoas significativas sobre suas ações?" },
-      { key: "Dignidade", value: "Necessidade Adulta: Dignidade (Sentir-se merecedor de afeto, respeito e coisas boas)", explanation: "Sente-se merecedor de coisas boas, afeto genuíno e respeito existencial?" }
+      { key: "Atenção Adulta", value: "Necessidade Adulta: Atenção (Receber atenção das pessoas próximas de forma regulada)", explanation: "Sentir-se considerado e receber atenção calibrada de pessoas significativas.", question: "Você sente que recebe atenção das pessoas que são importantes para você, ou se sente solitário(a) e invisível?" },
+      { key: "Carinho Adulto", value: "Necessidade Adulta: Carinho (Receber afeto físico e toques de forma confortável)", explanation: "Ter fontes sadias de acolhimento físico, ternura e afeto na vida adulta.", question: "Você tem fontes saudáveis de afeto, acolhimento e calor humano na sua vida atual?" },
+      { key: "Reconhecimento Adulto", value: "Necessidade Adulta: Reconhecimento (Sente-se admirado, valorizado e validado)", explanation: "Validação legítima de suas capacidades, esforços e competências no trabalho e sociedade.", question: "Você se sente reconhecido(a) e validado(a) pelo seu trabalho e pelas suas competências?" },
+      { key: "Autoestima Adulta", value: "Necessidade Adulta: Autoestima (Sente-se valioso, digno e competente como pessoa)", explanation: "Senso sólido de valor pessoal incondicional, segurança interna e merecimento.", question: "Você se sente uma pessoa de valor e digna de respeito, ou vive em constante autocrítica e sensação de insuficiência?" },
+      { key: "Vínculo Adulto", value: "Necessidade Adulta: Vínculo (Sentir-se conectado e pertencente a círculos íntimos)", explanation: "Ter conexões profundas e relações de lealdade com quem partilhar a vida.", question: "Você possui amigos ou relacionamentos íntimos com quem pode contar de verdade nos momentos difíceis?" },
+      { key: "Confiança", value: "Necessidade Adulta: Confiança (Capacidade de se abrir e confiar na lealdade alheia)", explanation: "Capacidade de confiar na boa-fé das pessoas sem desconfiança paranoide.", question: "Você consegue confiar nas pessoas e se permitir ser vulnerável, ou sente que não pode confiar em ninguém?" },
+      { key: "Sociabilidade Adulta", value: "Necessidade Adulta: Sociabilidade (Capacidade de interagir bem e se socializar)", explanation: "Fluidez para conviver, fazer amigos e circular confortavelmente em grupos sociais.", question: "Você tem facilidade para se comunicar e fazer novas amizades, ou o convívio social te gera muita ansiedade e exaustão?" },
+      { key: "Atratividade", value: "Necessidade Adulta: Atratividade (Sentir-se desejável, atraente e esteticamente aceito)", explanation: "Conforto com a própria imagem corporal, sentindo-se esteticamente agradável.", question: "Você se sente bem com a sua própria imagem e com seu corpo ao se olhar no espelho?" },
+      { key: "Realização", value: "Necessidade Adulta: Realização (Sentir-se cumpridor de metas e tarefas propostas)", explanation: "Sensação produtiva de concretizar projetos, planos e propósitos pessoais.", question: "Você sente que está construindo projetos e realizando metas importantes para a sua vida?" },
+      { key: "Autonomia Adulta", value: "Necessidade Adulta: Autonomia (Independência para decidir e agir por si só)", explanation: "Independência prática e emocional para decidir seu caminho e agir por si.", question: "Você toma suas próprias decisões com base no que acredita, ou é guiado pela aprovação e medo da opinião dos outros?" },
+      { key: "Proteção Adulta", value: "Necessidade Adulta: Proteção (Sentir-se seguro contra abusos, perigos e riscos)", explanation: "Sentir-se em segurança existencial, livre de exploração, ameaças ou abusos.", question: "Você se sente em paz e seguro(a) física e emocionalmente no seu cotidiano atual?" },
+      { key: "Asserção", value: "Necessidade Adulta: Asserção (Expressar opinião honestamente de forma assertiva)", explanation: "Capacidade de dizer 'não', defender limites e expressar opiniões de forma firme e respeitosa.", question: "Você consegue dizer 'não', impor limites claros e se posicionar quando alguém abusa da sua boa vontade?" },
+      { key: "Gregariedade Adulta", value: "Necessidade Adulta: Gregariedade (Sentir-se útil e agregador de valor à vida alheia)", explanation: "Sentir que suas ações têm impacto positivo e enriquecem a vida da comunidade.", question: "Você sente que sua vida tem utilidade e que você contribui positivamente para o bem de outras pessoas?" },
+      { key: "Compreensão Adulta", value: "Necessidade Adulta: Compreensão (Sentir-se ouvido, compreendido e empatizado)", explanation: "Ter espaços onde suas dores, dúvidas e sentimentos são escutados com empatia.", question: "Você tem alguém na sua vida que te escuta com empatia e realmente entende o que você passa?" },
+      { key: "Responsabilidade Adulta", value: "Necessidade Adulta: Responsabilidade (Tomar decisões maduras e arcar com consequências)", explanation: "Maturidade executiva para assumir as rédeas de seus atos e suas repercussões.", question: "Você se sente maduro(a) e capaz de assumir as consequências das suas escolhas de vida?" },
+      { key: "Liberdade", value: "Necessidade Adulta: Liberdade (Agir livre de coações, chantagens ou subjugações)", explanation: "Sentir-se livre de manipulações, chantagens emocionais ou pressões opressoras.", question: "Você se sente livre para ser quem é, ou vive aprisionado(a) por obrigações, medos e culpas?" },
+      { key: "Aprovação", value: "Necessidade Adulta: Aprovação (Sentir-se aprovado pelo que realiza profissionalmente)", explanation: "Sensação equilibrada de validação de seus resultados pelos pares ou sociedade.", question: "O quanto você se sente satisfeito com o seu desempenho profissional e pessoal?" },
+      { key: "Otimismo", value: "Necessidade Adulta: Otimismo (Manter visão esperançosa, realista e promissora do amanhã)", explanation: "Capacidade de manter esperança resiliente e foco em soluções realistas.", question: "Você consegue vislumbrar um futuro promissor e ter esperança na vida, mesmo diante dos problemas atuais?" },
+      { key: "Reflexão", value: "Necessidade Adulta: Reflexão (Sentir-se instruído, inteligente e capaz de discernimento)", explanation: "Espaço para pensar criticamente, estudar, discernir e expandir a mente.", question: "Você tem tempo e clareza mental para pensar, refletir e tomar decisões sábias com calma?" },
+      { key: "Controle", value: "Necessidade Adulta: Controle (Sentir capacidade de intervir e influenciar nos fatos)", explanation: "Senso de agência sobre a própria rotina, sem desamparo aprendido.", question: "Você sente que tem as rédeas da sua própria vida e rotina, ou sente que as circunstâncias te controlam?" },
+      { key: "Diversão Adulta", value: "Necessidade Adulta: Diversão (Sente-se alegre, recreativo e com tempo de lazer)", explanation: "Desfrute genuíno de momentos recreativos, risadas e lazer regenerativo.", question: "Você reserva tempo na sua semana para rir, se divertir e fazer coisas prazerosas sem culpa?" },
+      { key: "Coragem", value: "Necessidade Adulta: Coragem (Sentir-se apto a enfrentar desafios e temores)", explanation: "Disposição para agir em direção a valores importantes mesmo sentindo medo.", question: "Você tem coragem de enfrentar conversas difíceis e assumir riscos saudáveis para crescer?" },
+      { key: "Intimidade Adulta", value: "Necessidade Adulta: Intimidade (Conseguir viver relacionamentos profundos)", explanation: "Abertura para amar e ser amado com profundidade e vulnerabilidade segura.", question: "Você consegue se relacionar de forma profunda com alguém, sem medo de se machucar ou de perder sua liberdade?" },
+      { key: "Correspondência", value: "Necessidade Adulta: Correspondência (Corresponder a expectativas sociais de forma sadia)", explanation: "Desempenho funcional e saudável de papéis sociais sem sobrecarga.", question: "Sente que consegue corresponder às exigências da vida de forma equilibrada sem se estressar excessivamente?" },
+      { key: "Retorno (Feedback)", value: "Necessidade Adulta: Retorno (Receber feedbacks claros sobre suas ações na vida)", explanation: "Receber orientações e devolutivas claras de pessoas de confiança sobre seus comportamentos.", question: "Você recebe retornos sinceros e claros das pessoas próximas sobre suas atitudes?" },
+      { key: "Dignidade", value: "Necessidade Adulta: Dignidade (Sentir-se merecedor de afeto, respeito e coisas boas)", explanation: "Sentimento intocável de honra pessoal, integridade moral e merecimento de respeito.", question: "Você se sente merecedor(a) de coisas boas, amor verdadeiro e paz de espírito?" }
     ]
   },
   esquemas_adaptativos: {
@@ -1130,6 +1149,11 @@ export function ClinicalSuggestionsButton({
                   <p className="text-[10px] text-gray-450 leading-relaxed font-normal p-1 bg-[#101116] border border-gray-900 rounded select-none">
                     {item.explanation}
                   </p>
+                  {item.question && (
+                    <p className="text-[10px] text-amber-300/90 italic p-1.5 bg-amber-500/10 border border-amber-500/20 rounded select-none leading-relaxed">
+                      <span className="font-bold not-italic text-amber-400">💬 Pergunta ao paciente:</span> "{item.question}"
+                    </p>
+                  )}
                 </div>
               ))
             )}
@@ -1635,10 +1659,18 @@ Histórico Terapêutico (Novas Funções): ${activeDisorder.novasFuncoes}`;
                     </button>
                   </div>
 
-                  <p className="text-[11px] text-gray-400 leading-relaxed font-sans bg-gray-950/50 p-2.5 rounded-lg border border-gray-950 select-text">
-                    <span className="text-amber-500 font-bold font-mono text-[9px] uppercase tracking-wider block mb-0.5">Legenda / Critério Clínico:</span>
-                    {item.explanation}
-                  </p>
+                  <div className="space-y-1.5 bg-gray-950/50 p-2.5 rounded-lg border border-gray-950 select-text">
+                    <p className="text-[11px] text-gray-400 leading-relaxed font-sans">
+                      <span className="text-amber-500 font-bold font-mono text-[9px] uppercase tracking-wider block mb-0.5">Legenda / Critério Clínico:</span>
+                      {item.explanation}
+                    </p>
+                    {item.question && (
+                      <p className="text-[11px] text-amber-300/95 leading-relaxed font-sans italic pt-1 border-t border-gray-900">
+                        <span className="text-amber-400 font-bold not-italic font-mono text-[9px] uppercase tracking-wider block mb-0.5">💬 Pergunta Investigativa ao Paciente:</span>
+                        "{item.question}"
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))
             )}

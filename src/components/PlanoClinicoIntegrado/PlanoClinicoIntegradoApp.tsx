@@ -1342,17 +1342,23 @@ function SuggestionTextArea({
                     {group.items.map((s, idx) => {
                       const name = typeof s === 'string' ? s : s.name;
                       const desc = typeof s === 'string' ? '' : s.desc;
+                      const question = typeof s === 'string' ? '' : (s as any).question;
                       return (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => handleSelect(s)}
-                          className="text-left p-2 hover:bg-bg-sidebar rounded-xl border border-border-subtle/40 hover:border-primary/30 transition-all cursor-pointer flex flex-col justify-start"
+                          className="text-left p-2.5 hover:bg-bg-sidebar rounded-xl border border-border-subtle/40 hover:border-primary/30 transition-all cursor-pointer flex flex-col justify-start"
                         >
                           <span className="font-bold text-text-main text-[11px] mb-0.5">
                             {name}
                           </span>
                           {desc && <span className="text-[9px] text-text-dim/80 leading-normal">{desc}</span>}
+                          {question && (
+                            <div className="mt-1.5 p-1.5 bg-primary/10 border border-primary/20 rounded-lg text-[9.5px] text-primary/95 leading-relaxed font-medium italic">
+                              💬 <span className="font-bold not-italic">Pergunta ao paciente:</span> "{question}"
+                            </div>
+                          )}
                         </button>
                       );
                     })}
@@ -1363,18 +1369,24 @@ function SuggestionTextArea({
               (suggestions || []).map((s, idx) => {
                 const name = typeof s === 'string' ? s : s.name;
                 const desc = typeof s === 'string' ? '' : s.desc;
+                const question = typeof s === 'string' ? '' : (s as any).question;
                 
                 return (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSelect(s)}
-                    className="w-full text-left px-3 py-2.5 hover:bg-bg-sidebar rounded-lg transition-colors border-b border-border-subtle/50 last:border-0 cursor-pointer"
+                    className="w-full text-left px-3 py-2.5 hover:bg-bg-sidebar rounded-xl transition-colors border-b border-border-subtle/50 last:border-0 cursor-pointer"
                   >
                     <div className="font-bold text-text-main text-[11px] mb-0.5">
                       {name}
                     </div>
                     {desc && <p className="text-[10px] text-text-dim/80 leading-normal">{desc}</p>}
+                    {question && (
+                      <div className="mt-1.5 p-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[9.5px] text-amber-300/95 leading-relaxed font-medium italic">
+                        💬 <span className="font-bold not-italic text-amber-400">Pergunta investigativa ao paciente:</span> "{question}"
+                      </div>
+                    )}
                   </button>
                 );
               })

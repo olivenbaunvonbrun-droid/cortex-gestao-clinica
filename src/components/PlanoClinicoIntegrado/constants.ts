@@ -8,19 +8,23 @@ import { CLINICAL_SUGGESTIONS_DB } from "../BibliotecaAvaliacao/components/Clini
 export const TCC_CONCEPTS = {
   NecessidadesInfantis: CLINICAL_SUGGESTIONS_DB.necessidades_infantil.items.map(item => ({
     name: item.key,
-    desc: item.explanation
+    desc: item.explanation,
+    question: item.question
   })),
   NecessidadesParentais: CLINICAL_SUGGESTIONS_DB.necessidades_parental.items.map(item => ({
     name: item.key,
-    desc: item.explanation
+    desc: item.explanation,
+    question: item.question
   })),
   NecessidadesConjugais: CLINICAL_SUGGESTIONS_DB.necessidades_conjugal.items.map(item => ({
     name: item.key,
-    desc: item.explanation
+    desc: item.explanation,
+    question: item.question
   })),
   NecessidadesAdultas: CLINICAL_SUGGESTIONS_DB.necessidades_adulto.items.map(item => ({
     name: item.key,
-    desc: item.explanation
+    desc: item.explanation,
+    question: item.question
   })),
   DimensoesVida: [
     { name: "Pessoal", desc: "Cuidados com a saúde física, saúde mental, intelectualidade e espiritualidade." },
@@ -41,6 +45,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Abandono/Instabilidade", 
       desc: "Percepção de que as pessoas significativas não serão capazes de continuar fornecendo suporte emocional, conexão ou proteção prática porque são emocionalmente instáveis, imprevisíveis, morrerão em breve ou abandonarão o paciente por alguém melhor.", 
+      question: "Você costuma sentir um medo constante ou aflição de que as pessoas que você ama vão te deixar, se afastar, falecer ou encontrar alguém melhor que você?",
       for: ["nao_amabilidade", "incapacidade"],
       peripherals: ["Regra: Eu devo sempre estar alerta para sinais de rejeição", "Pressuposto: Se eu confiar em alguém, essa pessoa eventualmente irá embora"],
       excesses: ["Busca incessante de reasseguramento", "Verificação constante do paradeiro de terceiros", "Ciúmes excessivo", "Clamores emocionais"],
@@ -50,6 +55,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Desconfiança/Abuso", 
       desc: "Expectativa de que os outros irão maltratar, humilhar, enganar, mentir, manipular ou tirar vantagem. Frequentemente envolve a crença de que o dano é intencional ou resultado de negligência extrema e injustificada.", 
+      question: "Você sente que precisa estar sempre em guarda porque, cedo ou tarde, as pessoas vão mentir para você, te prejudicar, trair sua confiança ou tirar vantagem?",
       for: ["desvalor"],
       peripherals: ["Regra: Nunca baixar a guarda", "Atitude: Desconfiança perante elogios"],
       excesses: ["Sarcasmo e ironia como defesa", "Testar a lealdade dos outros constantemente", "Agressividade preventiva"],
@@ -59,6 +65,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Privação Emocional", 
       desc: "Expectativa de que os desejos de um grau normal de apoio emocional não serão adequadamente atendidos pelos outros. Pode envolver privação de cuidado (falta de atenção/afeto), privação de empatia (não ser compreendido) ou privação de proteção (falta de orientação/direção).", 
+      question: "Você sente um vazio de que ninguém nunca vai realmente te compreender no fundo, te dar o carinho que precisa ou cuidar de você de verdade?",
       for: ["nao_amabilidade"],
       peripherals: ["Pressuposto: Ninguém nunca vai realmente me entender ou cuidar de mim", "Regra: Eu devo me virar sozinho, pois não há apoio"],
       excesses: ["Reclamação passiva sobre falta de atenção", "Escolha de parceiros emocionalmente frios ou indisponíveis"],
@@ -68,6 +75,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Defectividade/Vergonha", 
       desc: "Sentimento de que se é defeituoso, mau, indesejado, inferior ou inválido em aspectos importantes, ou de que se seria impalatável para as pessoas significativas se exposto. Pode envolver hipersensibilidade a críticas, rejeição e culpa; autoconsciência exagerada e insegurança.", 
+      question: "Você guarda uma sensação íntima de que tem algum 'defeito' ou imperfeição que, se as pessoas descobrirem como você realmente é por dentro, vão te rejeitar ou sentir vergonha?",
       for: ["desvalor", "nao_amabilidade"],
       peripherals: ["Regra: Esconder meus verdadeiros sentimentos/defeitos", "Pressuposto: Se me conhecerem de verdade, vão me rejeitar"],
       excesses: ["Uso de 'máscaras' sociais", "Perfecionismo para compensar a falha interna", "Compensação através de status ou bens"],
@@ -77,6 +85,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Isolamento Social", 
       desc: "Sentimento de que se é isolado do resto do mundo, diferente das outras pessoas e/ou de que não se faz parte de qualquer grupo ou comunidade. Crença de que é 'estranho' ou que não pertence.", 
+      question: "Você se sente um estranho ou um 'peixe fora d'água' nos ambientes, como se fosse diferente das outras pessoas e não pertencesse a lugar nenhum?",
       for: ["nao_amabilidade"],
       peripherals: ["Regra: Eu devo evitar situações sociais onde eu possa parecer diferente", "Atitude: Eu sou um observador externo da vida"],
       excesses: ["Hipervigilância a sinais de exclusão", "Mimetismo social (fingir ser igual aos outros)"],
@@ -86,6 +95,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Dependência/Incompetência", 
       desc: "Crença de que se é incapaz de lidar com as responsabilidades cotidianas de forma competente sem ajuda considerável dos outros (ex: cuidar de si, resolver problemas diários, exercer bom julgamento, lidar com novas tarefas). Muitas vezes se apresenta como um desamparo.", 
+      question: "Você sente que não dá conta da vida sozinho e que precisa sempre que alguém te oriente, decida por você ou assuma a responsabilidade para você não errar?",
       for: ["incapacidade"],
       peripherals: ["Regra: Eu devo sempre consultar alguém antes de decidir", "Pressuposto: Sozinho eu vou fracassar miseravelmente"],
       excesses: ["Solicitação constante de ajuda para tarefas simples", "Procrastinação por medo de decidir errado"],
@@ -95,6 +105,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Vulnerabilidade", 
       desc: "Medo excessivo de que catástrofes iminentes (médicas, financeiras, naturais ou criminais) ocorrerão a qualquer momento e de que não se será capaz de impedi-las. Sentimento de estar 'no limite' de um desastre.", 
+      question: "Você vive com uma sensação de perigo iminente, temendo que uma tragédia de saúde, financeira ou familiar possa acontecer a qualquer instante sem você poder evitar?",
       for: ["incapacidade"],
       peripherals: ["Regra: Eu devo estar sempre preparado para o pior", "Atitude: O mundo é um lugar extremamente perigoso"],
       excesses: ["Verificação obsessiva de sintomas de saúde", "Acúmulo de recursos ou segurança", "Evitação de lugares 'perigosos'"],
@@ -104,6 +115,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Emaranhamento", 
       desc: "Envolvimento emocional excessivo e proximidade com um ou mais pessoas significativas (geralmente pais), à custa da individualização total ou do desenvolvimento social normal. Frequentemente envolve a convicção de que pelo menos um dos indivíduos emaranhados não consegue sobreviver ou ser feliz sem o apoio constante do outro.", 
+      question: "Você sente que sua vida é tão ligada aos seus pais (ou parceiro) que é difícil saber quem você é de verdade sozinho, ou sente que se afastar seria uma traição?",
       for: ["incapacidade"],
       peripherals: ["Regra: A felicidade do meu pai/mãe é minha responsabilidade", "Pressuposto: Se eu me afastar, algo terrível acontecerá a eles"],
       excesses: ["Compartilhamento de todos os detalhes da vida com os pais", "Dificuldade em ter segredos ou privacidade"],
@@ -113,6 +125,7 @@ export const TCC_CONCEPTS = {
     { 
       name: "Fracasso", 
       desc: "Crença de que falhou, falhará inevitavelmente ou é fundamentalmente inadequado em relação aos pares em áreas de realização (escola, carreira, esportes). Envolve sentimentos de ser burro, sem talento ou de nível inferior.", 
+      question: "Você se sente inferior ou menos capaz que as outras pessoas da sua idade, acreditando que na carreira ou nos estudos você é um fracasso ou uma fraude que logo será descoberta?",
       for: ["fracasso", "incapacidade"],
       peripherals: ["Regra: Eu tenho que me esforçar o triplo para ser apenas razoável", "Pressuposto: Eventualmente todos perceberão que sou uma fraude"],
       excesses: ["Trabalho compulsivo", "Sabotagem de oportunidades de sucesso", "Evitação de novos desafios"],
@@ -122,11 +135,92 @@ export const TCC_CONCEPTS = {
     { 
       name: "Grandiosidade", 
       desc: "Crença de que se é superior às outras pessoas, com direito a privilégios especiais, ou de que não se está sujeito às regras de reciprocidade que orientam a interação social normal.", 
+      question: "Você se irrita facilmente quando as coisas não saem exatamente do seu jeito ou sente que as regras comuns do dia a dia não deveriam se aplicar a você?",
       for: ["desvalor"],
       peripherals: ["Regra: Eu não deveria ter que esperar em filas", "Atitude: As pessoas são ferramentas para meus objetivos"],
       excesses: ["Interrupção de conversas", "Comportamento exigente e impaciente", "Falta de empatia"],
       deficits: ["Empatia", "Reciprocidade social", "Autocontrole"],
       history: ["Ser o 'filho de ouro' que nunca recebia limites", "Compensação de um sentimento profundo de inferioridade", "Pais que usavam o status do filho para se sentirem importantes"]
+    },
+    { 
+      name: "Autocontrole/Autodisciplina Insuficientes", 
+      desc: "Dificuldade contínua ou recusa de exercer autocontrole e tolerância à frustração suficientes para alcançar objetivos pessoais ou para conter impulsos e emoções excessivas.", 
+      question: "Você tem muita dificuldade de terminar o que começa, cede fácil a impulsos imediatos ou desiste rápido quando uma tarefa fica chata, cansativa ou frustrante?",
+      for: ["incapacidade", "desvalor"],
+      peripherals: ["Regra: Se algo é desconfortável, devo parar imediatamente", "Atitude: Eu não tolero frustração ou tédio"],
+      excesses: ["Procrastinação severa", "Consumo compulsivo ou vícios", "Evitação de rotinas e disciplina"],
+      deficits: ["Tolerância ao mal-estar", "Autodisciplina", "Regulação de impulsos"],
+      history: ["Pais extremamente permissivos sem limites claros", "Criança que nunca precisou esperar ou frustrar desejos"]
+    },
+    { 
+      name: "Subjugação", 
+      desc: "Entrega excessiva do controle aos outros por se sentir forçado a isso, geralmente para evitar raiva, retaliação ou abandono. Envolve a supressão de preferências e desejos próprios.", 
+      question: "Você costuma ceder às vontades dos outros ou engolir o que pensa e sente apenas para evitar que a outra pessoa fique com raiva, chateada ou se afaste de você?",
+      for: ["nao_amabilidade", "desvalor"],
+      peripherals: ["Regra: Devo obedecer para evitar punição ou rejeição", "Pressuposto: Se eu expressar o que sinto, o outro vai se revoltar"],
+      excesses: ["Concordar sempre com a opinião alheia", "Acúmulo de ressentimento silencioso", "Explosões passivo-agressivas tardias"],
+      deficits: ["Assertividade", "Expressão livre de emoções e direitos", "Autoafirmação"],
+      history: ["Crescer com pais dominadores ou agressivos", "Punição severa sempre que discordava de autoridades"]
+    },
+    { 
+      name: "Auto-sacrifício", 
+      desc: "Foco voluntário e excessivo em satisfazer as necessidades dos outros nas situações cotidianas, às custas da própria gratificação, para evitar sentimentos de culpa ou para poupar dor alheia.", 
+      question: "Você se sente culpado se colocar suas próprias necessidades em primeiro lugar, priorizando sempre cuidar e resolver os problemas dos outros antes de você mesmo?",
+      for: ["nao_amabilidade", "desvalor"],
+      peripherals: ["Regra: Minhas vontades são secundárias, o outro vem primeiro", "Pressuposto: Se eu não ajudar, serei uma pessoa egoísta e ruim"],
+      excesses: ["Assumir problemas e dívidas de terceiros", "Exaustão física e emocional por sobrecarga de favores"],
+      deficits: ["Autocuidado", "Defesa de limites próprios", "Aceitação de ajuda"],
+      history: ["Criança que teve que assumir o papel de cuidador da mãe/pai", "Pais doentes ou que jogavam culpa na criança"]
+    },
+    { 
+      name: "Busca de Aprovação/Reconhecimento", 
+      desc: "Ênfase excessiva na obtenção de aprovação, reconhecimento ou atenção de outras pessoas, ou em se encaixar, às custas do desenvolvimento de um senso verdadeiro e autêntico de si mesmo.", 
+      question: "O quanto a opinião e a validação dos outros definem como você se sente consigo mesmo? Você muda seu jeito de ser para se encaixar e ser admirado?",
+      for: ["desvalor", "nao_amabilidade"],
+      peripherals: ["Regra: Devo impressionar os outros para ter valor", "Pressuposto: Se eu não receber elogios, não sou ninguém"],
+      excesses: ["Preocupação neurótica com status e aparência", "Mudar de opinião conforme o interlocutor"],
+      deficits: ["Autenticidade", "Valores internos autônomos", "Segurança identitária"],
+      history: ["Amor parental condicionado ao sucesso, beleza ou comportamento modelo", "Pais preocupados com o que os vizinhos iam pensar"]
+    },
+    { 
+      name: "Negatividade/Pessimismo", 
+      desc: "Foco pervasivo e contínuo nos aspectos negativos da vida (dor, morte, perda, decepção, conflito, culpa, ressentimento, erros não resolvidos) enquanto minimiza ou ignora aspectos positivos e otimistas.", 
+      question: "Mesmo quando algo dá certo, você logo pensa no que pode dar errado em seguida, como se uma coisa boa sempre fosse acompanhada de um desastre iminente?",
+      for: ["incapacidade"],
+      peripherals: ["Regra: Devo sempre esperar o pior para não me decepcionar", "Pressuposto: As coisas boas duram pouco e o desastre vem logo"],
+      excesses: ["Previsões catastróficas frequentes", "Reclamação crônica", "Hipervigilância a falhas"],
+      deficits: ["Apreciação do momento presente", "Otimismo realista", "Gratidão"],
+      history: ["Pais deprimidos ou extremamente pessimistas", "Perdas traumáticas sucessivas e inesperadas na infância"]
+    },
+    { 
+      name: "Inibição Emocional", 
+      desc: "Inibição excessiva de ações, sentimentos ou comunicações espontâneas, geralmente para evitar desaprovação pelos outros, sentimentos de vergonha ou perda de controle dos próprios impulsos.", 
+      question: "Você acha muito difícil demonstrar afeto, chorar na frente de alguém ou expressar o que sente abertamente, preferindo manter uma postura fria, racional e controlada?",
+      for: ["desvalor"],
+      peripherals: ["Regra: Mostrar sentimentos é sinal de fraqueza e descontrole", "Pressuposto: Se eu expressar raiva ou choro, serei ridicularizado"],
+      excesses: ["Racionalização fria de eventos afetivos", "Rigidez postural e fala contida", "Somatizações"],
+      deficits: ["Expressão afetiva espontânea", "Vulnerabilidade compartilhada", "Choro e desabafo regulados"],
+      history: ["Família onde chorar ou rir alto era proibido ou zombado", "Pais que valorizavam apenas lógica e contenção"]
+    },
+    { 
+      name: "Padrões Inflexíveis/Crítica Exagerada", 
+      desc: "Crença subjacente de que se deve esforçar-se para atingir padrões internos extremamente elevados de comportamento e desempenho, geralmente para evitar críticas. Resulta em constante pressão e cobrança.", 
+      question: "Você se cobra de forma implacável para que tudo seja perfeito, sentindo que nada do que você faz está bom o suficiente e se martirizando duramente pelos mínimos erros?",
+      for: ["fracasso", "desvalor"],
+      peripherals: ["Regra: Se não for 100% perfeito, é um lixo", "Pressuposto: Não posso relaxar enquanto houver tarefas pendentes"],
+      excesses: ["Perfeccionismo paralisante", "Trabalho compulsivo sem pausas", "Crítica severa aos erros de colegas/subordinados"],
+      deficits: ["Flexibilidade cognitiva", "Autocompaixão", "Capacidade de relaxar sem culpa"],
+      history: ["Pais com padrões inalcançáveis que nunca elogiavam notas 9", "Exigência de retidão e sucesso absoluto"]
+    },
+    { 
+      name: "Punitividade", 
+      desc: "Crença de que as pessoas devem ser duramente punidas por cometerem erros. Envolve a tendência de ficar com raiva, ser intolerante, impaciente e punitivo consigo mesmo e com os outros ao falhar.", 
+      question: "Você tem dificuldade em perdoar seus próprios erros ou os erros dos outros, achando que quem erra tem que pagar o preço e ser duramente castigado?",
+      for: ["desvalor"],
+      peripherals: ["Regra: Quem comete erro não merece perdão", "Pressuposto: Se eu falhar, mereço ser punido severamente"],
+      excesses: ["Rancor prolongado", "Autopunição através de privação ou sofrimento", "Comportamento vingativo ou corte de relações"],
+      deficits: ["Perdão", "Empatia", "Aceitação da imperfeição humana"],
+      history: ["Castigos físicos ou morais severos na infância", "Pais implacáveis que não aceitavam desculpas"]
     }
   ],
   CrencasCentrais: [
