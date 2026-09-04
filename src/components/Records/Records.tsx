@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck, ClipboardList, Layers, Activity, TrendingUp, FileSpreadsheet } from 'lucide-react';
+import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck, ClipboardList, Layers, Activity, TrendingUp, FileSpreadsheet, Zap } from 'lucide-react';
 import { db, type Patient, type MedicalRecord, type MedicalRecordEntry, logAction, type Attachment } from '../../lib/db';
 import { cn, formatDate } from '../../lib/utils';
 import { syncService } from '../../lib/syncService';
@@ -11,11 +11,12 @@ import useConfirm from '../../hooks/useConfirm';
 import { exportToHtml as exportLinhaVida } from '../LinhaVida/utils/export';
 import { exportToHtml as exportDfc } from '../DfcAssistido/utils/export';
 import { exportThpToHtml as exportThp } from '../ThpTraining/utils/export';
+import { exportToHtml as exportTdah } from '../TdahAsrs18/utils/export';
 import { motion, AnimatePresence } from 'motion/react';
 import { renderMarkdown } from '../BibliotecaAvaliacao/utils/markdown';
 import { SCHEMA_DETAILS, YSQ_QUESTIONS } from '../YsqSmartAi/types';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { IhsResultViewer, YsqResultViewer, RidResultViewer, ThpResultViewer } from './ResultViewers';
+import { IhsResultViewer, YsqResultViewer, RidResultViewer, ThpResultViewer, TdahResultViewer } from './ResultViewers';
 
 interface RecordsProps {
   preSelectedPatientId?: string | null;
@@ -102,6 +103,9 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
       } else if (e.tipo === 'thp' || e.metadata?.type === 'thp') {
         type = 'thp';
         title = 'Treinamento de Habilidade Psicológica (THP)';
+      } else if (e.tipo === 'tdah' || e.metadata?.type === 'tdah') {
+        type = 'tdah';
+        title = 'Escala de TDAH em Adultos (ASRS-18)';
       } else if (e.tipo === 'psicometrik' || e.metadata?.type === 'psicometrik') {
         type = 'psicometrik';
         const toolTitle = e.metadata?.psicometrikData?.toolTitle || 'Avaliação Psicometrik';
@@ -180,17 +184,19 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                   event.type === 'ihs' ? "bg-[#4dabf7]/20 text-[#4dabf7] border-[#4dabf7]/30" :
                   event.type === 'ysq' ? "bg-purple-500/20 text-purple-400 border-purple-500/30" :
                   event.type === 'thp' ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
+                  event.type === 'tdah' ? "bg-amber-500/20 text-amber-400 border-amber-500/30" :
                   event.type === 'psicometrik' ? "bg-[#00A3FF]/20 text-[#00A3FF] border-[#00A3FF]/30" :
                   "bg-blue-500/20 text-blue-500 border-blue-500/30"
                 )}>
                   {event.type === 'evolution' ? <Clock size={12} /> :
                    event.type === 'appointment' ? <CalendarIcon size={12} /> :
+                   event.type === 'tdah' ? <Zap size={12} className="text-amber-400" /> :
                    <File size={12} />}
                 </div>
 
                 <div 
                   onClick={() => {
-                    if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(event.type)) {
+                    if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah'].includes(event.type)) {
                       setSelectedEvent(event);
                       setEditEventContent(event.content || '');
                       setIsEditingEvent(false);
@@ -212,6 +218,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                           event.type === 'ihs' ? "bg-[#4dabf7]/10 text-[#4dabf7] border-[#4dabf7]/20" :
                           event.type === 'ysq' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
                           event.type === 'thp' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                          event.type === 'tdah' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
                           event.type === 'psicometrik' ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/20" :
                           "bg-blue-500/10 text-blue-500 border-blue-500/30",
                           event.isAlert && "bg-red-500 text-white border-red-400"
@@ -222,6 +229,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                            event.type === 'ihs' ? 'IHS' :
                            event.type === 'ysq' ? 'YSQ' :
                            event.type === 'thp' ? 'THP' :
+                           event.type === 'tdah' ? 'TDAH' :
                            event.type === 'psicometrik' ? 'PsicoMetrik' : 'Arquivo'}
                         </span>
                         <h5 className={cn(
@@ -242,7 +250,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(event.type) && (
+                      {['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah'].includes(event.type) && (
                         <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
                           <button 
                             onClick={(e) => {
@@ -377,7 +385,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                         {isTop && (
                           <div 
                             onClick={() => {
-                              if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(event.type)) {
+                              if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah'].includes(event.type)) {
                                 setSelectedEvent(event);
                                 setEditEventContent(event.content || '');
                                 setIsEditingEvent(false);
@@ -398,6 +406,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                   event.type === 'ihs' ? "bg-[#4dabf7]/10 text-[#4dabf7] border-[#4dabf7]/25" :
                                   event.type === 'ysq' ? "bg-purple-500/10 text-purple-400 border-purple-500/25" :
                                   event.type === 'thp' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" :
+                                  event.type === 'tdah' ? "bg-amber-500/10 text-amber-400 border-amber-500/25" :
                                   event.type === 'psicometrik' ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/25" :
                                   "bg-blue-500/10 text-blue-500 border-blue-500/25"
                                 )}>
@@ -407,6 +416,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                    event.type === 'ihs' ? 'IHS' :
                                    event.type === 'ysq' ? 'YSQ' :
                                    event.type === 'thp' ? 'THP' :
+                                   event.type === 'tdah' ? 'TDAH' :
                                    event.type === 'psicometrik' ? 'PsicoMetrik' : 'Documento'}
                                 </span>
                                 <span className="text-[8px] font-mono text-text-dim">{event.data}</span>
@@ -430,11 +440,13 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                             event.type === 'ihs' ? "bg-[#4dabf7] text-bg-deep" :
                             event.type === 'ysq' ? "bg-purple-500 text-white" :
                             event.type === 'thp' ? "bg-emerald-500 text-bg-deep" :
+                            event.type === 'tdah' ? "bg-amber-500 text-slate-950" :
                             event.type === 'psicometrik' ? "bg-[#00A3FF] text-bg-deep" :
                             "bg-blue-500 text-white"
                           )}>
                             {event.type === 'evolution' ? <Clock size={10} /> :
                              event.type === 'appointment' ? <CalendarIcon size={10} /> :
+                             event.type === 'tdah' ? <Zap size={10} className="text-slate-950" /> :
                              <File size={10} />}
                           </div>
                         </div>
@@ -443,7 +455,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                         {!isTop && (
                           <div 
                             onClick={() => {
-                              if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(event.type)) {
+                              if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah'].includes(event.type)) {
                                 setSelectedEvent(event);
                                 setEditEventContent(event.content || '');
                                 setIsEditingEvent(false);
@@ -464,6 +476,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                   event.type === 'ihs' ? "bg-[#4dabf7]/10 text-[#4dabf7] border-[#4dabf7]/25" :
                                   event.type === 'ysq' ? "bg-purple-500/10 text-purple-400 border-purple-500/25" :
                                   event.type === 'thp' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" :
+                                  event.type === 'tdah' ? "bg-amber-500/10 text-amber-400 border-amber-500/25" :
                                   event.type === 'psicometrik' ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/25" :
                                   "bg-blue-500/10 text-blue-500 border-blue-500/25"
                                 )}>
@@ -473,6 +486,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                    event.type === 'ihs' ? 'IHS' :
                                    event.type === 'ysq' ? 'YSQ' :
                                    event.type === 'thp' ? 'THP' :
+                                   event.type === 'tdah' ? 'TDAH' :
                                    event.type === 'psicometrik' ? 'PsicoMetrik' : 'Documento'}
                                 </span>
                                 <span className="text-[8px] font-mono text-text-dim">{event.data}</span>
@@ -1490,6 +1504,14 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                 <Activity size={11} />
                                 Usar THP
                               </button>
+                              <button
+                                onClick={() => openTool('tdah-asrs18', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500 hover:text-slate-950 text-[9px] font-black uppercase tracking-widest text-amber-400 rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir Escala TDAH (ASRS-18) na tela"
+                              >
+                                <Zap size={11} />
+                                Usar TDAH
+                              </button>
                             </div>
                           )}
                           <button
@@ -1607,6 +1629,9 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                             'pci': 'plano-clinico-integrado',
                                             'ihp-pr-digital': 'ihp-pr-digital',
                                             'ihp': 'ihp-pr-digital',
+                                            'tdah': 'tdah-asrs18',
+                                            'tdah-asrs18': 'tdah-asrs18',
+                                            'asrs': 'tdah-asrs18',
                                             'registro-atendimento': 'registro-atendimento'
                                           };
                                           const mappedId = toolIdMap[entry.tipo as string] || entry.tipo;
@@ -1617,7 +1642,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                       >
                                         <Edit size={16} />
                                       </button>
-                                      {(entry.tipo === 'linha_vida' || entry.tipo === 'dfc' || entry.tipo === 'thp') && (
+                                      {(entry.tipo === 'linha_vida' || entry.tipo === 'dfc' || entry.tipo === 'thp' || entry.tipo === 'tdah') && (
                                         <button 
                                           onClick={() => {
                                             if (entry.tipo === 'linha_vida' && entry.metadata?.linhaVidaData) {
@@ -1626,6 +1651,8 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                               exportDfc(entry.metadata.dfcData);
                                             } else if (entry.tipo === 'thp' && entry.metadata?.thpData) {
                                               exportThp(entry.metadata.thpData);
+                                            } else if (entry.tipo === 'tdah' && entry.metadata?.tdahData) {
+                                              exportTdah(entry.metadata.tdahData);
                                             }
                                           }}
                                           className="p-2 text-text-dim hover:text-emerald-400 cursor-pointer transition-colors"
@@ -2082,7 +2109,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
 
               <div className="flex-grow overflow-y-auto p-10 scroller-hide">
                 {/* Modal Tabs for Clinical Tests */}
-                {['rid', 'ihs', 'ysq', 'thp', 'psicometrik'].includes(selectedEvent.type) && (
+                {['rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah'].includes(selectedEvent.type) && (
                   <div className="flex justify-center mb-8 no-print">
                     <div className="flex gap-1 bg-bg-sidebar p-1 rounded-xl border border-border-subtle/50">
                       {[
@@ -2185,6 +2212,10 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
 
                     {selectedEvent.type === 'thp' && (
                       <ThpResultViewer record={selectedEvent.rawEntry?.metadata?.thpData} />
+                    )}
+
+                    {selectedEvent.type === 'tdah' && (
+                      <TdahResultViewer assessment={selectedEvent.rawEntry?.metadata?.tdahData} />
                     )}
                   </div>
                   <div className="w-full">

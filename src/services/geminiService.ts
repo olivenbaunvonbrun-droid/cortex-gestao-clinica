@@ -463,6 +463,79 @@ ${rawAnswersSummary}
   return response.text || "Erro ao gerar laudo do IHP-PR.";
 }
 
+export async function analyzeTdahAssessment(
+  patient: { name: string; age: string },
+  scoring: {
+    classification: string;
+    riskLevel: string;
+    totalScore: number;
+    partAScore: number;
+    partASignificant: number;
+    thresholdMetA: boolean;
+    partBScore: number;
+    partBSignificant: number;
+    thresholdMetB: boolean;
+    summaryText: string;
+  },
+  answersText: string
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Tarefa: Analisar os resultados da Escala de Autoavaliação de TDAH em Adultos (ASRS-18 v1.1 - OMS) e gerar um Relatório Psicológico Clínico Profissional e Parecer Técnico de Avaliação.
+
+${CLINICAL_FRAMEWORK_PROMPT}
+
+Dados do Paciente:
+- Nome: ${patient.name}
+- Idade: ${patient.age} Anos
+
+Resultados Quantitativos e Triagem:
+- Classificação Diagnóstica Sugerida: ${scoring.classification} (${scoring.riskLevel})
+- Escore Global ASRS-18: ${scoring.totalScore} de 54 pontos
+- Parte A (Desatenção): ${scoring.partAScore}/27 pontos (${scoring.partASignificant}/9 sintomas frequentes atingidos - Critério ${scoring.thresholdMetA ? 'POSITIVO (≥ 4)' : 'NEGATIVO'})
+- Parte B (Hiperatividade / Impulsividade): ${scoring.partBScore}/27 pontos (${scoring.partBSignificant}/9 sintomas frequentes atingidos - Critério ${scoring.thresholdMetB ? 'POSITIVO (≥ 4)' : 'NEGATIVO'})
+- Síntese Psicométrica: ${scoring.summaryText}
+
+Espelho de Respostas Registradas pelo Examinando (Escala 0 a 3: 0 = Nem um pouco, 1 = Só um pouco, 2 = Bastante, 3 = Demais):
+${answersText}
+
+ESTRUTURA DO RELATÓRIO (Conforme Diretrizes do Conselho Federal de Psicologia - CFP - Resolução nº 06/2019):
+1. IDENTIFICAÇÃO (Nome, Idade e Instrumento Administrado)
+2. DESCRIÇÃO DA DEMANDA E MOTIVO DA INVESTIGAÇÃO (Queixas de déficits executivos, oscilação de foco, procrastinação, desorganização, desregulação motora ou impulsividade na vida adulta e seus reflexos no cotidiano)
+3. PROCEDIMENTO METODOLÓGICO (Utilização da Adult Self-Report Scale - ASRS-18 v1.1 da Organização Mundial da Saúde, validada no Brasil, composta por 18 itens na escala Likert distribuídos em dois domínios: Desatenção e Hiperatividade/Impulsividade, considerando os últimos seis meses)
+4. ANÁLISE QUANTITATIVA E QUALITATIVA DOS RESULTADOS:
+   - Domínio de Desatenção (Parte A): Análise detalhada dos escores, itens mais comprometidos (ex: distratibilidade, adiamento de tarefas, erros por descuido, memória prospectiva) e prejuízos nas funções executivas atencionais.
+   - Domínio de Hiperatividade e Impulsividade (Parte B): Análise dos escores, manifestações de inquietude motora, dificuldade em repousar, urgência verbal, interrupção de terceiros e regulação inibitória.
+   - Análise de Habilidades Psicológicas (HPs) do Cortex: Mapear déficits na HP de Autocontrole, HP de Autorregulação Emocional, HP de Resolutividade e Enfrentamento e HP de Sensibilidade Social.
+   - Correlações Clínicas com TCC e Terapia do Esquema: Identificar possíveis crenças centrais secundárias decorrentes do histórico de desatenção ("Eu sou incapaz", "Eu sou defeituoso", "Eu nunca termino nada") e Esquemas Iniciais Desadaptativos frequentemente ativados (Fracasso, Defectividade, Autocontrole Insuficiente, Padrões Inflexíveis).
+5. CONCLUSÃO DIAGNÓSTICA E PROGNÓSTICO:
+   - Parecer técnico sobre a probabilidade de TDAH (Apresentação Combinada, Predomínio Desatento, Predomínio Hiperativo/Impulsivo ou Sintomatologia Subclínica).
+   - Avaliação do impacto funcional nas esferas acadêmica, profissional e interpessoal.
+   - Prognóstico clínico frente a intervenções especializadas.
+6. RECOMENDAÇÕES TERAPÊUTICAS E PLANO DE CONDUTA (TCC & Neuropsicologia):
+   - Psicoeducação sobre o neurodesenvolvimento e funcionamento executivo do TDAH adulto.
+   - Técnicas comportamentais de TCC e manejo ambiental (estruturação de rotinas, suportes visuais externos, técnica de blocos/Pomodoro, fragmentação de metas).
+   - Treino continuado de Habilidades Psicológicas (HP de Autocontrole e Autorregulação).
+   - Reestruturação cognitiva de distorções e crenças de incompetência.
+   - Recomendação de avaliação médica/psiquiátrica complementar para análise de comorbidades e eventual suporte farmacológico, se julgado pertinente.
+
+Instruções importantes:
+- Tom estritamente profissional, clínico, acolhedor e fundamentado em evidências.
+- Formate em Markdown com títulos destacados em negrito.
+- Não inclua campos vazios de data ou assinatura no corpo do texto (são inseridos automaticamente no rodapé do sistema).
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+  });
+
+  return response.text || "Erro ao gerar laudo da Escala de TDAH (ASRS-18).";
+}
+
+
 export async function analyzeLinhaVidaAssessment(
   patient: { name: string; age: string },
   eventsText: string

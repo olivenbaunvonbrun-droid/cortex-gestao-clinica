@@ -24,12 +24,13 @@ import LinhaVidaApp from './components/LinhaVida/LinhaVidaApp';
 import PsidiagnosticProApp from './components/PsidiagnosticPro/PsidiagnosticProApp';
 import DfcAssistidoApp from './components/DfcAssistido/DfcAssistidoApp';
 import ThpTrainingApp from './components/ThpTraining/ThpTrainingApp';
+import TdahAsrs18App from './components/TdahAsrs18/TdahAsrs18App';
 import ToolsLibrary from './components/ToolsLibrary/ToolsLibrary';
 import BibliotecaAvaliacaoApp from './components/BibliotecaAvaliacao/BibliotecaAvaliacaoApp';
 import { ClinicalSuggestionsApp } from './components/BibliotecaAvaliacao/components/ClinicalSuggestionsHelper';
 import TeleconsultationApp from './components/Teleconsultation/TeleconsultationApp';
 import { Window } from './components/ui/Window';
-import { Brain, Cloud, Users, Sparkles, ClipboardList, Layers, TrendingUp, FileSpreadsheet, Activity, BookOpen, Video, Pin } from 'lucide-react';
+import { Brain, Cloud, Users, Sparkles, ClipboardList, Layers, TrendingUp, FileSpreadsheet, Activity, BookOpen, Video, Pin, Zap } from 'lucide-react';
 import { cn } from './lib/utils';
 import LGPDNotice from './components/LGPDNotice';
 import { useFirebase } from './hooks/useFirebase';
@@ -103,6 +104,7 @@ export default function App() {
     'psidiagnostic-pro': { title: 'Psidiagnostic Pro', shortTitle: 'Psi', icon: FileSpreadsheet },
     'dfc-assistido': { title: 'DFC Assistido', shortTitle: 'DFC', icon: Layers },
     'thp-training': { title: 'Treinamento THP', shortTitle: 'THP', icon: Activity },
+    'tdah-asrs18': { title: 'TDAH ASRS-18', shortTitle: 'TDAH', icon: Zap },
     'biblioteca-avaliacao': { title: 'Biblioteca de Avaliação', shortTitle: 'Testes', icon: BookOpen },
     'teleconsulta': { title: 'Teleconsulta Virtual', shortTitle: 'Vídeo', icon: Video },
     'parametros-clinicos': { title: 'Parâmetros Clínicos', shortTitle: 'Parâmetros', icon: Sparkles },
@@ -129,6 +131,7 @@ export default function App() {
       'psidiagnostic-pro': 'Psidiagnostic Pro',
       'dfc-assistido': 'DFC Assistido',
       'thp-training': 'Treinamento THP',
+      'tdah-asrs18': 'TDAH ASRS-18',
       'biblioteca-avaliacao': 'Biblioteca de Avaliação',
       'teleconsulta': 'Teleconsulta Virtual',
       'parametros-clinicos': 'Parâmetros Clínicos',
@@ -560,6 +563,14 @@ export default function App() {
               )}
               {win.id === 'thp-training' && (
                 <ThpTrainingApp 
+                  activePatientId={win.patientId || selectedPatientId || undefined} 
+                  lockPatient={false} 
+                  userId={currentUser?.id}
+                  onClose={() => handleCloseTool(win.id)}
+                />
+              )}
+              {win.id === 'tdah-asrs18' && (
+                <TdahAsrs18App 
                   activePatientId={win.patientId || selectedPatientId || undefined} 
                   lockPatient={false} 
                   userId={currentUser?.id}

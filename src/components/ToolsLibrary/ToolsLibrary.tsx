@@ -14,7 +14,8 @@ import {
   ChevronRight, 
   GripVertical,
   Activity,
-  Pin
+  Pin,
+  Zap
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -120,6 +121,14 @@ const DEFAULT_TOOLS: ToolItem[] = [
     title: 'IHP-PR Digital',
     description: 'Inventário de Habilidades Psicológicas (Poubel & Rodrigues) com cálculo automático, mapeamento em gráfico de radar e geração de laudos por IA.',
     icon: Brain,
+    status: 'active',
+    category: 'Avaliação Psicológica',
+  },
+  {
+    id: 'tdah-asrs18',
+    title: 'TDAH ASRS-18',
+    description: 'Escala de Autoavaliação de TDAH em Adultos (ASRS-18 - OMS) com cálculo de desatenção, hiperatividade/impulsividade e emissão de laudo neuropsicológico via IA.',
+    icon: Zap,
     status: 'active',
     category: 'Avaliação Psicológica',
   },

@@ -675,3 +675,141 @@ export function ThpResultViewer({ record }: ThpResultViewerProps) {
     </div>
   );
 }
+
+// ==========================================
+// 5. TDAH RESULT VIEWER
+// ==========================================
+
+interface TdahResultViewerProps {
+  assessment?: {
+    answers?: Record<number, any>;
+    patient?: {
+      name: string;
+      age: string;
+      psychologistName: string;
+      crp: string;
+    };
+    aiAnalysis?: string;
+    createdAt?: string;
+  };
+}
+
+export function TdahResultViewer({ assessment }: TdahResultViewerProps) {
+  if (!assessment) {
+    return (
+      <div className="p-8 text-center bg-bg-card border border-border-subtle rounded-3xl">
+        <p className="text-xs font-black uppercase text-text-dim tracking-widest">Nenhum dado de TDAH disponível.</p>
+      </div>
+    );
+  }
+
+  const answers = assessment.answers || {};
+  let partAScore = 0;
+  let partASignificant = 0;
+  for (let i = 1; i <= 9; i++) {
+    const val = Number(answers[i]) || 0;
+    partAScore += val;
+    if (val >= 2) partASignificant++;
+  }
+
+  let partBScore = 0;
+  let partBSignificant = 0;
+  for (let i = 10; i <= 18; i++) {
+    const val = Number(answers[i]) || 0;
+    partBScore += val;
+    if (val >= 2) partBSignificant++;
+  }
+
+  const totalScore = partAScore + partBScore;
+  const totalSignificant = partASignificant + partBSignificant;
+  const thresholdMetA = partASignificant >= 4;
+  const thresholdMetB = partBSignificant >= 4;
+
+  let classification = 'Não Sugestivo de TDAH';
+  let riskLevel = 'Baixa Probabilidade';
+  if (thresholdMetA && thresholdMetB) {
+    classification = 'TDAH - Tipo Combinado';
+    riskLevel = 'Alta Probabilidade';
+  } else if (thresholdMetA) {
+    classification = 'TDAH - Tipo Predomínio Desatento';
+    riskLevel = 'Alta Probabilidade';
+  } else if (thresholdMetB) {
+    classification = 'TDAH - Tipo Predomínio Hiperativo/Impulsivo';
+    riskLevel = 'Alta Probabilidade';
+  } else if (partASignificant >= 2 || partBSignificant >= 2 || totalScore >= 18) {
+    classification = 'Sintomas Subclínicos';
+    riskLevel = 'Moderada';
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full font-sans">
+      {/* Left Column */}
+      <div className="lg:col-span-5 space-y-6">
+        <div className="bg-bg-card rounded-2xl p-5 border border-border-subtle shadow-lg space-y-3">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+            <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+              <Zap size={13} /> Escala TDAH (ASRS-18)
+            </span>
+            <span className={cn(
+              "px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider border",
+              riskLevel === 'Alta Probabilidade' ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+            )}>
+              {riskLevel}
+            </span>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-black text-text-main">{classification}</h4>
+            <p className="text-[10px] text-text-dim mt-0.5">Escore Global: {totalScore}/54 pts • {totalSignificant}/18 sintomas frequentes</p>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <div className="p-2.5 bg-bg-sidebar/40 rounded-xl border border-border-subtle/50 text-xs flex justify-between items-center">
+              <div>
+                <span className="text-[9px] font-black uppercase text-text-dim block">Parte A: Desatenção</span>
+                <span className="font-bold text-text-main">{partAScore}/27 pts ({partASignificant}/9 sintomas)</span>
+              </div>
+              <span className={cn(
+                "px-2 py-0.5 rounded text-[8.5px] font-black uppercase border",
+                thresholdMetA ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-bg-card text-text-dim border-border-subtle"
+              )}>
+                {thresholdMetA ? 'Critério Positivo' : 'Abaixo do Limiar'}
+              </span>
+            </div>
+
+            <div className="p-2.5 bg-bg-sidebar/40 rounded-xl border border-border-subtle/50 text-xs flex justify-between items-center">
+              <div>
+                <span className="text-[9px] font-black uppercase text-text-dim block">Parte B: Hiperatividade</span>
+                <span className="font-bold text-text-main">{partBScore}/27 pts ({partBSignificant}/9 sintomas)</span>
+              </div>
+              <span className={cn(
+                "px-2 py-0.5 rounded text-[8.5px] font-black uppercase border",
+                thresholdMetB ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-bg-card text-text-dim border-border-subtle"
+              )}>
+                {thresholdMetB ? 'Critério Positivo' : 'Abaixo do Limiar'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column */}
+      <div className="lg:col-span-7 space-y-6">
+        <div className="bg-bg-card rounded-2xl p-6 border border-border-subtle shadow-lg space-y-4">
+          <div className="border-b border-border-subtle pb-3">
+            <h2 className="text-xs font-black uppercase tracking-wider text-amber-400">Parecer Clínico Interpretativo (IA)</h2>
+            <p className="italic text-text-dim text-[9px] uppercase font-bold tracking-wider mt-0.5">ASRS-18 v1.1 OMS • Diretrizes CFP nº 06/2019</p>
+          </div>
+          <div className="text-xs leading-relaxed max-w-none text-justify font-sans space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            {assessment.aiAnalysis ? (
+              renderMarkdown(assessment.aiAnalysis)
+            ) : (
+              <span className="text-text-dim/40 italic">Sem laudo interpretativo de IA gerado.</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
