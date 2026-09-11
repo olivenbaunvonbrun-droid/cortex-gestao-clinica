@@ -200,6 +200,7 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
                     key="draft"
                     onSave={handleSaveEntry} 
                     settings={settings}
+                    patientId={selectedPatientId}
                     patientName={pName}
                     patientAge={pAge}
                     isSaving={isSaving}
@@ -224,6 +225,7 @@ export default function RidInteligenteApp({ activePatientId, lockPatient = false
                       onCancel={() => setEditingEntry(undefined)}
                       initialData={editingEntry} 
                       settings={settings}
+                      patientId={selectedPatientId}
                       patientName={pName}
                       patientAge={pAge}
                       isSaving={isSaving}

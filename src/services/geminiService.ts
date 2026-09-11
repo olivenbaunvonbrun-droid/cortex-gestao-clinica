@@ -866,3 +866,289 @@ Por favor, escreva de maneira compassiva, ética, com jargão técnico refinado 
 
   return response.text;
 }
+
+// Extração Estruturada de RID a partir de Registro de Sessão ou Texto Clínico
+export async function extractRidFromText(clinicalText: string) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Você é um psicólogo clínico sênior especialista em Terapia Cognitivo-Comportamental de 4ª Geração e Terapia do Esquema.
+Sua tarefa é analisar o relato/transcrição da sessão de atendimento clínico fornecido e extrair com precisão cirúrgica os componentes do Registro de Interação Disfuncional (RID).
+
+${CLINICAL_FRAMEWORK_PROMPT}
+
+TEXTO CLÍNICO DA SESSÃO / ATENDIMENTO:
+"""
+${clinicalText}
+"""
+
+DIRETRIZES DE EXTRAÇÃO:
+1. situacao: Descreva de forma objetiva a situação-gatilho ou contexto relatado pelo paciente (onde estava, com quem, o que ocorreu).
+2. pensamento: Os pensamentos automáticos e interpretações cognitivas que surgiram na mente do paciente no momento do gatilho.
+3. emocao: A emoção primária predominante sentida (ex: Ansiedade, Medo, Raiva, Tristeza, Vergonha, Frustração, Culpa) e a intensidade estimada de 0 a 100%.
+4. comportamento: A resposta comportamental ou motora (ação realizada, esquiva, agressividade, paralisia, fuga).
+5. consequenciasCurtoPrazo: Consequência imediata do comportamento (ex: alívio temporário da ansiedade, evitar confronto momentâneo).
+6. consequenciasLongoPrazo: Consequência a longo prazo (ex: manutenção do medo, prejuízo no relacionamento, reforço do esquema disfuncional, perda de oportunidade).
+7. necessidade: Lista de Necessidades Emocionais Básicas que foram frustradas ou estavam em jogo (ex: "Vínculo Seguro", "Autonomia", "Aceitação/Aprovação", "Limites Realistas", "Autoexpressão Espontânea", "Cuidado", "Proteção", "Compreensão").
+8. esquema: Lista dos Esquemas Iniciais Desadaptativos (EIDs) ativados no evento. Escolha entre os 18 esquemas clássicos: "Abandono/Instabilidade", "Desconfiança/Abuso", "Privação Emocional", "Defectividade/Vergonha", "Isolamento Social/Alienação", "Dependência/Incompetência", "Vulnerabilidade a Danos ou Doenças", "Emaranhamento/Self Subdesenvolvido", "Fracasso", "Grandiosidade/Arrogância", "Autocontrole/Autodisciplina Insuficientes", "Subjugação", "Auto-sacrifício", "Busca de Aprovação/Reconhecimento", "Negatividade/Pessimismo", "Inibição Emocional", "Padrões Inflexíveis/Crítica Exagerada", "Punitividade".
+
+Retorne em formato JSON estrito conforme o schema.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          situacao: { type: Type.STRING },
+          pensamento: { type: Type.STRING },
+          emocao: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              intensity: { type: Type.INTEGER }
+            },
+            required: ["name", "intensity"]
+          },
+          comportamento: { type: Type.STRING },
+          consequenciasCurtoPrazo: { type: Type.STRING },
+          consequenciasLongoPrazo: { type: Type.STRING },
+          necessidade: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          esquema: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          }
+        },
+        required: [
+          "situacao",
+          "pensamento",
+          "emocao",
+          "comportamento",
+          "consequenciasCurtoPrazo",
+          "consequenciasLongoPrazo",
+          "necessidade",
+          "esquema"
+        ]
+      }
+    }
+  });
+
+  return JSON.parse(response.text || "{}");
+}
+
+// Extração Estruturada de PCI a partir de Registro de Sessão ou Texto Clínico
+export async function extractPciFromText(clinicalText: string) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Você é um supervisor clínico ph.D especialista em Terapia Cognitivo-Comportamental de 4ª Geração, Formulação de Caso e Terapia do Esquema.
+Sua tarefa é analisar o relato/transcrição da sessão de atendimento clínico e extrair com profundidade e rigor metodológico todas as dimensões do Plano Clínico Integrado (PCI).
+
+${CLINICAL_FRAMEWORK_PROMPT}
+
+TEXTO CLÍNICO DA SESSÃO / ATENDIMENTO:
+"""
+${clinicalText}
+"""
+
+Analise cuidadosamente as informações acima e extraia:
+1. eventoQueixas: Queixas clínicas principais relatadas pelo paciente, motivos de sofrimento e eventos desencadeantes.
+2. Análise Funcional (Tríplice Resposta / RID):
+   - ridSituacao: Contexto ou evento ativador relatado.
+   - ridPensamento: Pensamentos automáticos e interpretações cognitivas.
+   - ridEmocao: Emoção predominante.
+   - ridEmocaoIntensidade: Intensidade estimada de 0 a 100.
+   - ridComportamento: Resposta comportamental observada ou relatada.
+   - ridConsequencias: Consequências imediatas/curto prazo.
+   - ridConsequenciasLP: Consequências a longo prazo e custos funcionais.
+3. esquemasCognitivos: EIDs identificados como ativos (nomes dos esquemas e breve correlação clínica).
+4. crencasCentrais: Crenças centrais nucleares (ex: Desvalor, Desamor, Desamparo, Incapacidade).
+5. crencasPerifericas: Regras condicionais ("Se... então..."), pressupostos e atitudes intermediárias.
+6. excessosComp: Padrões comportamentais em excesso (ex: hipervigilância, procrastinação, evitação, agressividade verbal, tentativa de controle).
+7. deficitsHab: Déficits nas 8 Habilidades Psicológicas (HPs) do Método de 4ª Geração (ex: Autoconhecimento, Autorregulação Emocional, Autoestima, Resolutividade, Sociabilidade, Imunidade Social).
+8. historicoFormativo: Origens na infância/adolescência, dinâmicas familiares, figuras de apego e histórico de vivências estressoras.
+9. necessidadesIdentificadas: Necessidades emocionais básicas infantis ou adultas que foram negligenciadas ou frustradas.
+10. diagTopo: Hipóteses diagnósticas topográficas descritivas (conforme critérios DSM-5-TR / CID-11).
+11. diagFunc: Formulação diagnóstica funcional contextual (MDCF - contingências de reforçamento, esquiva experiencial, fatores de manutenção).
+12. projetoTerap: Proposta de projeto terapêutico estruturado (metas prioritárias, HPs a desenvolver, intervenções cognitivas/vivenciais e tarefas de imersão).
+
+Retorne em formato JSON estrito conforme o schema.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          eventoQueixas: { type: Type.STRING },
+          ridSituacao: { type: Type.STRING },
+          ridPensamento: { type: Type.STRING },
+          ridEmocao: { type: Type.STRING },
+          ridEmocaoIntensidade: { type: Type.INTEGER },
+          ridComportamento: { type: Type.STRING },
+          ridConsequencias: { type: Type.STRING },
+          ridConsequenciasLP: { type: Type.STRING },
+          esquemasCognitivos: { type: Type.STRING },
+          crencasCentrais: { type: Type.STRING },
+          crencasPerifericas: { type: Type.STRING },
+          excessosComp: { type: Type.STRING },
+          deficitsHab: { type: Type.STRING },
+          historicoFormativo: { type: Type.STRING },
+          necessidadesIdentificadas: { type: Type.STRING },
+          diagTopo: { type: Type.STRING },
+          diagFunc: { type: Type.STRING },
+          projetoTerap: { type: Type.STRING }
+        },
+        required: [
+          "eventoQueixas",
+          "ridSituacao",
+          "ridPensamento",
+          "ridEmocao",
+          "ridEmocaoIntensidade",
+          "ridComportamento",
+          "ridConsequencias",
+          "ridConsequenciasLP",
+          "esquemasCognitivos",
+          "crencasCentrais",
+          "crencasPerifericas",
+          "excessosComp",
+          "deficitsHab",
+          "historicoFormativo",
+          "necessidadesIdentificadas",
+          "diagTopo",
+          "diagFunc",
+          "projetoTerap"
+        ]
+      }
+    }
+  });
+
+  return JSON.parse(response.text || "{}");
+}
+
+// Transcrição de áudio (por chunk ou arquivo completo) com Gemini
+export async function transcribeAudioChunk(audioBase64: string, mimeType: string = "audio/webm"): Promise<string> {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const systemInstruction = `
+    Você é um transcritor médico-psicológico forense de alta precisão.
+    Sua tarefa é transcrever na íntegra as falas contidas no áudio da sessão clínica de psicologia.
+    REGRAS DE TRANSCRIÇÃO:
+    - Transcreva com fidelidade absoluta as palavras faladas em português do Brasil.
+    - Identifique os interlocutores sempre que possível usando "Psi:" (Terapeuta) e "P:" (Paciente).
+    - Remova hesitações sem sentido ("hum", "ééé", pausas vazias), mas mantenha todos os relatos e diálogos clínicos essenciais.
+    - Se houver termos técnicos de psicologia ou nomes próprios, grafar corretamente.
+    - Retorne apenas o texto transcrito, sem introduções ou comentários adicionais.
+  `;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: [
+      { text: "Transcreva fielmente este segmento de áudio de atendimento clínico de psicologia." },
+      { inlineData: { mimeType, data: audioBase64 } }
+    ],
+    config: { systemInstruction }
+  });
+
+  return (response.text || "").trim();
+}
+
+// Análise Clínica Abrangente (Escriba IA) para Preenchimento do Registro de Atendimento
+export async function analyzeSessionTranscriptComprehensive(
+  transcript: string,
+  patient: { name: string; age?: string },
+  approaches: string[] = ["TCC 4ª Geração"]
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Você é o Escriba Clínico de IA de mais alto nível para Psicologia Clínica, especializado na abordagem de Terapia Cognitivo-Comportamental de 4ª Geração, Terapia do Esquema e Prática Baseada em Evidências (PBE).
+Sua missão é atuar como um supervisor clínico que analisa a transcrição integral de um atendimento e preenche, com rigor semiológico e técnico de excelência médica/hospitalar, todos os 12 campos necessários para o Prontuário e Registro de Atendimento.
+
+${CLINICAL_FRAMEWORK_PROMPT}
+
+DADOS DO PACIENTE:
+- Nome: ${patient.name || "Não informado"}
+- Idade: ${patient.age || "Não informada"}
+- Abordagens Norteadoras: ${approaches.join(", ")}
+
+TRANSCRIÇÃO DA CONSULTA / ATENDIMENTO:
+"""
+${transcript}
+"""
+
+INSTRUÇÕES E DIRETRIZES DE CADA CAMPO:
+1. relatoCliente: A transcrição/relato clínico estruturado da sessão, organizado semiologicamente em subtópicos (Contexto/Situação, Necessidades e Tríplice Resposta, Intervenções e Consequências). Formatar em HTML clássico com parágrafos justificados (<p style='text-align: justify;'>), tópicos (<ul><li>) e ênfases (<strong>).
+2. motivoConsulta: Motivo da consulta/queixa primária trazida na sessão e as necessidades emocionais básicas violadas identificadas (1-2 parágrafos justificados em HTML).
+3. objetivosCliente: Objetivos da sessão declarados pelo próprio paciente e sua relação com déficits em Habilidades Psicológicas (HTML com <ul><li>).
+4. objetivosTerapeuta: Objetivos técnicos do terapeuta na sessão sob a ótica de 4ª Geração (enfraquecimento de EIDs, treino de HPs, reestruturação) (HTML com <ul><li>).
+5. intervencoes: Técnicas e posturas clínicas efetivamente aplicadas durante o atendimento (ex: validação emocional, reestruturação cognitiva, metáforas da ACT, diálogos de modos esquemáticos) (HTML com <ul><li>).
+6. observacoes: Observações semiológicas e clínicas sobre o estado mental do paciente, crenças nucleares/regras ativadas e estilo de enfrentamento habitual (resignação, evitação, hipercompensação) (HTML com <p style='text-align: justify;'>).
+7. insights: Insights clínicos emergentes alcançados na sessão conectando dores atuais a origens formativas (HTML com <ul><li>).
+8. percepcaoCliente: Percepção subjetiva de encerramento do paciente, nível de adesão, aliança terapêutica e engajamento (HTML com <p style='text-align: justify;'>).
+9. progresso: Avaliação resumida do progresso clínico. Escolha uma das opções: "Evolução Significativa", "Evolução Positiva", "Progresso Estável", "Resistência / Estagnação" ou "Alerta Clínico / Retrocesso".
+10. tarefas: Tarefas intersessão recomendadas com foco no PDP (Plano de Desenvolvimento de HPs), como monitoramento de RIDs, exercícios de desfusão ou mindfulness (HTML com <ul><li>).
+11. planejamento: Planejamento e eixos temáticos priorizados para a próxima sessão (HTML com <p style='text-align: justify;'> ou <ul><li>).
+12. encaminhamentos: Encaminhamentos sugeridos (médicos, psiquiátricos, exames) ou declaração de ausência de necessidade no momento (HTML com <p style='text-align: justify;'>).
+
+IMPORTANTE DE FORMATAÇÃO:
+- Os campos HTML devem conter apenas marcações de texto limpo (<p>, <ul>, <li>, <strong>), sem tags <html>, <head> ou <body>.
+- NÃO envolva os valores com blocos de código como \`\`\`html.
+- Retorne um objeto JSON estrito correspondente ao schema especificado.
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          relatoCliente: { type: Type.STRING },
+          motivoConsulta: { type: Type.STRING },
+          objetivosCliente: { type: Type.STRING },
+          objetivosTerapeuta: { type: Type.STRING },
+          intervencoes: { type: Type.STRING },
+          observacoes: { type: Type.STRING },
+          insights: { type: Type.STRING },
+          percepcaoCliente: { type: Type.STRING },
+          progresso: { type: Type.STRING },
+          tarefas: { type: Type.STRING },
+          planejamento: { type: Type.STRING },
+          encaminhamentos: { type: Type.STRING }
+        },
+        required: [
+          "relatoCliente",
+          "motivoConsulta",
+          "objetivosCliente",
+          "objetivosTerapeuta",
+          "intervencoes",
+          "observacoes",
+          "insights",
+          "percepcaoCliente",
+          "progresso",
+          "tarefas",
+          "planejamento",
+          "encaminhamentos"
+        ]
+      }
+    }
+  });
+
+  return JSON.parse(response.text || "{}");
+}
+

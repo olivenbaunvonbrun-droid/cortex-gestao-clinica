@@ -105,6 +105,106 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
   const [importFiles, setImportFiles] = useState<File[]>([]);
   const [isImporting, setIsImporting] = useState(false);
 
+  // Estados do Menu Suspenso de Registros de Atendimento da Sessão
+  const [sessionRecords, setSessionRecords] = useState<any[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [isExtractingSession, setIsExtractingSession] = useState(false);
+
+  useEffect(() => {
+    if (!selectedPatientId) {
+      setSessionRecords([]);
+      setSelectedSessionId('');
+      return;
+    }
+    const loadSessions = async () => {
+      try {
+        const { dbWrapper: attendanceDb } = await import('../RegistroAtendimento/lib/registroDbWrapper');
+        const list = await attendanceDb.getHistory(selectedPatientId);
+        setSessionRecords(list || []);
+        if (list && list.length > 0) {
+          setSelectedSessionId(list[0].id || '');
+        } else {
+          setSelectedSessionId('');
+        }
+      } catch (e) {
+        console.error("Erro ao carregar registros de atendimento no PCI:", e);
+      }
+    };
+    loadSessions();
+  }, [selectedPatientId]);
+
+  const handleExtractFromSelectedSession = async () => {
+    if (!selectedSessionId) {
+      toast.error("Selecione um registro de atendimento no menu suspenso.");
+      return;
+    }
+    const session = sessionRecords.find(s => String(s.id) === String(selectedSessionId));
+    if (!session) {
+      toast.error("Registro de atendimento não encontrado.");
+      return;
+    }
+
+    const f = session.fields || {};
+    const cleanHtml = (html?: string) => html ? html.replace(/<[^>]*>/g, " ").trim() : "";
+
+    const sessionContent = `
+SESSÃO CLÍNICA: Nº ${f.numeroSessao || 'N/A'} - Data: ${f.dataAtendimento || ''} - Cód: ${f.codigoRegistro || ''}
+Paciente: ${f.nomeCliente || formState.patient.name || ''}
+Idade: ${f.idadeCliente || formState.idade || ''}
+Motivo / Queixa: ${cleanHtml(f.motivoConsulta)}
+Relato da Sessão: ${cleanHtml(f.relatoCliente)}
+Intervenções Clínicas Realizadas: ${cleanHtml(f.intervencoes)}
+Observações Semiológicas: ${cleanHtml(f.observacoes)}
+Insights Emergentes: ${cleanHtml(f.insights)}
+Percepção do Paciente: ${cleanHtml(f.percepcaoCliente)}
+Tarefas Intersessão: ${cleanHtml(f.tarefas)}
+Planejamento: ${cleanHtml(f.planejamento)}
+Encaminhamentos: ${cleanHtml(f.encaminhamentos)}
+    `.trim();
+
+    if (!sessionContent || sessionContent.length < 30) {
+      toast.error("O registro selecionado não possui conteúdo clínico suficiente.");
+      return;
+    }
+
+    setIsExtractingSession(true);
+    try {
+      const { extractPciFromText } = await import('../../services/geminiService');
+      const data = await extractPciFromText(sessionContent);
+
+      setFormState(prev => ({
+        ...prev,
+        eventoQueixas: data.eventoQueixas || prev.eventoQueixas,
+        ridSituacao: data.ridSituacao || prev.ridSituacao,
+        ridPensamento: data.ridPensamento || prev.ridPensamento,
+        ridEmocao: data.ridEmocao || prev.ridEmocao,
+        ridEmocaoIntensidade: data.ridEmocaoIntensidade !== undefined ? data.ridEmocaoIntensidade : prev.ridEmocaoIntensidade,
+        ridComportamento: data.ridComportamento || prev.ridComportamento,
+        ridConsequencias: data.ridConsequencias || prev.ridConsequencias,
+        ridConsequenciasLP: data.ridConsequenciasLP || prev.ridConsequenciasLP,
+        esquemasCognitivos: data.esquemasCognitivos || prev.esquemasCognitivos,
+        crencasCentrais: data.crencasCentrais || prev.crencasCentrais,
+        crencasPerifericas: data.crencasPerifericas || prev.crencasPerifericas,
+        excessosComp: data.excessosComp || prev.excessosComp,
+        deficitsHab: data.deficitsHab || prev.deficitsHab,
+        historicoFormativo: data.historicoFormativo || prev.historicoFormativo,
+        necessidadesIdentificadas: data.necessidadesIdentificadas || prev.necessidadesIdentificadas,
+        diagTopo: data.diagTopo || prev.diagTopo,
+        diagFunc: data.diagFunc || prev.diagFunc,
+        projetoTerap: data.projetoTerap || prev.projetoTerap,
+        idade: data.idade || f.idadeCliente || prev.idade
+      }));
+
+      toast.success("Plano Clínico Integrado preenchido com IA a partir da sessão!");
+      if (isImportModalOpen) setIsImportModalOpen(false);
+    } catch (err: any) {
+      console.error("Erro ao extrair dados para o PCI:", err);
+      toast.error("Falha ao extrair dados clínicos com IA: " + (err.message || err));
+    } finally {
+      setIsExtractingSession(false);
+    }
+  };
+
   const [settings, setSettings] = useState({
     professionalName: 'Psicólogo(a)',
     professionalCRP: '',
@@ -709,8 +809,57 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
               <div className="flex flex-1 overflow-auto w-full relative">
                   {/* LEFT SCROLLABLE FORM COLUMN */}
                   <div className="flex-1 overflow-y-auto bg-bg-deep p-6 md:p-8 scroller-hide select-text">
-                    <div className="max-w-4xl mx-auto space-y-12 pb-24">
-                      
+                    <div className="max-w-4xl mx-auto space-y-8 pb-24">
+                      {/* SELETOR DE REGISTRO DE ATENDIMENTO (DROP-DOWN) */}
+                      <div className="p-4 bg-bg-card/90 border border-primary/25 rounded-[2rem] space-y-3 shadow-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                            <Sparkles size={13} className="animate-pulse" /> Preenchimento Automático via Sessão de Atendimento
+                          </span>
+                          <span className="text-[9px] font-bold text-text-dim">
+                            {sessionRecords.length} {sessionRecords.length === 1 ? 'sessão gravada' : 'sessões gravadas'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2.5">
+                          <select
+                            value={selectedSessionId}
+                            onChange={(e) => setSelectedSessionId(e.target.value)}
+                            disabled={sessionRecords.length === 0 || isExtractingSession}
+                            className="flex-1 px-4 py-2.5 bg-bg-sidebar border border-border-subtle rounded-xl text-xs font-semibold text-text-main outline-none focus:border-primary cursor-pointer disabled:opacity-50 truncate"
+                          >
+                            {sessionRecords.length === 0 ? (
+                              <option value="">Nenhum registro de atendimento encontrado para este paciente</option>
+                            ) : (
+                              sessionRecords.map((s) => {
+                                const f = s.fields || {};
+                                const label = `Sessão ${f.numeroSessao ? `#${f.numeroSessao}` : ''} • ${f.dataAtendimento || 'Sem data'} • Cód: ${f.codigoRegistro || s.id}`;
+                                return (
+                                  <option key={s.id} value={s.id} className="bg-bg-card text-text-main">
+                                    {label}
+                                  </option>
+                                );
+                              })
+                            )}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleExtractFromSelectedSession}
+                            disabled={sessionRecords.length === 0 || isExtractingSession || !selectedSessionId}
+                            className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-bg-deep font-black rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider cursor-pointer shrink-0 shadow-md shadow-primary/15"
+                          >
+                            {isExtractingSession ? (
+                              <>
+                                <Loader2 size={13} className="animate-spin" /> Extraindo...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles size={13} /> Preencher PCI via IA
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Abordagem & Fase Header selector */}
                       <div className="bg-bg-card p-6 rounded-[2rem] border border-border-subtle shadow-md grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-2">

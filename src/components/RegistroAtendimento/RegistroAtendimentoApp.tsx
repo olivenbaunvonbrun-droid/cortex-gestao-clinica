@@ -32,6 +32,7 @@ import {
   generateContentWithSystemInstruction, 
   transcribeAudioFile 
 } from '../../services/geminiService';
+import { ClinicalAudioRecorder } from './components/ClinicalAudioRecorder';
 
 interface RegistroAtendimentoAppProps {
   activePatientId?: string | null;
@@ -771,6 +772,21 @@ export default function RegistroAtendimentoApp({
     }
   };
 
+  const handleScribeComplete = (analysisData: any) => {
+    if (analysisData.relatoCliente) setRelatoCliente(analysisData.relatoCliente);
+    if (analysisData.motivoConsulta) setMotivoConsulta(analysisData.motivoConsulta);
+    if (analysisData.objetivosCliente) setObjetivosCliente(analysisData.objetivosCliente);
+    if (analysisData.objetivosTerapeuta) setObjetivosTerapeuta(analysisData.objetivosTerapeuta);
+    if (analysisData.intervencoes) setIntervencoes(analysisData.intervencoes);
+    if (analysisData.observacoes) setObservacoes(analysisData.observacoes);
+    if (analysisData.insights) setInsights(analysisData.insights);
+    if (analysisData.percepcaoCliente) setPercepcaoCliente(analysisData.percepcaoCliente);
+    if (analysisData.progresso) setProgresso(analysisData.progresso);
+    if (analysisData.tarefas) setTarefas(analysisData.tarefas);
+    if (analysisData.planejamento) setPlanejamento(analysisData.planejamento);
+    if (analysisData.encaminhamentos) setEncaminhamentos(analysisData.encaminhamentos);
+  };
+
   // Export HTML
   const handleExportHtml = () => {
     const recordPayload = getFormPayload();
@@ -1068,6 +1084,13 @@ export default function RegistroAtendimentoApp({
             {/* 1. FORM PAGE */}
             {currentPage === "new-record" && (
               <form onSubmit={(e) => e.preventDefault()} className="space-y-6 select-text pb-20">
+                {/* Módulo Escriba Clínico de IA (Noa Health / Voa Notes) */}
+                <ClinicalAudioRecorder 
+                  patient={{ id: selectedPatientId, name: nomeCliente, age: idadeCliente }}
+                  approaches={abordagensSessao.length > 0 ? abordagensSessao : ['TCC 4ª Geração']}
+                  onTranscriptionComplete={handleScribeComplete}
+                />
+
                 {/* Dados Técnicos */}
                 <div className="p-6 bg-bg-sidebar border border-border-subtle rounded-2xl space-y-4 shadow-md">
                   <h4 className="text-xs font-black text-primary uppercase tracking-wider pb-2 border-b border-border-subtle/50">Dados Técnicos do Atendimento</h4>

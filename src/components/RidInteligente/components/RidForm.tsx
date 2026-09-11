@@ -27,12 +27,13 @@ interface RidFormProps {
   onCancel?: () => void;
   initialData?: RidEntry;
   settings: AppSettings;
+  patientId?: string;
   patientName?: string;
   patientAge?: string;
   isSaving?: boolean;
 }
 
-export function RidForm({ onSave, onCancel, initialData, settings, patientName, patientAge, isSaving = false }: RidFormProps) {
+export function RidForm({ onSave, onCancel, initialData, settings, patientId, patientName, patientAge, isSaving = false }: RidFormProps) {
   const [formData, setFormData] = useState<Omit<RidEntry, 'id' | 'date' | 'analysis'>>(() => {
     if (initialData) {
       return {
@@ -80,6 +81,96 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
   const [pastedText, setPastedText] = useState('');
   const [importFiles, setImportFiles] = useState<File[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+
+  // Estados do Menu Suspenso de Registros de Atendimento da Sessão
+  const [sessionRecords, setSessionRecords] = useState<any[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [isExtractingSession, setIsExtractingSession] = useState(false);
+
+  useEffect(() => {
+    if (!patientId) {
+      setSessionRecords([]);
+      setSelectedSessionId('');
+      return;
+    }
+    const loadSessions = async () => {
+      try {
+        const { dbWrapper } = await import('../../RegistroAtendimento/lib/registroDbWrapper');
+        const list = await dbWrapper.getHistory(patientId);
+        setSessionRecords(list || []);
+        if (list && list.length > 0) {
+          setSelectedSessionId(list[0].id || '');
+        } else {
+          setSelectedSessionId('');
+        }
+      } catch (e) {
+        console.error("Erro ao carregar registros de atendimento:", e);
+      }
+    };
+    loadSessions();
+  }, [patientId]);
+
+  const handleExtractFromSelectedSession = async () => {
+    if (!selectedSessionId) {
+      toast.error("Selecione um registro de atendimento no menu suspenso.");
+      return;
+    }
+    const session = sessionRecords.find(s => String(s.id) === String(selectedSessionId));
+    if (!session) {
+      toast.error("Registro de atendimento não encontrado.");
+      return;
+    }
+
+    const f = session.fields || {};
+    const cleanHtml = (html?: string) => html ? html.replace(/<[^>]*>/g, " ").trim() : "";
+
+    const sessionContent = `
+SESSÃO CLÍNICA: Nº ${f.numeroSessao || 'N/A'} - Data: ${f.dataAtendimento || ''} - Cód: ${f.codigoRegistro || ''}
+Paciente: ${f.nomeCliente || patientName || ''}
+Motivo / Queixa: ${cleanHtml(f.motivoConsulta)}
+Relato da Sessão: ${cleanHtml(f.relatoCliente)}
+Intervenções Clínicas: ${cleanHtml(f.intervencoes)}
+Observações Semiológicas: ${cleanHtml(f.observacoes)}
+Insights Emergentes: ${cleanHtml(f.insights)}
+Percepção do Paciente: ${cleanHtml(f.percepcaoCliente)}
+Tarefas Intersessão: ${cleanHtml(f.tarefas)}
+Planejamento: ${cleanHtml(f.planejamento)}
+    `.trim();
+
+    if (!sessionContent || sessionContent.length < 30) {
+      toast.error("O registro selecionado não possui conteúdo clínico suficiente.");
+      return;
+    }
+
+    setIsExtractingSession(true);
+    try {
+      const { extractRidFromText } = await import('../../../services/geminiService');
+      const data = await extractRidFromText(sessionContent);
+
+      setFormData(prev => ({
+        ...prev,
+        situacao: data.situacao || prev.situacao,
+        pensamento: data.pensamento || prev.pensamento,
+        comportamento: data.comportamento || prev.comportamento,
+        consequenciasCurtoPrazo: data.consequenciasCurtoPrazo || prev.consequenciasCurtoPrazo,
+        consequenciasLongoPrazo: data.consequenciasLongoPrazo || prev.consequenciasLongoPrazo,
+        emocao: data.emocao ? {
+          name: data.emocao.name || prev.emocao.name,
+          intensity: data.emocao.intensity !== undefined ? data.emocao.intensity : prev.emocao.intensity
+        } : prev.emocao,
+        necessidade: Array.isArray(data.necessidade) && data.necessidade.length > 0 ? data.necessidade : prev.necessidade,
+        esquema: Array.isArray(data.esquema) && data.esquema.length > 0 ? data.esquema : prev.esquema
+      }));
+
+      toast.success("Campos do RID preenchidos com IA a partir da sessão!");
+      if (isImportModalOpen) setIsImportModalOpen(false);
+    } catch (err: any) {
+      console.error("Erro ao extrair dados para o RID:", err);
+      toast.error("Falha ao extrair dados clínicos com IA: " + (err.message || err));
+    } finally {
+      setIsExtractingSession(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -402,6 +493,56 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientName, 
               <div className="w-full p-2.5 bg-bg-card border border-border-subtle rounded-xl text-xs font-semibold text-text-main text-center">
                 {patientAge ? `${patientAge} anos` : '--'}
               </div>
+            </div>
+          </div>
+
+          {/* SELETOR DE REGISTRO DE ATENDIMENTO (DROP-DOWN) */}
+          <div className="p-3.5 bg-bg-card/70 border border-primary/25 rounded-2xl space-y-2.5 shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Sparkles size={13} className="animate-pulse" /> Preenchimento Automático via Sessão de Atendimento
+              </span>
+              <span className="text-[9px] font-bold text-text-dim">
+                {sessionRecords.length} {sessionRecords.length === 1 ? 'sessão gravada' : 'sessões gravadas'}
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select
+                value={selectedSessionId}
+                onChange={(e) => setSelectedSessionId(e.target.value)}
+                disabled={sessionRecords.length === 0 || isExtractingSession}
+                className="flex-1 px-3 py-2 bg-bg-deep border border-border-subtle rounded-xl text-xs font-semibold text-text-main outline-none focus:border-primary cursor-pointer disabled:opacity-50 truncate"
+              >
+                {sessionRecords.length === 0 ? (
+                  <option value="">Nenhum registro de atendimento encontrado para este paciente</option>
+                ) : (
+                  sessionRecords.map((s) => {
+                    const f = s.fields || {};
+                    const label = `Sessão ${f.numeroSessao ? `#${f.numeroSessao}` : ''} • ${f.dataAtendimento || 'Sem data'} • Cód: ${f.codigoRegistro || s.id}`;
+                    return (
+                      <option key={s.id} value={s.id} className="bg-bg-card text-text-main">
+                        {label}
+                      </option>
+                    );
+                  })
+                )}
+              </select>
+              <button
+                type="button"
+                onClick={handleExtractFromSelectedSession}
+                disabled={sessionRecords.length === 0 || isExtractingSession || !selectedSessionId}
+                className="px-4 py-2 bg-primary hover:bg-primary/90 text-bg-deep font-black rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider cursor-pointer shrink-0 shadow-md shadow-primary/10"
+              >
+                {isExtractingSession ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" /> Extraindo...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={13} /> Preencher RID via IA
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
