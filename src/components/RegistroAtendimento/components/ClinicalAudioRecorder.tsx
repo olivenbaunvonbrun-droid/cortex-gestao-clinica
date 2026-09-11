@@ -52,6 +52,8 @@ export function ClinicalAudioRecorder({
   const [durationSeconds, setDurationSeconds] = useState(0);
   const [processingStep, setProcessingStep] = useState<string>('');
   const [isConfirmDiscardOpen, setIsConfirmDiscardOpen] = useState(false);
+  const [isPrivacyMuted, setIsPrivacyMuted] = useState(false);
+  const [audioPurgedMessage, setAudioPurgedMessage] = useState(false);
 
   // Upload state
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -246,6 +248,34 @@ export function ClinicalAudioRecorder({
     }
   };
 
+  // Recorte de Sigilo Ético (Off the Record): suspende captação de trecho confidencial
+  const togglePrivacyMute = () => {
+    if (!mediaRecorderRef.current) return;
+
+    if (!isPrivacyMuted) {
+      if (mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.pause();
+      }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getAudioTracks().forEach(t => t.enabled = false);
+      }
+      setIsPrivacyMuted(true);
+      toast('🔒 Modo Sigilo Ético Ativado: Captação suspensa.', {
+        icon: '🔒',
+        duration: 3000
+      });
+    } else {
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getAudioTracks().forEach(t => t.enabled = true);
+      }
+      if (mediaRecorderRef.current.state === 'paused') {
+        mediaRecorderRef.current.resume();
+      }
+      setIsPrivacyMuted(false);
+      toast.success('▶️ Captação clínica retomada.');
+    }
+  };
+
   // Clean up recording tracks & intervals
   const cleanupStream = () => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -374,6 +404,12 @@ export function ClinicalAudioRecorder({
 
       // Trigger parent callback
       onTranscriptionComplete(clinicalAnalysis);
+
+      // Expurgo Imediato da Memória RAM (Privacidade por Padrão / Dados Transitórios)
+      audioChunksRef.current = [];
+      segmentBlobsRef.current = [];
+      setAudioPurgedMessage(true);
+      setTimeout(() => setAudioPurgedMessage(false), 9000);
 
       toast.success('Atendimento transcrito e todos os campos preenchidos com sucesso!');
       setRecordingStatus('idle');
@@ -544,6 +580,21 @@ export function ClinicalAudioRecorder({
               {/* Control Action Buttons */}
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={togglePrivacyMute}
+                  className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-[11px] font-bold ${
+                    isPrivacyMuted 
+                      ? 'bg-amber-500 text-bg-deep border-amber-400 font-black animate-pulse shadow-lg shadow-amber-500/25'
+                      : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
+                  }`}
+                  title={isPrivacyMuted ? 'Retomar captação da sessão' : 'Pausa de Sigilo Ético: Não gravar este trecho'}
+                >
+                  <ShieldCheck size={14} />
+                  <span>{isPrivacyMuted ? 'Retomar Captação' : 'Recorte de Sigilo'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={togglePause}
                   className="p-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-text-main border border-white/[0.1] transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
                   title={recordingStatus === 'recording' ? 'Pausar gravação' : 'Retomar gravação'}
@@ -553,6 +604,7 @@ export function ClinicalAudioRecorder({
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setIsConfirmDiscardOpen(true)}
                   className="p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
                   title="Descartar gravação"
@@ -562,6 +614,7 @@ export function ClinicalAudioRecorder({
                 </button>
 
                 <button
+                  type="button"
                   onClick={finishAndProcessSession}
                   className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-bg-deep font-black transition-all cursor-pointer flex items-center gap-2 text-xs uppercase tracking-wider shadow-lg shadow-primary/20"
                 >
@@ -570,6 +623,19 @@ export function ClinicalAudioRecorder({
                 </button>
               </div>
             </div>
+
+            {/* PRIVACY WARNING BANNER */}
+            {isPrivacyMuted && (
+              <div className="flex items-center gap-2.5 p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-semibold animate-in fade-in">
+                <ShieldCheck size={18} className="text-amber-400 shrink-0" />
+                <div>
+                  <span className="font-black uppercase tracking-wider block text-[10px]">🔒 Modo Sigilo Ético Ativo</span>
+                  <span className="text-[11px] text-amber-200/90">
+                    O microfone está pausado. O trecho falado durante este intervalo <strong>NÃO será gravado, transcrito nem inserido no prontuário</strong>.
+                  </span>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -651,6 +717,16 @@ export function ClinicalAudioRecorder({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* AVISO DE EXPURGO DE ÁUDIO BRUTO (PRIVACIDADE POR PADRÃO) */}
+      {audioPurgedMessage && (
+        <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-xl flex items-center gap-2.5 text-emerald-400 text-xs font-medium animate-in fade-in">
+          <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
+          <span>
+            <strong>Privacidade Médica & Expurgo de Dados:</strong> O áudio bruto da sessão foi processado e descartado da memória RAM. Apenas o registro clínico estruturado foi mantido de forma segura e criptografada no prontuário.
+          </span>
+        </div>
+      )}
 
       {/* DISCARD CONFIRMATION MODAL */}
       {isConfirmDiscardOpen && (

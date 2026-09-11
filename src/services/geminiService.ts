@@ -1090,13 +1090,25 @@ TRANSCRIÇÃO DA CONSULTA / ATENDIMENTO:
 ${transcript}
 """
 
+REGRAS DE OURO DE FIDELIDADE CLÍNICA E PRESERVAÇÃO LEXICAL:
+1. PRESERVAÇÃO LEXICAL (CITAÇÕES LITERAIS DO PACIENTE):
+   - Termos de impacto, expressões emocionais nucleares e metáforas utilizadas pelo próprio paciente (ex: "sinto um buraco no peito", "estou pisando em ovos", "minha cabeça parece que vai explodir", "me sinto uma fraude") DEVEM ser preservados literalmente entre aspas duplas ("> '...'") no Relato Detalhado e nas Observações Clínicas.
+2. FIDELIDADE ESTRITA AOS FATOS (ANTI-ALUCINAÇÃO):
+   - Baseie-se estritamente no que foi verbalizado ou observado no atendimento.
+   - Se um tema não foi abordado na sessão, NÃO invente dados nem use clichês. Ausência de menção deve resultar em texto conciso e direto.
+   - Descreva o comportamento e o afeto observado faticamente (ex: "falou do trabalho com respiração acelerada e hesitação vocal") em vez de rótulos inferidos sem evidência.
+3. RIGOR DE TCC DE 4ª GERAÇÃO E TERAPIA DO ESQUEMA:
+   - Identifique com clareza os EIDs ativados, os modos esquemáticos adotados e as necessidades emocionais básicas negligenciadas.
+4. LINGUAGEM DE PRONTUÁRIO TÉCNICO (RESOLUÇÃO CFP Nº 06/2019):
+   - Redação na voz profissional do psicólogo ("Paciente relatou...", "Foi realizada intervenção de...", "Observou-se postura de...").
+
 INSTRUÇÕES E DIRETRIZES DE CADA CAMPO:
-1. relatoCliente: A transcrição/relato clínico estruturado da sessão, organizado semiologicamente em subtópicos (Contexto/Situação, Necessidades e Tríplice Resposta, Intervenções e Consequências). Formatar em HTML clássico com parágrafos justificados (<p style='text-align: justify;'>), tópicos (<ul><li>) e ênfases (<strong>).
+1. relatoCliente: A transcrição/relato clínico estruturado da sessão, organizado semiologicamente em subtópicos (Contexto/Situação, Necessidades e Tríplice Resposta, Intervenções e Consequências). Inclua as falas marcantes do paciente entre aspas. Formatar em HTML clássico com parágrafos justificados (<p style='text-align: justify;'>), tópicos (<ul><li>) e ênfases (<strong>).
 2. motivoConsulta: Motivo da consulta/queixa primária trazida na sessão e as necessidades emocionais básicas violadas identificadas (1-2 parágrafos justificados em HTML).
 3. objetivosCliente: Objetivos da sessão declarados pelo próprio paciente e sua relação com déficits em Habilidades Psicológicas (HTML com <ul><li>).
 4. objetivosTerapeuta: Objetivos técnicos do terapeuta na sessão sob a ótica de 4ª Geração (enfraquecimento de EIDs, treino de HPs, reestruturação) (HTML com <ul><li>).
 5. intervencoes: Técnicas e posturas clínicas efetivamente aplicadas durante o atendimento (ex: validação emocional, reestruturação cognitiva, metáforas da ACT, diálogos de modos esquemáticos) (HTML com <ul><li>).
-6. observacoes: Observações semiológicas e clínicas sobre o estado mental do paciente, crenças nucleares/regras ativadas e estilo de enfrentamento habitual (resignação, evitação, hipercompensação) (HTML com <p style='text-align: justify;'>).
+6. observacoes: Observações semiológicas e clínicas sobre o estado mental do paciente, crenças nucleares/regras ativadas e estilo de enfrentamento habitual (resignação, evitação, hipercompensação) com citações do paciente (HTML com <p style='text-align: justify;'>).
 7. insights: Insights clínicos emergentes alcançados na sessão conectando dores atuais a origens formativas (HTML com <ul><li>).
 8. percepcaoCliente: Percepção subjetiva de encerramento do paciente, nível de adesão, aliança terapêutica e engajamento (HTML com <p style='text-align: justify;'>).
 9. progresso: Avaliação resumida do progresso clínico. Escolha uma das opções: "Evolução Significativa", "Evolução Positiva", "Progresso Estável", "Resistência / Estagnação" ou "Alerta Clínico / Retrocesso".
