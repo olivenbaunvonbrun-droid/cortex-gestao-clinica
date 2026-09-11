@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Wand2, Save, AlertCircle, Loader2, BrainCircuit, Activity, BookOpen, Search, X, Printer, Upload, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';

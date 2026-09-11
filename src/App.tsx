@@ -50,6 +50,7 @@ import { auth } from './lib/firebase';
 import { signOut } from 'firebase/auth';
 import { syncService } from './lib/syncService';
 import { Toaster } from 'react-hot-toast';
+import { ErrorBoundary } from './components/Common/ErrorBoundary';
 
 export default function App() {
   const { user: firebaseUser, loading: firebaseLoading } = useFirebase();
@@ -452,168 +453,174 @@ export default function App() {
  
       {/* FLOATING WINDOWS (SECTIONS & TOOLS) */}
       {openWindows.map(win => (
-        <Window
-          key={`win-instance-${win.id}`}
-          title={win.title}
-          isMinimized={win.isMinimized}
-          isMaximized={win.isMaximized}
-          snapState={win.snapState}
-          onSnapChange={(snap) => handleSnapWindow(win.id, snap)}
-          zIndex={win.zIndex}
+        <ErrorBoundary
+          key={`eb-${win.id}`}
+          toolTitle={win.title}
           onClose={() => handleCloseTool(win.id)}
-          onMinimize={() => handleToggleMinimize(win.id)}
-          onMaximize={() => handleMaximizeTool(win.id)}
-          onFocus={() => handleFocusTool(win.id)}
         >
-          <React.Suspense fallback={<WindowLoadingFallback />}>
-            {win.type === 'section' && (
-              <div className="w-full h-full overflow-y-auto p-6 scrollbar-thin">
-                {win.id === 'section-dashboard' && <Dashboard onSectionChange={handleOpenSection} openTool={handleOpenTool} />}
-                {win.id === 'section-pacientes' && (
-                  <Patients 
-                    onOpenProntuario={(patientId) => {
-                      setSelectedPatientId(patientId);
-                      handleOpenSection('prontuarios');
-                    }} 
-                  />
-                )}
-                {win.id === 'section-agenda' && <Agenda openTool={handleOpenTool} />}
-                {win.id === 'section-prontuarios' && (
-                  <Records 
-                    preSelectedPatientId={selectedPatientId} 
-                    onPatientSelected={setSelectedPatientId}
-                    openTool={handleOpenTool}
-                  />
-                )}
-                {win.id === 'section-financeiro' && <Finance />}
-                {win.id === 'section-relatorios' && <Reports />}
-                {win.id === 'section-ferramentas' && (
-                  <ToolsLibrary 
-                    onOpenTool={handleOpenTool} 
-                    openWindows={openWindows.filter(w => w.type === 'tool').map(w => w.id)} 
-                    pinnedTools={pinnedTools}
-                    onTogglePin={handleTogglePin}
-                  />
-                )}
-                {win.id === 'section-settings' && <Settings onUpdateSettings={(newS) => setSettings({ ...settings, ...newS })} />}
-              </div>
-            )}
+          <Window
+            key={`win-instance-${win.id}`}
+            title={win.title}
+            isMinimized={win.isMinimized}
+            isMaximized={win.isMaximized}
+            snapState={win.snapState}
+            onSnapChange={(snap) => handleSnapWindow(win.id, snap)}
+            zIndex={win.zIndex}
+            onClose={() => handleCloseTool(win.id)}
+            onMinimize={() => handleToggleMinimize(win.id)}
+            onMaximize={() => handleMaximizeTool(win.id)}
+            onFocus={() => handleFocusTool(win.id)}
+          >
+            <React.Suspense fallback={<WindowLoadingFallback />}>
+              {win.type === 'section' && (
+                <div className="w-full h-full overflow-y-auto p-6 scrollbar-thin">
+                  {win.id === 'section-dashboard' && <Dashboard onSectionChange={handleOpenSection} openTool={handleOpenTool} />}
+                  {win.id === 'section-pacientes' && (
+                    <Patients 
+                      onOpenProntuario={(patientId) => {
+                        setSelectedPatientId(patientId);
+                        handleOpenSection('prontuarios');
+                      }} 
+                    />
+                  )}
+                  {win.id === 'section-agenda' && <Agenda openTool={handleOpenTool} />}
+                  {win.id === 'section-prontuarios' && (
+                    <Records 
+                      preSelectedPatientId={selectedPatientId} 
+                      onPatientSelected={setSelectedPatientId}
+                      openTool={handleOpenTool}
+                    />
+                  )}
+                  {win.id === 'section-financeiro' && <Finance />}
+                  {win.id === 'section-relatorios' && <Reports />}
+                  {win.id === 'section-ferramentas' && (
+                    <ToolsLibrary 
+                      onOpenTool={handleOpenTool} 
+                      openWindows={openWindows.filter(w => w.type === 'tool').map(w => w.id)} 
+                      pinnedTools={pinnedTools}
+                      onTogglePin={handleTogglePin}
+                    />
+                  )}
+                  {win.id === 'section-settings' && <Settings onUpdateSettings={(newS) => setSettings({ ...settings, ...newS })} />}
+                </div>
+              )}
 
-            {win.type === 'tool' && (
-              <>
-                {win.id === 'rid-inteligente' && (
-                  <RidInteligenteApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'ihs-digital' && (
-                  <IhsDigitalApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'ysq-smart-ai' && (
-                  <YsqSmartAiApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'registro-atendimento' && (
-                  <RegistroAtendimentoApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    openTool={handleOpenTool}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'plano-clinico-integrado' && (
-                  <PlanoClinicoIntegradoApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'ihp-pr-digital' && (
-                  <IhpPrDigitalApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'linha-vida' && (
-                  <LinhaVidaApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'psidiagnostic-pro' && (
-                  <PsidiagnosticProApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'dfc-assistido' && (
-                  <DfcAssistidoApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'thp-training' && (
-                  <ThpTrainingApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'tdah-asrs18' && (
-                  <TdahAsrs18App 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'biblioteca-avaliacao' && (
-                  <BibliotecaAvaliacaoApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    lockPatient={false} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'teleconsulta' && (
-                  <TeleconsultationApp 
-                    activePatientId={win.patientId || selectedPatientId || undefined} 
-                    userId={currentUser?.id}
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-                {win.id === 'parametros-clinicos' && (
-                  <ClinicalSuggestionsApp 
-                    onClose={() => handleCloseTool(win.id)}
-                  />
-                )}
-              </>
-            )}
-          </React.Suspense>
-        </Window>
+              {win.type === 'tool' && (
+                <>
+                  {win.id === 'rid-inteligente' && (
+                    <RidInteligenteApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'ihs-digital' && (
+                    <IhsDigitalApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'ysq-smart-ai' && (
+                    <YsqSmartAiApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'registro-atendimento' && (
+                    <RegistroAtendimentoApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      openTool={handleOpenTool}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'plano-clinico-integrado' && (
+                    <PlanoClinicoIntegradoApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'ihp-pr-digital' && (
+                    <IhpPrDigitalApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'linha-vida' && (
+                    <LinhaVidaApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'psidiagnostic-pro' && (
+                    <PsidiagnosticProApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'dfc-assistido' && (
+                    <DfcAssistidoApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'thp-training' && (
+                    <ThpTrainingApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'tdah-asrs18' && (
+                    <TdahAsrs18App 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'biblioteca-avaliacao' && (
+                    <BibliotecaAvaliacaoApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'teleconsulta' && (
+                    <TeleconsultationApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'parametros-clinicos' && (
+                    <ClinicalSuggestionsApp 
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                </>
+              )}
+            </React.Suspense>
+          </Window>
+        </ErrorBoundary>
       ))}
 
       {/* WINDOWS BOTTOM TASKBAR */}
