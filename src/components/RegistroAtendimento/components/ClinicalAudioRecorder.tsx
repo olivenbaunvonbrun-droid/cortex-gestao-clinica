@@ -22,6 +22,7 @@ import {
   transcribeAudioChunk, 
   analyzeSessionTranscriptComprehensive 
 } from '../../../services/geminiService';
+import { blobToBase64, splitAudioIntoValidWavChunks } from '../../../lib/audioSplitter';
 
 interface ClinicalAudioRecorderProps {
   patient: { id?: string; name: string; age?: string };
@@ -50,6 +51,7 @@ export function ClinicalAudioRecorder({
   const [activeTab, setActiveTab] = useState<'record' | 'upload'>('record');
   const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
   const [durationSeconds, setDurationSeconds] = useState(0);
+  const [completedSegmentsCount, setCompletedSegmentsCount] = useState(0);
   const [processingStep, setProcessingStep] = useState<string>('');
   const [isConfirmDiscardOpen, setIsConfirmDiscardOpen] = useState(false);
   const [isPrivacyMuted, setIsPrivacyMuted] = useState(false);
@@ -65,6 +67,15 @@ export function ClinicalAudioRecorder({
   const segmentBlobsRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const backupIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingStatusRef = useRef<'idle' | 'recording' | 'paused' | 'processing'>('idle');
+  const segmentDurationSecondsRef = useRef<number>(0);
+  const currentMimeTypeRef = useRef<string>('audio/webm;codecs=opus');
+  const SEGMENT_ROTATE_INTERVAL_SEC = 480; // 8 minutos por bloco (~1.8 MB a 24kbps)
+
+  // Keep recordingStatusRef in sync
+  useEffect(() => {
+    recordingStatusRef.current = recordingStatus;
+  }, [recordingStatus]);
 
   // Web Audio Visualizer refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -149,6 +160,64 @@ export function ClinicalAudioRecorder({
     }
   };
 
+  // Inicia um novo gravador de segmento independente (produz contêiner WebM/Opus canônico com cabeçalho completo)
+  const startSegmentRecorder = (stream: MediaStream) => {
+    let mimeType = 'audio/webm;codecs=opus';
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+        ? 'audio/ogg;codecs=opus'
+        : '';
+    }
+    currentMimeTypeRef.current = mimeType || 'audio/webm';
+
+    const options: MediaRecorderOptions = {
+      audioBitsPerSecond: 24000 // 24 kbps opus mono é ~10.8 MB/hora
+    };
+    if (mimeType) options.mimeType = mimeType;
+
+    const mediaRecorder = new MediaRecorder(stream, options);
+    mediaRecorderRef.current = mediaRecorder;
+    audioChunksRef.current = [];
+    segmentDurationSecondsRef.current = 0;
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        audioChunksRef.current.push(e.data);
+      }
+    };
+
+    mediaRecorder.start(3000);
+  };
+
+  // Rotaciona para o próximo bloco de gravação de forma ininterrupta (sem fechar o microfone)
+  const rotateSegment = () => {
+    if (!mediaRecorderRef.current || !audioStreamRef.current) return;
+    const oldRec = mediaRecorderRef.current;
+
+    oldRec.onstop = () => {
+      if (audioChunksRef.current.length > 0) {
+        const segBlob = new Blob(audioChunksRef.current, {
+          type: oldRec.mimeType || currentMimeTypeRef.current || 'audio/webm'
+        });
+        if (segBlob.size > 1000) {
+          segmentBlobsRef.current.push(segBlob);
+          setCompletedSegmentsCount(segmentBlobsRef.current.length);
+        }
+      }
+      audioChunksRef.current = [];
+      // Se ainda estiver no modo de gravação ativa, inicia imediatamente o próximo bloco
+      if (recordingStatusRef.current === 'recording' && audioStreamRef.current) {
+        startSegmentRecorder(audioStreamRef.current);
+      }
+    };
+
+    if (oldRec.state !== 'inactive') {
+      oldRec.stop();
+    }
+  };
+
   // Start Live Audio Recording
   const startRecording = async () => {
     try {
@@ -162,51 +231,40 @@ export function ClinicalAudioRecorder({
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          channelCount: 1 // Mono optimizes payload size
+          channelCount: 1 // Mono otimiza tamanho e fidelidade
         }
       });
 
       audioStreamRef.current = stream;
       setupAudioVisualizer(stream);
 
-      // Choose optimal mimeType for high voice compression
-      let mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-          ? 'audio/ogg;codecs=opus'
-          : '';
-      }
-
-      const options: MediaRecorderOptions = {
-        audioBitsPerSecond: 24000 // 24 kbps opus is ~10.8 MB/hour, crystal clear speech
-      };
-      if (mimeType) options.mimeType = mimeType;
-
-      const mediaRecorder = new MediaRecorder(stream, options);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
       segmentBlobsRef.current = [];
+      audioChunksRef.current = [];
+      setCompletedSegmentsCount(0);
+      setDurationSeconds(0);
+      segmentDurationSecondsRef.current = 0;
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
-      };
-
-      // Collect audio chunks every 5 seconds for memory safety
-      mediaRecorder.start(5000);
+      startSegmentRecorder(stream);
 
       setRecordingStatus('recording');
-      setDurationSeconds(0);
+      recordingStatusRef.current = 'recording';
 
-      // Session timer
+      // Timer de sessão com rotação automática a cada 8 minutos
       timerIntervalRef.current = setInterval(() => {
         setDurationSeconds((prev) => prev + 1);
+        segmentDurationSecondsRef.current += 1;
+
+        // Se o bloco atual atingir o intervalo de 8 minutos, rotaciona sem parar o áudio
+        if (
+          segmentDurationSecondsRef.current >= SEGMENT_ROTATE_INTERVAL_SEC &&
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state === 'recording'
+        ) {
+          rotateSegment();
+        }
       }, 1000);
 
-      // Auto-save backup marker to Dexie every 30 seconds to safeguard patient's session
+      // Backup periódico de segurança no Dexie a cada 30 segundos
       backupIntervalRef.current = setInterval(async () => {
         try {
           await db.settings.put({
@@ -214,11 +272,12 @@ export function ClinicalAudioRecorder({
             value: {
               patientName: patient.name,
               timestamp: Date.now(),
-              duration: durationSeconds
+              duration: durationSeconds,
+              segmentsCount: segmentBlobsRef.current.length
             }
           });
         } catch (e) {
-          // Non-blocking
+          // Não bloqueante
         }
       }, 30000);
 
@@ -236,13 +295,23 @@ export function ClinicalAudioRecorder({
     if (recordingStatus === 'recording') {
       mediaRecorderRef.current.pause();
       setRecordingStatus('paused');
+      recordingStatusRef.current = 'paused';
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       toast('Gravação pausada.');
     } else if (recordingStatus === 'paused') {
       mediaRecorderRef.current.resume();
       setRecordingStatus('recording');
+      recordingStatusRef.current = 'recording';
       timerIntervalRef.current = setInterval(() => {
         setDurationSeconds((prev) => prev + 1);
+        segmentDurationSecondsRef.current += 1;
+        if (
+          segmentDurationSecondsRef.current >= SEGMENT_ROTATE_INTERVAL_SEC &&
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state === 'recording'
+        ) {
+          rotateSegment();
+        }
       }, 1000);
       toast.success('Gravação retomada.');
     }
@@ -276,7 +345,7 @@ export function ClinicalAudioRecorder({
     }
   };
 
-  // Clean up recording tracks & intervals
+  // Limpeza de streams e intervalos
   const cleanupStream = () => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     if (backupIntervalRef.current) clearInterval(backupIntervalRef.current);
@@ -290,7 +359,7 @@ export function ClinicalAudioRecorder({
     db.settings.delete('cortex_active_session_backup').catch(() => {});
   };
 
-  // Discard Recording
+  // Descartar Gravação
   const discardRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
@@ -298,98 +367,86 @@ export function ClinicalAudioRecorder({
     cleanupStream();
     audioChunksRef.current = [];
     segmentBlobsRef.current = [];
+    setCompletedSegmentsCount(0);
     setRecordingStatus('idle');
+    recordingStatusRef.current = 'idle';
     setDurationSeconds(0);
     setIsConfirmDiscardOpen(false);
     toast('Gravação descartada.');
   };
 
-  // Convert Blob to Base64
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const res = reader.result as string;
-        const base64 = res.split(',')[1] || res;
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  // Stop recording and process full session with Gemini AI
+  // Concluir gravação ao vivo e processar com IA
   const finishAndProcessSession = async () => {
-    if (!mediaRecorderRef.current) return;
-
     setRecordingStatus('processing');
-    setProcessingStep('Compilando fluxo de áudio da sessão...');
+    recordingStatusRef.current = 'processing';
+    setProcessingStep('Compilando e finalizando capítulos da sessão...');
 
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     stopVisualizer();
 
-    // Wait for recorder stop to flush all data
-    const completeAudioBlob = await new Promise<Blob>((resolve) => {
-      if (!mediaRecorderRef.current) {
-        resolve(new Blob(audioChunksRef.current, { type: 'audio/webm' }));
-        return;
-      }
-
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, {
-          type: mediaRecorderRef.current?.mimeType || 'audio/webm'
-        });
-        resolve(blob);
-      };
-
-      mediaRecorderRef.current.stop();
-    });
+    // Finaliza o último bloco ativo
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      await new Promise<void>((resolve) => {
+        const rec = mediaRecorderRef.current!;
+        rec.onstop = () => {
+          if (audioChunksRef.current.length > 0) {
+            const segBlob = new Blob(audioChunksRef.current, {
+              type: rec.mimeType || currentMimeTypeRef.current || 'audio/webm'
+            });
+            if (segBlob.size > 1000) {
+              segmentBlobsRef.current.push(segBlob);
+              setCompletedSegmentsCount(segmentBlobsRef.current.length);
+            }
+          }
+          resolve();
+        };
+        rec.stop();
+      });
+    }
 
     cleanupStream();
 
-    await processAudioBlob(completeAudioBlob);
+    const segmentsToProcess = [...segmentBlobsRef.current];
+    if (segmentsToProcess.length === 0) {
+      toast.error('Nenhum áudio válido foi registrado na sessão.');
+      setRecordingStatus('idle');
+      recordingStatusRef.current = 'idle';
+      return;
+    }
+
+    await processAudioSegments(segmentsToProcess);
   };
 
-  // Unified audio processor (for recorded live blob OR uploaded file)
-  const processAudioBlob = async (blob: Blob) => {
+  // Processador sequencial resiliente de blocos de áudio (para gravação ao vivo ou arquivo enviado)
+  const processAudioSegments = async (blobs: Blob[]) => {
     setRecordingStatus('processing');
+    recordingStatusRef.current = 'processing';
     try {
-      const mimeType = blob.type || 'audio/webm';
-      const sizeMB = blob.size / (1024 * 1024);
+      const total = blobs.length;
+      const transcriptParts: string[] = [];
 
-      let fullTranscript = '';
+      for (let i = 0; i < total; i++) {
+        const chunkBlob = blobs[i];
+        const sizeMB = (chunkBlob.size / (1024 * 1024)).toFixed(1);
+        const progressMsg = total > 1
+          ? `Transcrevendo capítulo ${i + 1} de ${total} (${sizeMB} MB)...`
+          : `Transcrevendo áudio clínico (${sizeMB} MB)...`;
+        setProcessingStep(progressMsg);
 
-      // Step 1: Transcription
-      setProcessingStep(`Transcrevendo áudio com IA (${sizeMB.toFixed(1)} MB)...`);
-
-      // For safety with Gemini payload limits (<15MB), if blob <= 15MB transcribe directly
-      if (blob.size <= 15 * 1024 * 1024) {
-        const base64 = await blobToBase64(blob);
-        fullTranscript = await transcribeAudioChunk(base64, mimeType);
-      } else {
-        // Multi-segment fallback for extra-long sessions (> 1h30 / 2h):
-        // Slice blob in 10MB segments and transcribe sequentially
-        setProcessingStep(`Sessão longa (${sizeMB.toFixed(1)} MB): processando em capítulos...`);
-        const chunkSize = 10 * 1024 * 1024;
-        const totalChunks = Math.ceil(blob.size / chunkSize);
-        const transcriptParts: string[] = [];
-
-        for (let i = 0; i < totalChunks; i++) {
-          setProcessingStep(`Transcrevendo capítulo ${i + 1} de ${totalChunks}...`);
-          const chunkBlob = blob.slice(i * chunkSize, Math.min((i + 1) * chunkSize, blob.size), mimeType);
-          const chunkBase64 = await blobToBase64(chunkBlob);
-          const partTranscript = await transcribeAudioChunk(chunkBase64, mimeType);
-          if (partTranscript) transcriptParts.push(partTranscript);
+        const base64 = await blobToBase64(chunkBlob);
+        const mimeType = chunkBlob.type || 'audio/webm';
+        const partText = await transcribeAudioChunk(base64, mimeType);
+        if (partText && partText.trim()) {
+          transcriptParts.push(partText.trim());
         }
-
-        fullTranscript = transcriptParts.join('\n\n');
       }
 
-      if (!fullTranscript.trim()) {
-        throw new Error('A inteligência artificial não identificou falas clínicas no áudio fornecido.');
+      const fullTranscript = transcriptParts.join('\n\n');
+      if (!fullTranscript || fullTranscript.trim().length < 15) {
+        throw new Error('A inteligência artificial não identificou falas clínicas audíveis no áudio.');
       }
 
-      // Step 2: Comprehensive Clinical Analysis (TCC 4ª Geração)
+      // Step 2: Análise Clínica Abrangente (TCC 4ª Geração)
       setProcessingStep('Formulando raciocínio clínico de 4ª Geração e preenchendo os 12 campos...');
       const clinicalAnalysis = await analyzeSessionTranscriptComprehensive(
         fullTranscript,
@@ -397,22 +454,19 @@ export function ClinicalAudioRecorder({
         approaches
       );
 
-      // If relatoCliente returned without transcript, prepend or ensure structured transcript
-      if (!clinicalAnalysis.relatoCliente || clinicalAnalysis.relatoCliente.length < 50) {
-        clinicalAnalysis.relatoCliente = `<p style="text-align: justify;"><strong>Transcrição Semiurada da Sessão:</strong><br>${fullTranscript.replace(/\n/g, '<br>')}</p>`;
-      }
-
-      // Trigger parent callback
+      // Trigger callback no componente pai (que preenche o formulário e salva no prontuário!)
       onTranscriptionComplete(clinicalAnalysis);
 
-      // Expurgo Imediato da Memória RAM (Privacidade por Padrão / Dados Transitórios)
+      // Expurgo Imediato da Memória RAM (Privacidade Médica & LGPD)
       audioChunksRef.current = [];
       segmentBlobsRef.current = [];
+      setCompletedSegmentsCount(0);
       setAudioPurgedMessage(true);
       setTimeout(() => setAudioPurgedMessage(false), 9000);
 
       toast.success('Atendimento transcrito e todos os campos preenchidos com sucesso!');
       setRecordingStatus('idle');
+      recordingStatusRef.current = 'idle';
       setDurationSeconds(0);
       setProcessingStep('');
       setUploadedFile(null);
@@ -420,17 +474,43 @@ export function ClinicalAudioRecorder({
       console.error('Error processing clinical session audio:', err);
       toast.error('Falha no processamento: ' + (err.message || 'Erro desconhecido'));
       setRecordingStatus('idle');
+      recordingStatusRef.current = 'idle';
       setProcessingStep('');
     }
   };
 
-  // Handle uploaded audio file
+  // Handle uploaded audio file (suporta arquivos de até 2h com fatiamento canônico WAV)
   const handleProcessUploadedFile = async () => {
     if (!uploadedFile) {
-      toast.error('Selecione um arquivo de áudio antes de processar.');
+      toast.error('Selecione um arquivo de áudio gravado.');
       return;
     }
-    await processAudioBlob(uploadedFile);
+
+    setRecordingStatus('processing');
+    recordingStatusRef.current = 'processing';
+    try {
+      setProcessingStep('Inspecionando arquivo de áudio para transcrição de alta fidelidade...');
+      let chunks: Blob[] = [];
+
+      if (uploadedFile.size <= 15 * 1024 * 1024) {
+        chunks = [uploadedFile];
+      } else {
+        // Divide o áudio de longa duração (> 15MB) em blocos canônicos de 6 minutos sem corromper cabeçalhos
+        chunks = await splitAudioIntoValidWavChunks(
+          uploadedFile,
+          360,
+          (stepMsg) => setProcessingStep(stepMsg)
+        );
+      }
+
+      await processAudioSegments(chunks);
+    } catch (err: any) {
+      console.error('Falha no processamento de áudio enviado:', err);
+      toast.error('Erro ao processar áudio: ' + (err.message || 'Formato incompatível'));
+      setRecordingStatus('idle');
+      recordingStatusRef.current = 'idle';
+      setProcessingStep('');
+    }
   };
 
   // Clean up on unmount
@@ -560,6 +640,11 @@ export function ClinicalAudioRecorder({
                     }`}>
                       {recordingStatus === 'recording' ? 'Gravando Sessão' : 'Pausado'}
                     </span>
+                    {completedSegmentsCount > 0 && (
+                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                        {completedSegmentsCount} {completedSegmentsCount === 1 ? 'bloco salvo' : 'blocos salvos'}
+                      </span>
+                    )}
                   </div>
                   <span className="text-[9px] text-text-dim font-medium">
                     Paciente: {patient.name || 'Sem seleção'} • Abordagem: {approaches.join(', ')}

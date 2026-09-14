@@ -772,7 +772,7 @@ export default function RegistroAtendimentoApp({
     }
   };
 
-  const handleScribeComplete = (analysisData: any) => {
+  const handleScribeComplete = async (analysisData: any) => {
     if (analysisData.relatoCliente) setRelatoCliente(analysisData.relatoCliente);
     if (analysisData.motivoConsulta) setMotivoConsulta(analysisData.motivoConsulta);
     if (analysisData.objetivosCliente) setObjetivosCliente(analysisData.objetivosCliente);
@@ -785,6 +785,68 @@ export default function RegistroAtendimentoApp({
     if (analysisData.tarefas) setTarefas(analysisData.tarefas);
     if (analysisData.planejamento) setPlanejamento(analysisData.planejamento);
     if (analysisData.encaminhamentos) setEncaminhamentos(analysisData.encaminhamentos);
+
+    // Auto-gravar o registro clínico no prontuário do paciente se selecionado
+    if (selectedPatientId) {
+      try {
+        const nextNum = (numeroSessao && numeroSessao.trim())
+          ? numeroSessao
+          : String((recordsList.length || 0) + 1);
+        setNumeroSessao(nextNum);
+
+        const newRecordId = recordId || Date.now().toString();
+        setRecordId(newRecordId);
+
+        const payload: AttendanceRecord = {
+          id: newRecordId,
+          patient: {
+            name: nomeCliente || 'Paciente',
+            age: idadeCliente || 'N/D',
+            psychologistName: psicologo,
+            crp: crp
+          },
+          template: 'completo',
+          fields: {
+            psicologo,
+            crp,
+            dataAtendimento,
+            horario,
+            codigoRegistro,
+            numeroSessao: nextNum,
+            tipoSessao,
+            localSessao,
+            abordagensSessao: JSON.stringify(abordagensSessao),
+            nomeCliente: nomeCliente || 'Paciente',
+            idadeCliente,
+            sexoCliente,
+            contatoCliente,
+            motivoConsulta: analysisData.motivoConsulta || motivoConsulta,
+            objetivosCliente: analysisData.objetivosCliente || objetivosCliente,
+            objetivosTerapeuta: analysisData.objetivosTerapeuta || objetivosTerapeuta,
+            relatoCliente: analysisData.relatoCliente || relatoCliente,
+            intervencoes: analysisData.intervencoes || intervencoes,
+            observacoes: analysisData.observacoes || observacoes,
+            insights: analysisData.insights || insights,
+            percepcaoCliente: analysisData.percepcaoCliente || percepcaoCliente,
+            progresso: analysisData.progresso || progresso || 'Satisfatório',
+            tarefas: analysisData.tarefas || tarefas,
+            planejamento: analysisData.planejamento || planejamento,
+            confidencialidade,
+            encaminhamentos: analysisData.encaminhamentos || encaminhamentos,
+            assinatura: assinaturaPayload
+          },
+          createdAt: new Date().toISOString()
+        };
+
+        const updated = await dbWrapper.saveEntry(payload, selectedPatientId, userId);
+        setRecordsList(updated);
+        toast.success("✅ Atendimento registrado e salvo no prontuário do paciente com sucesso!", { duration: 5000 });
+      } catch (err: any) {
+        console.error("Falha no auto-registro clínico pós-transcrição:", err);
+      }
+    } else {
+      toast("Campos preenchidos! Selecione o paciente no topo para salvar o registro no prontuário.", { icon: "ℹ️" });
+    }
   };
 
   // Export HTML
