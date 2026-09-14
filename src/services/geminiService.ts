@@ -2,7 +2,13 @@ import { GoogleGenAI as OriginalGoogleGenAI, Type } from "@google/genai";
 import { db } from "../lib/db";
 import { decryptData } from "../lib/crypto";
 
-const GEMINI_MODELS = [
+export const GEMINI_MODELS = [
+  "gemini-3.1-pro",
+  "gemini-3.5-flash",
+  "gemini-3.0-pro",
+  "gemini-3.0-flash",
+  "gemini-3-flash-preview",
+  "gemini-3-pro-preview",
   "gemini-2.5-pro",
   "gemini-2.5-flash",
   "gemini-2.0-flash",
@@ -10,16 +16,22 @@ const GEMINI_MODELS = [
   "gemini-1.5-flash"
 ];
 
-class GoogleGenAI extends OriginalGoogleGenAI {
+export class GoogleGenAI extends OriginalGoogleGenAI {
   constructor(options: any) {
     super(options);
     const originalGenerateContent = this.models.generateContent.bind(this.models);
     this.models.generateContent = async (params: any) => {
       let lastError: any = null;
-      // Prioriza o modelo explicitamente solicitado pela chamada, e usa os demais como fallback ordenado
-      const candidateModels = params?.model
-        ? [params.model, ...GEMINI_MODELS.filter(m => m !== params.model)]
-        : GEMINI_MODELS;
+      const requestedModel = params?.model;
+      let candidateModels: string[];
+
+      // Se um modelo da família 3.x foi explicitamente solicitado, começa por ele e depois segue a hierarquia
+      if (requestedModel && requestedModel.startsWith("gemini-3")) {
+        candidateModels = [requestedModel, ...GEMINI_MODELS.filter(m => m !== requestedModel)];
+      } else {
+        // Garante que todas as versões 3.0+ sejam SEMPRE testadas antes de qualquer versão 2.x ou 1.x
+        candidateModels = GEMINI_MODELS;
+      }
 
       for (const modelName of candidateModels) {
         try {
@@ -72,7 +84,7 @@ export async function generateContentWithSystemInstruction(prompt: string, syste
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     contents: prompt,
     config: { systemInstruction }
   });
@@ -89,7 +101,7 @@ export async function transcribeAudioFile(audioBase64: string, mimeType: string)
     NÃO envolva a resposta com marcações de blocos de código como \`\`\`html.
   `;
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     contents: [
       { text: "Por favor, realize a transcrição clínica estruturada deste áudio." },
       { inlineData: { mimeType, data: audioBase64 } }
@@ -899,7 +911,7 @@ Retorne em formato JSON estrito conforme o schema.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -992,7 +1004,7 @@ Retorne em formato JSON estrito conforme o schema.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -1068,7 +1080,7 @@ export async function transcribeAudioChunk(audioBase64: string, mimeType: string
   `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.5-flash",
     contents: [
       { text: "Transcreva fielmente este segmento de áudio de atendimento clínico de psicologia." },
       { inlineData: { mimeType, data: audioBase64 } }
@@ -1137,7 +1149,7 @@ IMPORTANTE DE FORMATAÇÃO:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-pro",
+    model: "gemini-3.1-pro",
     contents: prompt,
     config: {
       maxOutputTokens: 8192,

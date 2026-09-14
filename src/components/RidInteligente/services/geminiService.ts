@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI } from "../../../services/geminiService";
 import { RidEntry } from "../types";
 import { db } from "../../../lib/db";
 import { decryptData } from "../../../lib/crypto";
@@ -60,7 +60,7 @@ export async function analyzeRid(data: Omit<RidEntry, 'id' | 'date' | 'analysis'
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
     });
     
