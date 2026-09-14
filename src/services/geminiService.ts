@@ -3,11 +3,11 @@ import { db } from "../lib/db";
 import { decryptData } from "../lib/crypto";
 
 const GEMINI_MODELS = [
+  "gemini-2.5-pro",
   "gemini-2.5-flash",
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-2.5-pro",
-  "gemini-1.5-pro"
+  "gemini-1.5-pro",
+  "gemini-1.5-flash"
 ];
 
 class GoogleGenAI extends OriginalGoogleGenAI {
@@ -16,7 +16,12 @@ class GoogleGenAI extends OriginalGoogleGenAI {
     const originalGenerateContent = this.models.generateContent.bind(this.models);
     this.models.generateContent = async (params: any) => {
       let lastError: any = null;
-      for (const modelName of GEMINI_MODELS) {
+      // Prioriza o modelo explicitamente solicitado pela chamada, e usa os demais como fallback ordenado
+      const candidateModels = params?.model
+        ? [params.model, ...GEMINI_MODELS.filter(m => m !== params.model)]
+        : GEMINI_MODELS;
+
+      for (const modelName of candidateModels) {
         try {
           console.log(`[Resiliência] Tentando modelo Gemini: ${modelName}`);
           return await originalGenerateContent({
@@ -1132,7 +1137,7 @@ IMPORTANTE DE FORMATAÇÃO:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.5-pro",
     contents: prompt,
     config: {
       maxOutputTokens: 8192,
