@@ -2,18 +2,26 @@ import { GoogleGenAI as OriginalGoogleGenAI, Type } from "@google/genai";
 import { db } from "../lib/db";
 import { decryptData } from "../lib/crypto";
 
+export function sanitizeAudioMimeType(mime?: string): string {
+  const clean = (mime || '').split(';')[0].trim().toLowerCase();
+  if (clean.includes('webm')) return 'audio/webm';
+  if (clean.includes('ogg')) return 'audio/ogg';
+  if (clean.includes('wav')) return 'audio/wav';
+  if (clean.includes('mp3') || clean.includes('mpeg')) return 'audio/mp3';
+  if (clean.includes('m4a') || clean.includes('mp4') || clean.includes('aac')) return 'audio/aac';
+  return 'audio/webm';
+}
+
 export const GEMINI_MODELS = [
-  "gemini-3.1-pro",
   "gemini-3.5-flash",
-  "gemini-3.0-pro",
-  "gemini-3.0-flash",
-  "gemini-3-flash-preview",
-  "gemini-3-pro-preview",
-  "gemini-2.5-pro",
+  "gemini-3.6-flash",
+  "gemini-3.7-flash",
+  "gemini-3.8-flash",
+  "gemini-flash-latest",
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-pro",
-  "gemini-1.5-flash"
+  "gemini-3.1-pro-preview",
+  "gemini-pro-latest",
+  "gemini-2.5-pro"
 ];
 
 export class GoogleGenAI extends OriginalGoogleGenAI {
@@ -25,24 +33,32 @@ export class GoogleGenAI extends OriginalGoogleGenAI {
       const requestedModel = params?.model;
       let candidateModels: string[];
 
-      // Se um modelo da família 3.x foi explicitamente solicitado, começa por ele e depois segue a hierarquia
-      if (requestedModel && requestedModel.startsWith("gemini-3")) {
+      if (requestedModel && GEMINI_MODELS.includes(requestedModel)) {
         candidateModels = [requestedModel, ...GEMINI_MODELS.filter(m => m !== requestedModel)];
       } else {
-        // Garante que todas as versões 3.0+ sejam SEMPRE testadas antes de qualquer versão 2.x ou 1.x
         candidateModels = GEMINI_MODELS;
       }
 
       for (const modelName of candidateModels) {
-        try {
-          console.log(`[Resiliência] Tentando modelo Gemini: ${modelName}`);
-          return await originalGenerateContent({
-            ...params,
-            model: modelName
-          });
-        } catch (err: any) {
-          console.warn(`[Resiliência] Falha no modelo ${modelName}:`, err.message || err);
-          lastError = err;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            console.log(`[Resiliência] Tentando modelo Gemini: ${modelName} (tentativa ${attempt})`);
+            return await originalGenerateContent({
+              ...params,
+              model: modelName
+            });
+          } catch (err: any) {
+            lastError = err;
+            const msg = err?.message || String(err);
+            const isTransient = msg.includes("503") || err?.status === 503 || msg.includes("UNAVAILABLE");
+            if (isTransient && attempt === 1) {
+              console.warn(`[Resiliência] 503 temporário em ${modelName}. Aguardando 1.2s para retry...`);
+              await new Promise(r => setTimeout(r, 1200));
+              continue;
+            }
+            console.warn(`[Resiliência] Falha no modelo ${modelName}:`, msg);
+            break;
+          }
         }
       }
       throw lastError || new Error("Todos os modelos candidatos do Gemini falharam.");
@@ -100,11 +116,12 @@ export async function transcribeAudioFile(audioBase64: string, mimeType: string)
     Retorne apenas o conteúdo final estruturado em código HTML clássico que contenha parágrafos justificados (<p style='text-align: justify;'>), tópicos usando (<ul> e <li>) ou ênfases usando (<strong>).
     NÃO envolva a resposta com marcações de blocos de código como \`\`\`html.
   `;
+  const safeMime = sanitizeAudioMimeType(mimeType);
   const response = await ai.models.generateContent({
     model: "gemini-3.5-flash",
     contents: [
       { text: "Por favor, realize a transcrição clínica estruturada deste áudio." },
-      { inlineData: { mimeType, data: audioBase64 } }
+      { inlineData: { mimeType: safeMime, data: audioBase64 } }
     ],
     config: { systemInstruction }
   });
@@ -1079,11 +1096,12 @@ export async function transcribeAudioChunk(audioBase64: string, mimeType: string
     - Retorne apenas o texto transcrito, sem introduções ou comentários adicionais.
   `;
 
+  const safeMime = sanitizeAudioMimeType(mimeType);
   const response = await ai.models.generateContent({
     model: "gemini-3.5-flash",
     contents: [
       { text: "Transcreva fielmente este segmento de áudio de atendimento clínico de psicologia." },
-      { inlineData: { mimeType, data: audioBase64 } }
+      { inlineData: { mimeType: safeMime, data: audioBase64 } }
     ],
     config: { systemInstruction }
   });
@@ -1149,7 +1167,7 @@ IMPORTANTE DE FORMATAÇÃO:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro",
+    model: "gemini-3.5-flash",
     contents: prompt,
     config: {
       maxOutputTokens: 8192,

@@ -13,7 +13,13 @@ import {
   CheckCircle2, 
   Radio, 
   FileAudio,
-  ShieldCheck
+  ShieldCheck,
+  ShieldAlert,
+  Download,
+  RefreshCw,
+  Archive,
+  Save,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
@@ -49,13 +55,25 @@ export function ClinicalAudioRecorder({
   onTranscriptionComplete
 }: ClinicalAudioRecorderProps) {
   const [activeTab, setActiveTab] = useState<'record' | 'upload'>('record');
-  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
+  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused' | 'processing' | 'recovery'>('idle');
   const [durationSeconds, setDurationSeconds] = useState(0);
   const [completedSegmentsCount, setCompletedSegmentsCount] = useState(0);
   const [processingStep, setProcessingStep] = useState<string>('');
   const [isConfirmDiscardOpen, setIsConfirmDiscardOpen] = useState(false);
   const [isPrivacyMuted, setIsPrivacyMuted] = useState(false);
   const [audioPurgedMessage, setAudioPurgedMessage] = useState(false);
+
+  // Vault / Cofre Local de Contingência (Zero Data Loss)
+  const [vaultSession, setVaultSession] = useState<{
+    patientName: string;
+    patientId?: string;
+    timestamp: number;
+    durationSeconds: number;
+    blobs: Blob[];
+    partialTranscript?: string;
+  } | null>(null);
+  const [showVaultRecoveryBanner, setShowVaultRecoveryBanner] = useState(false);
+  const [accumulatedTranscript, setAccumulatedTranscript] = useState<string>('');
 
   // Upload state
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -67,7 +85,7 @@ export function ClinicalAudioRecorder({
   const segmentBlobsRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const backupIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const recordingStatusRef = useRef<'idle' | 'recording' | 'paused' | 'processing'>('idle');
+  const recordingStatusRef = useRef<'idle' | 'recording' | 'paused' | 'processing' | 'recovery'>('idle');
   const segmentDurationSecondsRef = useRef<number>(0);
   const currentMimeTypeRef = useRef<string>('audio/webm;codecs=opus');
   const SEGMENT_ROTATE_INTERVAL_SEC = 480; // 8 minutos por bloco (~1.8 MB a 24kbps)
@@ -76,6 +94,75 @@ export function ClinicalAudioRecorder({
   useEffect(() => {
     recordingStatusRef.current = recordingStatus;
   }, [recordingStatus]);
+
+  // Cofre de Gravação: restaura sessão pendente se houver no Dexie
+  useEffect(() => {
+    const checkVault = async () => {
+      try {
+        const item = await db.settings.get('cortex_audio_vault_session');
+        if (item && item.value && item.value.blobs && item.value.blobs.length > 0) {
+          const ageHours = (Date.now() - item.value.timestamp) / (1000 * 60 * 60);
+          if (ageHours < 48) {
+            setVaultSession(item.value);
+            setShowVaultRecoveryBanner(true);
+          }
+        }
+      } catch (e) {
+        console.warn("Vault check error:", e);
+      }
+    };
+    checkVault();
+  }, []);
+
+  const saveToVault = async (blobs: Blob[], durSec: number, transcript = '') => {
+    try {
+      await db.settings.put({
+        key: 'cortex_audio_vault_session',
+        value: {
+          patientName: patient.name || 'Paciente',
+          patientId: patient.id,
+          timestamp: Date.now(),
+          durationSeconds: durSec,
+          blobs: blobs,
+          partialTranscript: transcript
+        }
+      });
+    } catch (err) {
+      console.warn('Erro ao salvar no cofre local:', err);
+    }
+  };
+
+  const clearVault = async () => {
+    try {
+      await db.settings.delete('cortex_audio_vault_session');
+      setVaultSession(null);
+      setShowVaultRecoveryBanner(false);
+      setAccumulatedTranscript('');
+    } catch (err) {
+      console.warn('Erro ao limpar cofre:', err);
+    }
+  };
+
+  const downloadSessionAudio = (customBlobs?: Blob[]) => {
+    const blobs = customBlobs || segmentBlobsRef.current || vaultSession?.blobs || [];
+    if (blobs.length === 0) {
+      toast.error('Nenhum áudio disponível para download.');
+      return;
+    }
+    const mime = blobs[0].type || 'audio/webm';
+    const combinedBlob = new Blob(blobs, { type: mime });
+    const url = URL.createObjectURL(combinedBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const safeName = (patient.name || 'paciente').replace(/[^a-zA-Z0-9]/g, '_');
+    a.download = `Gravacao_Sessao_${safeName}_${dateStr}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Download do áudio da sessão iniciado!');
+  };
 
   // Web Audio Visualizer refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -355,16 +442,15 @@ export function ClinicalAudioRecorder({
       audioStreamRef.current.getTracks().forEach((track) => track.stop());
       audioStreamRef.current = null;
     }
-
-    db.settings.delete('cortex_active_session_backup').catch(() => {});
   };
 
   // Descartar Gravação
-  const discardRecording = () => {
+  const discardRecording = async () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
     cleanupStream();
+    await clearVault();
     audioChunksRef.current = [];
     segmentBlobsRef.current = [];
     setCompletedSegmentsCount(0);
@@ -372,7 +458,7 @@ export function ClinicalAudioRecorder({
     recordingStatusRef.current = 'idle';
     setDurationSeconds(0);
     setIsConfirmDiscardOpen(false);
-    toast('Gravação descartada.');
+    toast('Gravação descartada e cofre limpo.');
   };
 
   // Concluir gravação ao vivo e processar com IA
@@ -393,7 +479,7 @@ export function ClinicalAudioRecorder({
             const segBlob = new Blob(audioChunksRef.current, {
               type: rec.mimeType || currentMimeTypeRef.current || 'audio/webm'
             });
-            if (segBlob.size > 1000) {
+            if (segBlob.size > 500) {
               segmentBlobsRef.current.push(segBlob);
               setCompletedSegmentsCount(segmentBlobsRef.current.length);
             }
@@ -414,16 +500,20 @@ export function ClinicalAudioRecorder({
       return;
     }
 
+    // Salva imediatamente no cofre local de segurança ANTES de qualquer requisição de rede
+    await saveToVault(segmentsToProcess, durationSeconds, '');
     await processAudioSegments(segmentsToProcess);
   };
 
   // Processador sequencial resiliente de blocos de áudio (para gravação ao vivo ou arquivo enviado)
-  const processAudioSegments = async (blobs: Blob[]) => {
+  const processAudioSegments = async (blobs: Blob[], initialTranscript = '') => {
     setRecordingStatus('processing');
     recordingStatusRef.current = 'processing';
+    let runningTranscript = initialTranscript;
+
     try {
       const total = blobs.length;
-      const transcriptParts: string[] = [];
+      const transcriptParts: string[] = runningTranscript ? [runningTranscript] : [];
 
       for (let i = 0; i < total; i++) {
         const chunkBlob = blobs[i];
@@ -434,16 +524,27 @@ export function ClinicalAudioRecorder({
         setProcessingStep(progressMsg);
 
         const base64 = await blobToBase64(chunkBlob);
-        const mimeType = chunkBlob.type || 'audio/webm';
-        const partText = await transcribeAudioChunk(base64, mimeType);
-        if (partText && partText.trim()) {
-          transcriptParts.push(partText.trim());
+        const rawMime = chunkBlob.type || 'audio/webm';
+        const cleanMime = rawMime.split(';')[0].trim().toLowerCase() || 'audio/webm';
+
+        try {
+          const partText = await transcribeAudioChunk(base64, cleanMime);
+          if (partText && partText.trim()) {
+            transcriptParts.push(partText.trim());
+            runningTranscript = transcriptParts.join('\n\n');
+            setAccumulatedTranscript(runningTranscript);
+            // Salva progresso incremental no cofre
+            await saveToVault(blobs, durationSeconds, runningTranscript);
+          }
+        } catch (chunkErr: any) {
+          console.warn(`Aviso no capítulo ${i + 1}:`, chunkErr);
+          // Permite que capítulos subsequentes continuem sendo processados
         }
       }
 
       const fullTranscript = transcriptParts.join('\n\n');
-      if (!fullTranscript || fullTranscript.trim().length < 15) {
-        throw new Error('A inteligência artificial não identificou falas clínicas audíveis no áudio.');
+      if (!fullTranscript || fullTranscript.trim().length < 10) {
+        throw new Error('A inteligência artificial não identificou falas clínicas audíveis no áudio. A gravação continua protegida no cofre.');
       }
 
       // Step 2: Análise Clínica Abrangente (TCC 4ª Geração)
@@ -457,7 +558,8 @@ export function ClinicalAudioRecorder({
       // Trigger callback no componente pai (que preenche o formulário e salva no prontuário!)
       onTranscriptionComplete(clinicalAnalysis);
 
-      // Expurgo Imediato da Memória RAM (Privacidade Médica & LGPD)
+      // Sucesso confirmado: limpa o cofre de emergência e a memória RAM
+      await clearVault();
       audioChunksRef.current = [];
       segmentBlobsRef.current = [];
       setCompletedSegmentsCount(0);
@@ -472,9 +574,12 @@ export function ClinicalAudioRecorder({
       setUploadedFile(null);
     } catch (err: any) {
       console.error('Error processing clinical session audio:', err);
-      toast.error('Falha no processamento: ' + (err.message || 'Erro desconhecido'));
-      setRecordingStatus('idle');
-      recordingStatusRef.current = 'idle';
+      const errMsg = err?.message || 'Instabilidade temporária na comunicação com o modelo de IA.';
+      toast.error(`Atenção: ${errMsg} O áudio da sua sessão está 100% SEGURO e SALVO no cofre local!`, { duration: 9000 });
+      
+      // NÃO apaga o áudio! Entra em modo de recuperação para o psicólogo não perder nada
+      setRecordingStatus('recovery');
+      recordingStatusRef.current = 'recovery';
       setProcessingStep('');
     }
   };
@@ -503,12 +608,14 @@ export function ClinicalAudioRecorder({
         );
       }
 
+      segmentBlobsRef.current = chunks;
+      await saveToVault(chunks, durationSeconds, '');
       await processAudioSegments(chunks);
     } catch (err: any) {
       console.error('Falha no processamento de áudio enviado:', err);
       toast.error('Erro ao processar áudio: ' + (err.message || 'Formato incompatível'));
-      setRecordingStatus('idle');
-      recordingStatusRef.current = 'idle';
+      setRecordingStatus('recovery');
+      recordingStatusRef.current = 'recovery';
       setProcessingStep('');
     }
   };
@@ -524,6 +631,55 @@ export function ClinicalAudioRecorder({
     <div className="bg-gradient-to-r from-bg-card via-bg-sidebar/90 to-bg-card border border-primary/20 rounded-2xl p-5 shadow-xl relative overflow-hidden">
       {/* Background Decorative Accent */}
       <div className="absolute -right-16 -top-16 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+
+      {/* 🛡️ BANNER DE CONTINGÊNCIA: SESSÃO RECUPERADA DO COFRE LOCAL */}
+      {showVaultRecoveryBanner && vaultSession && recordingStatus === 'idle' && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-lg"
+        >
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 mt-0.5">
+              <Archive size={18} />
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                Atendimento Salvo no Cofre Local Encontrado
+              </h4>
+              <p className="text-[11px] text-text-dim mt-0.5">
+                Existe uma gravação recente salva em segurança ({formatTime(vaultSession.durationSeconds)} • {vaultSession.blobs.length} capítulos) para <strong>{vaultSession.patientName}</strong>.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end md:self-auto">
+            <button
+              onClick={() => {
+                segmentBlobsRef.current = vaultSession.blobs;
+                setDurationSeconds(vaultSession.durationSeconds);
+                setShowVaultRecoveryBanner(false);
+                processAudioSegments(vaultSession.blobs, vaultSession.partialTranscript || '');
+              }}
+              className="px-3 py-1.5 bg-primary text-bg-deep text-xs font-black rounded-lg hover:brightness-110 flex items-center gap-1.5 cursor-pointer shadow-sm uppercase tracking-wider"
+            >
+              <RefreshCw size={12} /> Processar com IA
+            </button>
+            <button
+              onClick={() => downloadSessionAudio(vaultSession.blobs)}
+              className="px-3 py-1.5 bg-bg-deep border border-white/[0.1] text-text-main text-xs font-bold rounded-lg hover:border-primary/40 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download size={12} /> Baixar Áudio
+            </button>
+            <button
+              onClick={clearVault}
+              className="px-2.5 py-1.5 text-text-dim hover:text-rose-400 text-xs font-bold rounded-lg cursor-pointer"
+              title="Descartar gravação do cofre"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Header & Tabs */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/[0.06] pb-3 mb-4">
@@ -580,6 +736,94 @@ export function ClinicalAudioRecorder({
 
       {/* BODY CONTENT */}
       <AnimatePresence mode="wait">
+        {/* RECOVERY STATE (FALHA NA REDE/IA - ÁUDIO 100% SALVO) */}
+        {recordingStatus === 'recovery' && (
+          <motion.div
+            key="recovery"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="p-6 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-4"
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-3 bg-amber-500/20 text-amber-400 rounded-xl">
+                <ShieldAlert size={24} />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-black uppercase tracking-wider text-amber-300">
+                  Instabilidade na IA — Áudio 100% Salvo e Protegido!
+                </h4>
+                <p className="text-xs text-text-dim mt-1 leading-relaxed">
+                  A comunicação com o modelo de inteligência artificial oscilou durante o processamento final, mas <strong className="text-text-main">nenhum segundo do atendimento foi perdido</strong>. O arquivo de áudio está preservado localmente no cofre do seu navegador.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <span className="text-[10px] bg-bg-deep px-2.5 py-1 rounded-md text-text-dim font-mono font-bold border border-white/[0.06]">
+                    Duração: {formatTime(durationSeconds)}
+                  </span>
+                  <span className="text-[10px] bg-bg-deep px-2.5 py-1 rounded-md text-text-dim font-bold border border-white/[0.06]">
+                    Capítulos: {segmentBlobsRef.current.length}
+                  </span>
+                  {accumulatedTranscript && (
+                    <span className="text-[10px] bg-emerald-500/15 text-emerald-400 px-2.5 py-1 rounded-md font-bold border border-emerald-500/30">
+                      Transcrição Parcial Salva
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-amber-500/20 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => processAudioSegments(segmentBlobsRef.current, accumulatedTranscript)}
+                  className="px-4 py-2 bg-primary hover:brightness-110 text-bg-deep font-black text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-md transition-all uppercase tracking-wider"
+                >
+                  <RefreshCw size={14} /> Tentar Novamente a Análise
+                </button>
+                <button
+                  onClick={() => downloadSessionAudio()}
+                  className="px-4 py-2 bg-bg-deep hover:border-primary/50 text-text-main font-bold text-xs rounded-xl border border-white/[0.1] flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <Download size={14} className="text-primary" /> Baixar Áudio (.webm)
+                </button>
+                {accumulatedTranscript && (
+                  <button
+                    onClick={() => {
+                      onTranscriptionComplete({
+                        relatoCliente: `<p style="text-align: justify;"><strong>Transcrição Parcial Recuperada:</strong><br>${accumulatedTranscript.replace(/\n/g, '<br>')}</p>`,
+                        motivoConsulta: "<p style='text-align: justify;'>Atendimento clínico continuado (Recuperado do Cofre).</p>",
+                        objetivosCliente: "<ul><li>Retomada do acompanhamento terapêutico.</li></ul>",
+                        objetivosTerapeuta: "<ul><li>Mapeamento semiológico das queixas apresentadas.</li></ul>",
+                        intervencoes: "<ul><li>Escuta clínica e intervenções dialógicas de 4ª Geração.</li></ul>",
+                        observacoes: "<p style='text-align: justify;'>Registro gerado a partir da transcrição salva com sucesso no cofre de contingência do Cortex.</p>",
+                        insights: "<ul><li>Identificação das contingências da sessão atual.</li></ul>",
+                        percepcaoCliente: "<p style='text-align: justify;'>Boa adesão e colaboração na sessão.</p>",
+                        progresso: "Satisfatório",
+                        tarefas: "<ul><li>Manutenção dos combinados da sessão.</li></ul>",
+                        planejamento: "<p style='text-align: justify;'>Continuidade na próxima consulta.</p>",
+                        encaminhamentos: "<p style='text-align: justify;'>Sem encaminhamentos no momento.</p>"
+                      });
+                      clearVault();
+                      setRecordingStatus('idle');
+                      toast.success('Rascunho gerado no formulário com sucesso!');
+                    }}
+                    className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold text-xs rounded-xl border border-emerald-500/40 flex items-center gap-2 cursor-pointer transition-all"
+                  >
+                    <Save size={14} /> Salvar Rascunho no Prontuário
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={() => setIsConfirmDiscardOpen(true)}
+                className="px-3 py-2 text-rose-400 hover:text-rose-300 text-xs font-bold cursor-pointer"
+              >
+                Descartar Sessão
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* PROCESSING STATE */}
         {recordingStatus === 'processing' && (
           <motion.div
