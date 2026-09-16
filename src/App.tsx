@@ -13,6 +13,7 @@ import Records from './components/Records/Records';
 import Finance from './components/Finance/Finance';
 import Settings from './components/Settings/Settings';
 import Dashboard from './components/Dashboard/Dashboard';
+import PatientSelfRegistration from './components/Patients/PatientSelfRegistration';
 
 // Lazy loaded heavy tools and secondary sections (Code-Splitting)
 const Reports = React.lazy(() => import('./components/Reports/Reports'));
@@ -66,6 +67,23 @@ export default function App() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Check for patient self-registration link in URL (?cadastro_paciente=... ou ?cadastro=...)
+  const [selfRegistrationToken] = useState<string | null>(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const token = searchParams.get('cadastro_paciente') || searchParams.get('cadastro');
+      if (token) return token;
+
+      if (window.location.hash.includes('cadastro_paciente=') || window.location.hash.includes('cadastro=')) {
+        const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+        return hashParams.get('cadastro_paciente') || hashParams.get('cadastro');
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  });
 
   // === UNIFIED WINDOW MANAGER ===
   interface ToolWindow {
@@ -401,6 +419,10 @@ export default function App() {
     setCurrentUser(null);
     localStorage.removeItem('psiCurrentUsername_v9');
   };
+
+  if (selfRegistrationToken) {
+    return <PatientSelfRegistration token={selfRegistrationToken} />;
+  }
 
   if (isLoading) {
     return (

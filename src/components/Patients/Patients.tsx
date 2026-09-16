@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Search, UserPlus, Filter, Trash2, Edit2, FileText, Calendar as CalendarIcon, ExternalLink, LayoutGrid, List, MessageCircle, Mail, Shield, Users } from 'lucide-react';
+import { Plus, Search, UserPlus, Filter, Trash2, Edit2, FileText, Calendar as CalendarIcon, ExternalLink, LayoutGrid, List, MessageCircle, Mail, Shield, Users, Link as LinkIcon, Share2 } from 'lucide-react';
 import { db, type Patient, logAction } from '../../lib/db';
 import { cn, formatDate, calculateAge, formatCurrency } from '../../lib/utils';
 import { syncService } from '../../lib/syncService';
@@ -8,6 +8,8 @@ import { auth } from '../../lib/firebase';
 import PatientModal from './PatientModal';
 import ConfirmModal from '../ui/ConfirmModal';
 import useConfirm from '../../hooks/useConfirm';
+import { toast } from 'react-hot-toast';
+import { encodeRegistrationToken } from './PatientSelfRegistration';
 
 interface PatientsProps {
   onOpenProntuario?: (patientId: string) => void;
@@ -57,6 +59,48 @@ export default function Patients({ onOpenProntuario }: PatientsProps) {
 
   const handleEmail = (email: string) => {
     window.location.href = `mailto:${email}`;
+  };
+
+  const handleSendRegistrationLink = async (patient: Patient) => {
+    const firstName = (patient.nome || '').trim().split(/\s+/)[0] || '';
+    const cleanPhone = (patient.telefone || '').replace(/\D/g, '');
+    if (firstName.length < 2 || cleanPhone.length < 10) {
+      toast.error("O paciente precisa ter pelo menos o primeiro nome e o número de WhatsApp com DDD para envio do link.");
+      return;
+    }
+
+    try {
+      const items = await db.settings.toArray();
+      const settingsMap: any = {};
+      items.forEach(it => settingsMap[it.key] = it.value);
+      const clinicTitle = (!settingsMap.appTitle || settingsMap.appTitle === "Sistema de Gestão para Psicólogos")
+        ? 'Consultório de Psicologia'
+        : settingsMap.appTitle;
+
+      const token = encodeRegistrationToken({
+        id: patient.id,
+        primeiroNome: firstName,
+        telefone: cleanPhone,
+        psicologoNome: clinicTitle,
+        psicologoTelefone: settingsMap.psychPhone || '',
+        ts: Date.now()
+      });
+
+      const baseUrl = window.location.origin + window.location.pathname;
+      const link = `${baseUrl}?cadastro_paciente=${encodeURIComponent(token)}`;
+      const message = `Olá, ${firstName}! Para agilizar seu atendimento e formalizar seu prontuário em ${clinicTitle}, por favor preencha seus dados cadastrais através deste link seguro: ${link}`;
+
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(link).catch(() => {});
+      }
+
+      const waUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
+      window.open(waUrl, '_blank');
+      toast.success("Link copiado e WhatsApp aberto!");
+    } catch (err) {
+      console.error("Erro ao gerar link de auto-cadastro:", err);
+      toast.error("Erro ao gerar link.");
+    }
   };
 
   const handleDelete = (id: string, nome: string) => {
@@ -237,15 +281,26 @@ export default function Patients({ onOpenProntuario }: PatientsProps) {
                     {patient.telefone && (
                       <button 
                         onClick={() => handleWhatsApp(patient.telefone!, patient.nome)}
-                        className="w-9 h-9 flex items-center justify-center bg-green-500/10 text-green-500 rounded-xl border border-green-500/20 hover:bg-green-500 hover:text-white transition-all shadow-lg shadow-green-500/5"
+                        title="Enviar mensagem WhatsApp"
+                        className="w-9 h-9 flex items-center justify-center bg-green-500/10 text-green-500 rounded-xl border border-green-500/20 hover:bg-green-500 hover:text-white transition-all shadow-lg shadow-green-500/5 cursor-pointer"
                       >
                         <MessageCircle size={14} />
+                      </button>
+                    )}
+                    {patient.telefone && (
+                      <button 
+                        onClick={() => handleSendRegistrationLink(patient)}
+                        title="Enviar link de auto-cadastro via WhatsApp"
+                        className="w-9 h-9 flex items-center justify-center bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/5 cursor-pointer"
+                      >
+                        <Share2 size={14} />
                       </button>
                     )}
                     {patient.email && (
                       <button 
                         onClick={() => handleEmail(patient.email!)}
-                        className="w-9 h-9 flex items-center justify-center bg-primary/10 text-primary rounded-xl border border-primary/20 hover:bg-primary hover:text-white transition-all shadow-lg shadow-primary/5"
+                        title="Enviar e-mail"
+                        className="w-9 h-9 flex items-center justify-center bg-primary/10 text-primary rounded-xl border border-primary/20 hover:bg-primary hover:text-white transition-all shadow-lg shadow-primary/5 cursor-pointer"
                       >
                         <Mail size={14} />
                       </button>
@@ -365,6 +420,15 @@ export default function Patients({ onOpenProntuario }: PatientsProps) {
                     </td>
                     <td className="px-8 py-5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
+                        {patient.telefone && (
+                          <button
+                            onClick={() => handleSendRegistrationLink(patient)}
+                            className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest text-emerald-400 transition-all border border-emerald-500/20 cursor-pointer"
+                            title="Enviar link de auto-cadastro via WhatsApp"
+                          >
+                            <Share2 size={12} /> Auto-Cadastro
+                          </button>
+                        )}
                         {patient.telefone && (
                           <button
                             onClick={() => handleWhatsApp(patient.telefone!, patient.nome)}

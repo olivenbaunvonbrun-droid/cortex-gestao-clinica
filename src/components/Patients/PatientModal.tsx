@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Trash2, Plus, ExternalLink, Camera, FileText, Download, UserPlus, Users, Loader2 } from 'lucide-react';
+import { X, Save, Trash2, Plus, ExternalLink, Camera, FileText, Download, UserPlus, Users, Loader2, MessageCircle, Link as LinkIcon, ClipboardPaste, Check } from 'lucide-react';
 import { db, type Patient, logAction } from '../../lib/db';
 import { cn, safeUUID } from '../../lib/utils';
 import RichTextEditor from '../RichTextEditor';
@@ -7,6 +7,7 @@ import { CONTRACT_TEMPLATES, type ContractType } from '../../constants/contracts
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
 import { toast } from 'react-hot-toast';
+import { encodeRegistrationToken } from './PatientSelfRegistration';
 
 const BRAZILIAN_STATES = [
   { value: 'AC', label: 'Acre (AC)' },
@@ -86,6 +87,194 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
   const [selectedTemplate, setSelectedTemplate] = useState<ContractType | ''>('');
   const [settings, setSettings] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+
+  // Estados e controle do Link de Auto-Cadastro via WhatsApp
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [isCopiedLink, setIsCopiedLink] = useState(false);
+
+  // Validação reativa da condição solicitada:
+  // "onde o usuário precisará inserir pelo menos o primeiro nome e o número de Whatsapp do paciente para que a opção do envio do link esteja disponível"
+  const firstName = (formData.nome || '').trim().split(/\s+/)[0] || '';
+  const cleanPhone = (formData.telefone || '').replace(/\D/g, '');
+  const hasValidFirstName = firstName.length >= 2;
+  const hasValidPhone = cleanPhone.length >= 10;
+  const canSendRegistrationLink = hasValidFirstName && hasValidPhone;
+
+  const generateRegistrationLink = async () => {
+    let patientId = (formData as any).id || patient?.id;
+    if (!patientId) {
+      patientId = safeUUID();
+      const draftPatient: Patient = {
+        ...formData,
+        id: patientId,
+        dataCadastro: new Date().toISOString(),
+        status: formData.status || 'ativo'
+      } as Patient;
+      await db.pacientes.put(draftPatient);
+      setFormData(prev => ({ ...prev, id: patientId }));
+      const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
+      logAction(currentUser, `Iniciou pré-cadastro via WhatsApp para: ${formData.nome}`);
+      const firebaseUid = auth.currentUser?.uid;
+      if (firebaseUid) {
+        try {
+          await syncService.saveToCloud(firebaseUid, 'pacientes', draftPatient);
+        } catch (e) {
+          console.warn("Sync failed for draft patient:", e);
+        }
+      }
+    }
+
+    const clinicTitle = (!settings.appTitle || settings.appTitle === "Sistema de Gestão para Psicólogos")
+      ? 'Consultório de Psicologia'
+      : settings.appTitle;
+
+    const token = encodeRegistrationToken({
+      id: patientId,
+      primeiroNome: firstName,
+      telefone: cleanPhone,
+      psicologoNome: clinicTitle,
+      psicologoTelefone: settings.psychPhone || '',
+      ts: Date.now()
+    });
+
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?cadastro_paciente=${encodeURIComponent(token)}`;
+  };
+
+  const handleSendWhatsAppLink = async () => {
+    if (!canSendRegistrationLink) {
+      toast.error("Insira pelo menos o primeiro nome e o número de WhatsApp (com DDD) para habilitar o envio.");
+      return;
+    }
+    try {
+      const link = await generateRegistrationLink();
+      const clinicTitle = (!settings.appTitle || settings.appTitle === "Sistema de Gestão para Psicólogos")
+        ? 'nosso consultório'
+        : settings.appTitle;
+      const message = `Olá, ${firstName}! Para agilizar seu atendimento e formalizar seu prontuário em ${clinicTitle}, por favor preencha seus dados cadastrais através deste link seguro: ${link}`;
+
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(link).catch(() => {});
+      }
+
+      const waUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
+      window.open(waUrl, '_blank');
+      toast.success("Link copiado e WhatsApp aberto com sucesso!");
+    } catch (err) {
+      console.error("Erro ao gerar link de auto-cadastro:", err);
+      toast.error("Erro ao gerar link de cadastro.");
+    }
+  };
+
+  const handleCopyRegistrationLink = async () => {
+    if (!canSendRegistrationLink) {
+      toast.error("Insira pelo menos o primeiro nome e o WhatsApp para copiar o link.");
+      return;
+    }
+    try {
+      const link = await generateRegistrationLink();
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(link);
+        setIsCopiedLink(true);
+        setTimeout(() => setIsCopiedLink(false), 3000);
+        toast.success("Link de auto-cadastro copiado com sucesso!");
+      } else {
+        toast.success(`Link gerado: ${link}`);
+      }
+    } catch (err) {
+      console.error("Erro ao copiar link:", err);
+      toast.error("Erro ao gerar link.");
+    }
+  };
+
+  const applyImportedData = (textToParse: string) => {
+    if (!textToParse.trim()) {
+      toast.error("Cole o texto recebido do paciente.");
+      return;
+    }
+
+    // 1. Tenta extrair token base64 [CORTEX_CADASTRO:...]
+    const matchToken = textToParse.match(/\[CORTEX_CADASTRO:([a-zA-Z0-9+/=]+)\]/);
+    if (matchToken && matchToken[1]) {
+      try {
+        const payloadStr = decodeURIComponent(escape(atob(matchToken[1])));
+        const data = JSON.parse(payloadStr);
+        setFormData(prev => ({
+          ...prev,
+          nome: data.nome || prev.nome,
+          cpf: data.cpf || prev.cpf,
+          email: data.email || prev.email,
+          nascimento: data.nascimento || prev.nascimento,
+          endereco: data.endereco || prev.endereco,
+          estado: data.estado || prev.estado,
+        }));
+        toast.success("Dados do paciente importados com sucesso!");
+        setShowImportModal(false);
+        setImportText('');
+        return;
+      } catch (e) {
+        console.warn("Falha ao decodificar token, tentando parser por texto:", e);
+      }
+    }
+
+    // 2. Parser inteligente de texto regular
+    let foundAny = false;
+    const updates: Partial<Patient> = {};
+
+    const nomeMatch = textToParse.match(/(?:Nome|Nome Completo)\s*:\s*([^\n\r]+)/i);
+    if (nomeMatch && nomeMatch[1].trim()) {
+      updates.nome = nomeMatch[1].replace(/[*_]/g, '').trim();
+      foundAny = true;
+    }
+
+    const cpfMatch = textToParse.match(/CPF\s*:\s*([0-9.\-]+)/i);
+    if (cpfMatch && cpfMatch[1].trim()) {
+      updates.cpf = cpfMatch[1].replace(/[*_]/g, '').trim();
+      foundAny = true;
+    }
+
+    const emailMatch = textToParse.match(/(?:E-mail|Email)\s*:\s*([^\s\n\r*]+@[^\s\n\r*]+)/i);
+    if (emailMatch && emailMatch[1].trim()) {
+      updates.email = emailMatch[1].replace(/[*_]/g, '').trim();
+      foundAny = true;
+    }
+
+    const nascMatch = textToParse.match(/(?:Nascimento|Data de Nascimento)\s*:\s*([0-9]{2}[\/\-][0-9]{2}[\/\-][0-9]{4}|[0-9]{4}[\/\-][0-9]{2}[\/\-][0-9]{2})/i);
+    if (nascMatch && nascMatch[1].trim()) {
+      const rawDate = nascMatch[1].replace(/[*_]/g, '').trim();
+      if (rawDate.includes('/')) {
+        const parts = rawDate.split('/');
+        if (parts.length === 3) {
+          updates.nascimento = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+      } else {
+        updates.nascimento = rawDate;
+      }
+      foundAny = true;
+    }
+
+    const enderecoMatch = textToParse.match(/(?:Endereço|Endereco)\s*:\s*([^\n\r]+)/i);
+    if (enderecoMatch && enderecoMatch[1].trim()) {
+      updates.endereco = enderecoMatch[1].replace(/[*_]/g, '').trim();
+      foundAny = true;
+    }
+
+    const ufMatch = textToParse.match(/(?:Estado|UF|Estado \(UF\))\s*:\s*([A-Za-z]{2})/i);
+    if (ufMatch && ufMatch[1].trim()) {
+      updates.estado = ufMatch[1].replace(/[*_]/g, '').toUpperCase().trim();
+      foundAny = true;
+    }
+
+    if (foundAny) {
+      setFormData(prev => ({ ...prev, ...updates }));
+      toast.success("Dados identificados e importados para o formulário!");
+      setShowImportModal(false);
+      setImportText('');
+    } else {
+      toast.error("Não foi possível identificar campos cadastrais válidos no texto colado.");
+    }
+  };
 
   useEffect(() => {
     loadSettings();
@@ -615,6 +804,76 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
         <form onSubmit={handleSave} className="space-y-10">
           {activeTab === 'dados' && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+              
+              {/* Card de Auto-Cadastro pelo Paciente via WhatsApp */}
+              <div className="mb-8 p-5 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/25 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
+                    <MessageCircle size={24} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2.5">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                        Auto-Cadastro pelo Paciente via WhatsApp
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Link Seguro
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-text-dim mt-1 leading-relaxed max-w-xl">
+                      {canSendRegistrationLink ? (
+                        <span>
+                          Solicite que <strong className="text-text-main font-bold">{firstName}</strong> preencha os dados cadastrais complementares (sobrenome, CPF, e-mail, nascimento, endereço e UF) diretamente pelo celular.
+                        </span>
+                      ) : (
+                        <span className="text-amber-400/90 font-medium">
+                          Insira pelo menos o <strong>primeiro nome</strong> e o <strong>número de WhatsApp com DDD</strong> para liberar o envio do link.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                  <button
+                    type="button"
+                    disabled={!canSendRegistrationLink}
+                    onClick={handleSendWhatsAppLink}
+                    title={canSendRegistrationLink ? "Enviar link de cadastro via WhatsApp" : "Preencha primeiro nome e WhatsApp para habilitar"}
+                    className={cn(
+                      "flex-1 md:flex-initial px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-md",
+                      canSendRegistrationLink
+                        ? "bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white shadow-emerald-500/20 hover:-translate-y-0.5 cursor-pointer"
+                        : "bg-bg-sidebar border border-border-subtle text-text-dim/40 cursor-not-allowed opacity-50"
+                    )}
+                  >
+                    <MessageCircle size={15} />
+                    Enviar Link WhatsApp
+                  </button>
+
+                  {canSendRegistrationLink && (
+                    <button
+                      type="button"
+                      onClick={handleCopyRegistrationLink}
+                      title="Copiar link de auto-cadastro para a área de transferência"
+                      className="p-2.5 bg-bg-sidebar hover:bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 transition-all active:scale-95 cursor-pointer"
+                    >
+                      {isCopiedLink ? <Check size={16} className="text-emerald-400" /> : <LinkIcon size={16} />}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowImportModal(true)}
+                    title="Importar dados preenchidos pelo paciente a partir do WhatsApp"
+                    className="px-3.5 py-2.5 bg-bg-sidebar hover:bg-white/5 border border-border-subtle hover:border-text-dim/40 rounded-xl text-[10px] font-black uppercase tracking-widest text-text-dim hover:text-text-main transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  >
+                    <Download size={14} />
+                    Importar do WhatsApp
+                  </button>
+                </div>
+              </div>
+
               <div className="flex flex-col lg:flex-row gap-12 mb-10">
                 <div className="flex flex-col items-center gap-6">
                   <div className="relative w-40 h-40 rounded-[2.5rem] bg-bg-sidebar border-2 border-dashed border-border-subtle flex items-center justify-center overflow-hidden group shadow-inner">
@@ -1077,6 +1336,88 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
           </div>
         </form>
       </div>
+
+      {/* Modal de Importação de Dados do WhatsApp */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
+          <div className="max-w-lg w-full bg-bg-card border border-border-subtle rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-border-subtle mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Download size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-text-main">
+                    Importar Cadastro do Paciente
+                  </h3>
+                  <p className="text-[10px] text-text-dim font-bold uppercase tracking-wider">
+                    Via mensagem recebida pelo WhatsApp
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowImportModal(false); setImportText(''); }}
+                className="p-2 rounded-xl text-text-dim hover:text-text-main hover:bg-white/5 transition-all cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-text-dim leading-relaxed mb-4">
+              Cole abaixo a mensagem que o paciente enviou pelo WhatsApp após concluir o auto-cadastro. Os dados (nome, CPF, e-mail, data de nascimento, endereço e UF) serão preenchidos automaticamente no formulário.
+            </p>
+
+            <textarea
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder="Cole aqui a mensagem do paciente (ex: 'Olá! Preenchi meus dados cadastrais...')"
+              rows={6}
+              className="w-full p-4 bg-bg-sidebar border border-border-subtle rounded-2xl text-xs text-text-main placeholder:text-text-dim/30 outline-none focus:border-primary transition-all font-mono mb-4 resize-none"
+            />
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const clipText = await navigator.clipboard.readText();
+                    if (clipText) {
+                      setImportText(clipText);
+                      applyImportedData(clipText);
+                    }
+                  } catch {
+                    toast.error("Permissão da área de transferência não concedida. Cole o texto manualmente no campo acima.");
+                  }
+                }}
+                className="px-4 py-2.5 bg-bg-sidebar hover:bg-white/5 border border-border-subtle rounded-xl text-[10px] font-black uppercase tracking-widest text-text-dim hover:text-text-main transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <ClipboardPaste size={14} />
+                Colar da Transferência
+              </button>
+
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowImportModal(false); setImportText(''); }}
+                  className="px-4 py-2.5 bg-bg-sidebar hover:bg-white/5 border border-border-subtle rounded-xl text-[10px] font-black uppercase tracking-widest text-text-dim transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyImportedData(importText)}
+                  disabled={!importText.trim()}
+                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer active:scale-95"
+                >
+                  <Check size={14} />
+                  Aplicar Dados
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
