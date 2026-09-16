@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Wand2, Save, AlertCircle, Loader2, BrainCircuit, Activity, BookOpen, Search, X, Printer, Upload, Sparkles } from 'lucide-react';
+import { Wand2, Save, AlertCircle, Loader2, BrainCircuit, Activity, BookOpen, Search, X, Printer, Upload, Sparkles, HelpCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-hot-toast';
 import { RidEntry, AppSettings } from '../types';
 import { analyzeRid } from '../services/geminiService';
+import { generateClinicalFieldFilling, generateClinicalFieldQuestions } from '../../../services/geminiService';
+import { ClinicalQuestionsModal, QuestionItem } from '../../Common/ClinicalQuestionsModal';
 import { cn } from '../lib/utils';
 import { storage } from '../lib/storage';
 import { encryption } from '../lib/encryption';
@@ -80,12 +82,170 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [importFiles, setImportFiles] = useState<File[]>([]);
-  const [isImporting, setIsImporting] = useState(false);
+   const [isImporting, setIsImporting] = useState(false);
 
-  // Estados do Menu Suspenso de Registros de Atendimento da Sessão
+  // Controle de ativação do Dropdown de Sessões de Atendimento
+  const [isAutoFillEnabled, setIsAutoFillEnabled] = useState(false);
   const [sessionRecords, setSessionRecords] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [isExtractingSession, setIsExtractingSession] = useState(false);
+
+  // Estados de Preenchimento Clínico Direto e Perguntas Socráticas
+  const [fillingField, setFillingField] = useState<string | null>(null);
+  const [askingField, setAskingField] = useState<string | null>(null);
+  const [questionsModal, setQuestionsModal] = useState<{
+    isOpen: boolean;
+    fieldLabel: string;
+    fieldName: string;
+    questions: QuestionItem[];
+  }>({
+    isOpen: false,
+    fieldLabel: '',
+    fieldName: '',
+    questions: []
+  });
+
+  const handleFieldFill = async (fieldName: string, fieldLabel: string) => {
+    const situation = formData.situacao?.trim();
+    if (!situation && fieldName !== 'situacao') {
+      toast.error("Preencha primeiro o campo '1. Situação Ocorrente' para que a IA possa analisar e sugerir o preenchimento.", { duration: 4500 });
+      return;
+    }
+
+    setFillingField(fieldName);
+    try {
+      const res = await generateClinicalFieldFilling({
+        tool: 'RID',
+        field: fieldName,
+        fieldLabel,
+        situation: situation || formData.pensamento || 'Análise de situação clínica',
+        patientContext: {
+          name: patientName,
+          age: patientAge
+        }
+      });
+
+      if (fieldName === 'necessidade') {
+        if (res.tags && res.tags.length > 0) {
+          setFormData(prev => {
+            const existing = new Set(prev.necessidade);
+            res.tags!.forEach(t => existing.add(t));
+            return { ...prev, necessidade: Array.from(existing) };
+          });
+          toast.success("Necessidades identificadas e adicionadas!");
+        } else if (res.text) {
+          setFormData(prev => {
+            const existing = new Set(prev.necessidade);
+            existing.add(res.text!);
+            return { ...prev, necessidade: Array.from(existing) };
+          });
+          toast.success("Necessidade sugerida!");
+        }
+      } else if (fieldName === 'esquema') {
+        if (res.tags && res.tags.length > 0) {
+          setFormData(prev => {
+            const existing = new Set(prev.esquema);
+            res.tags!.forEach(t => existing.add(t));
+            return { ...prev, esquema: Array.from(existing) };
+          });
+          toast.success("Esquemas mapeados e adicionados!");
+        } else if (res.text) {
+          setFormData(prev => {
+            const existing = new Set(prev.esquema);
+            existing.add(res.text!);
+            return { ...prev, esquema: Array.from(existing) };
+          });
+          toast.success("Esquema sugerido!");
+        }
+      } else if (fieldName === 'emocao') {
+        if (res.emotion && res.emotion.name) {
+          setFormData(prev => ({
+            ...prev,
+            emocao: {
+              name: res.emotion!.name,
+              intensity: res.emotion!.intensity ?? prev.emocao.intensity
+            }
+          }));
+          toast.success(`Emoção identificada: ${res.emotion.name} (${res.emotion.intensity}%)`);
+        } else if (res.text) {
+          toast.success(`Análise emocional: ${res.text}`);
+        }
+      } else if (fieldName === 'situacao') {
+        if (res.text) {
+          setFormData(prev => ({
+            ...prev,
+            situacao: prev.situacao && prev.situacao.trim() ? `${prev.situacao}\n${res.text}` : res.text!
+          }));
+          toast.success("Situação enriquecida com formulação de 4ª geração!");
+        }
+      } else {
+        // Campos de texto: pensamento, comportamento, consequenciasCurtoPrazo, consequenciasLongoPrazo
+        if (res.text) {
+          setFormData(prev => {
+            const current = (prev as any)[fieldName] as string;
+            const newVal = current && current.trim() ? `${current}\n${res.text}` : res.text!;
+            return { ...prev, [fieldName]: newVal };
+          });
+          toast.success(`Campo "${fieldLabel}" preenchido com sucesso!`);
+        }
+      }
+    } catch (err: any) {
+      console.error("Erro ao preencher campo via IA:", err);
+      toast.error("Falha ao analisar campo: " + (err.message || err));
+    } finally {
+      setFillingField(null);
+    }
+  };
+
+  const handleFieldAsk = async (fieldName: string, fieldLabel: string) => {
+    const situation = formData.situacao?.trim();
+    if (!situation && fieldName !== 'situacao') {
+      toast.error("Preencha primeiro o campo '1. Situação Ocorrente' para que a IA formule perguntas socráticas direcionadas.", { duration: 4500 });
+      return;
+    }
+
+    setAskingField(fieldName);
+    try {
+      const questions = await generateClinicalFieldQuestions({
+        tool: 'RID',
+        field: fieldName,
+        fieldLabel,
+        situation: situation || 'Situação clínica não relatada detalhadamente',
+        patientContext: {
+          name: patientName,
+          age: patientAge
+        }
+      });
+
+      setQuestionsModal({
+        isOpen: true,
+        fieldLabel,
+        fieldName,
+        questions
+      });
+    } catch (err: any) {
+      console.error("Erro ao gerar perguntas clínicas:", err);
+      toast.error("Falha ao gerar perguntas socráticas: " + (err.message || err));
+    } finally {
+      setAskingField(null);
+    }
+  };
+
+  const handleInsertQuestionIntoField = (questionText: string) => {
+    const field = questionsModal.fieldName;
+    if (!field) return;
+    if (field === 'situacao' || field === 'pensamento' || field === 'comportamento' || field === 'consequenciasCurtoPrazo' || field === 'consequenciasLongoPrazo') {
+      setFormData(prev => {
+        const current = (prev as any)[field] as string;
+        const annotation = `[Inquérito Socrático: "${questionText}"]`;
+        const newVal = current && current.trim() ? `${current}\n${annotation}` : annotation;
+        return { ...prev, [field]: newVal };
+      });
+    } else {
+      navigator.clipboard.writeText(questionText);
+      toast.success("Pergunta copiada para a área de transferência!");
+    }
+  };
 
   useEffect(() => {
     if (!patientId) {
@@ -496,66 +656,105 @@ Planejamento: ${cleanHtml(f.planejamento)}
             </div>
           </div>
 
-          {/* SELETOR DE REGISTRO DE ATENDIMENTO (DROP-DOWN) */}
+          {/* SELETOR DE REGISTRO DE ATENDIMENTO (DROP-DOWN COM CONTROLE DE ATIVAÇÃO) */}
           <div className="p-3.5 bg-bg-card/70 border border-primary/25 rounded-2xl space-y-2.5 shadow-md">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                <Sparkles size={13} className="animate-pulse" /> Preenchimento Automático via Sessão de Atendimento
-              </span>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isAutoFillEnabled}
+                  onChange={(e) => setIsAutoFillEnabled(e.target.checked)}
+                  className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                />
+                <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <Sparkles size={13} className={isAutoFillEnabled ? "animate-pulse text-primary" : "text-text-dim"} /> 
+                  Preenchimento Automático via Sessão de Atendimento
+                </span>
+              </label>
               <span className="text-[9px] font-bold text-text-dim">
                 {sessionRecords.length} {sessionRecords.length === 1 ? 'sessão gravada' : 'sessões gravadas'}
               </span>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <select
-                value={selectedSessionId}
-                onChange={(e) => setSelectedSessionId(e.target.value)}
-                disabled={sessionRecords.length === 0 || isExtractingSession}
-                className="flex-1 px-3 py-2 bg-bg-deep border border-border-subtle rounded-xl text-xs font-semibold text-text-main outline-none focus:border-primary cursor-pointer disabled:opacity-50 truncate"
-              >
-                {sessionRecords.length === 0 ? (
-                  <option value="">Nenhum registro de atendimento encontrado para este paciente</option>
-                ) : (
-                  sessionRecords.map((s) => {
-                    const f = s.fields || {};
-                    const label = `Sessão ${f.numeroSessao ? `#${f.numeroSessao}` : ''} • ${f.dataAtendimento || 'Sem data'} • Cód: ${f.codigoRegistro || s.id}`;
-                    return (
-                      <option key={s.id} value={s.id} className="bg-bg-card text-text-main">
-                        {label}
-                      </option>
-                    );
-                  })
-                )}
-              </select>
-              <button
-                type="button"
-                onClick={handleExtractFromSelectedSession}
-                disabled={sessionRecords.length === 0 || isExtractingSession || !selectedSessionId}
-                className="px-4 py-2 bg-primary hover:bg-primary/90 text-bg-deep font-black rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider cursor-pointer shrink-0 shadow-md shadow-primary/10"
-              >
-                {isExtractingSession ? (
-                  <>
-                    <Loader2 size={13} className="animate-spin" /> Extraindo...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={13} /> Preencher RID via IA
-                  </>
-                )}
-              </button>
-            </div>
+
+            {isAutoFillEnabled ? (
+              <div className="flex flex-col sm:flex-row gap-2 pt-1 border-t border-border-subtle/40">
+                <select
+                  value={selectedSessionId}
+                  onChange={(e) => setSelectedSessionId(e.target.value)}
+                  disabled={sessionRecords.length === 0 || isExtractingSession}
+                  className="flex-1 px-3 py-2 bg-bg-deep border border-border-subtle rounded-xl text-xs font-semibold text-text-main outline-none focus:border-primary cursor-pointer disabled:opacity-50 truncate"
+                >
+                  {sessionRecords.length === 0 ? (
+                    <option value="">Nenhum registro de atendimento encontrado para este paciente</option>
+                  ) : (
+                    sessionRecords.map((s) => {
+                      const f = s.fields || {};
+                      const label = `Sessão ${f.numeroSessao ? `#${f.numeroSessao}` : ''} • ${f.dataAtendimento || 'Sem data'} • Cód: ${f.codigoRegistro || s.id}`;
+                      return (
+                        <option key={s.id} value={s.id} className="bg-bg-card text-text-main">
+                          {label}
+                        </option>
+                      );
+                    })
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleExtractFromSelectedSession}
+                  disabled={sessionRecords.length === 0 || isExtractingSession || !selectedSessionId}
+                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-bg-deep font-black rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider cursor-pointer shrink-0 shadow-md shadow-primary/10"
+                >
+                  {isExtractingSession ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" /> Extraindo...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={13} /> Preencher RID via IA
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <p className="text-[9.5px] text-text-dim/80 italic pl-6">
+                Modo direto ativo. Marque a caixa acima se desejar vincular e extrair dados de uma sessão gravada anteriormente.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1.5 rounded-xl transition-all relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">1. Situação Ocorrente</label>
-                <button 
-                  onClick={() => setActiveSuggestionField(activeSuggestionField === 'situacao' ? null : 'situacao')}
-                  className="text-[9px] font-bold text-text-dim hover:underline mb-1 cursor-pointer"
-                >
-                  Sugestões
-                </button>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldAsk('situacao', '1. Situação Ocorrente')}
+                    disabled={askingField === 'situacao'}
+                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Sugerir perguntas investigativas para detalhar a situação com o paciente"
+                  >
+                    {askingField === 'situacao' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
+                    Perguntar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFieldFill('situacao', '1. Situação Ocorrente')}
+                    disabled={fillingField === 'situacao'}
+                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Formular clinicamente a situação com IA"
+                  >
+                    {fillingField === 'situacao' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Preencher
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveSuggestionField(activeSuggestionField === 'situacao' ? null : 'situacao')}
+                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                  >
+                    Sugestões
+                  </button>
+                </div>
               </div>
               <textarea
                 name="situacao"
@@ -587,10 +786,31 @@ Planejamento: ${cleanHtml(f.planejamento)}
             <div className="space-y-1.5 relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">2. Necessidade Básica</label>
-                <div className="flex gap-2 mb-1">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldAsk('necessidade', '2. Necessidade Básica')}
+                    disabled={askingField === 'necessidade'}
+                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Perguntas socráticas para investigar necessidades frustradas em sessão"
+                  >
+                    {askingField === 'necessidade' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
+                    Perguntar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFieldFill('necessidade', '2. Necessidade Básica')}
+                    disabled={fillingField === 'necessidade'}
+                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Preencher necessidades com IA a partir da Situação"
+                  >
+                    {fillingField === 'necessidade' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Preencher
+                  </button>
                   <button 
+                    type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'necessidade' ? null : 'necessidade')}
-                    className="text-[9px] font-bold text-primary hover:underline cursor-pointer"
+                    className="text-[9px] font-bold text-primary hover:underline cursor-pointer pl-0.5"
                   >
                     Sugerir
                   </button>
@@ -666,10 +886,31 @@ Planejamento: ${cleanHtml(f.planejamento)}
             <div className="space-y-1.5 relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">3. Esquema Ativado</label>
-                <div className="flex gap-2 mb-1">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldAsk('esquema', '3. Esquema Inicial Desadaptativo')}
+                    disabled={askingField === 'esquema'}
+                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-amber-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Perguntas socráticas para rastrear esquemas desadaptativos ativos"
+                  >
+                    {askingField === 'esquema' ? <Loader2 size={10} className="animate-spin text-amber-400" /> : <HelpCircle size={10} className="text-amber-400" />}
+                    Perguntar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFieldFill('esquema', '3. Esquema Inicial Desadaptativo')}
+                    disabled={fillingField === 'esquema'}
+                    className="px-2 py-0.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Mapear e preencher Esquemas com IA a partir da Situação"
+                  >
+                    {fillingField === 'esquema' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Preencher
+                  </button>
                   <button 
-                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'esquema' ? null : 'esquema')}
-                     className="text-[9px] font-bold text-amber-400 hover:underline cursor-pointer"
+                    type="button"
+                    onClick={() => setActiveSuggestionField(activeSuggestionField === 'esquema' ? null : 'esquema')}
+                    className="text-[9px] font-bold text-amber-400 hover:underline cursor-pointer pl-0.5"
                   >
                     Sugerir
                   </button>
@@ -719,12 +960,35 @@ Planejamento: ${cleanHtml(f.planejamento)}
             <div className="col-span-2 space-y-1.5 relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">4. Pensamentos Automáticos</label>
-                <button 
-                  onClick={() => setActiveSuggestionField(activeSuggestionField === 'pensamento' ? null : 'pensamento')}
-                  className="text-[9px] font-bold text-text-dim hover:underline mb-1 cursor-pointer"
-                >
-                  Distorções
-                </button>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldAsk('pensamento', '4. Pensamento Automático')}
+                    disabled={askingField === 'pensamento'}
+                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Perguntas socráticas para capturar pensamentos automáticos em sessão"
+                  >
+                    {askingField === 'pensamento' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
+                    Perguntar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFieldFill('pensamento', '4. Pensamento Automático')}
+                    disabled={fillingField === 'pensamento'}
+                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Identificar e formular pensamentos automáticos via IA"
+                  >
+                    {fillingField === 'pensamento' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Preencher
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveSuggestionField(activeSuggestionField === 'pensamento' ? null : 'pensamento')}
+                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                  >
+                    Distorções
+                  </button>
+                </div>
               </div>
               <textarea
                 name="pensamento"
@@ -757,13 +1021,35 @@ Planejamento: ${cleanHtml(f.planejamento)}
             <div className="col-span-1 space-y-1.5 relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">5. Intensidade Emocional</label>
-                <button 
-                  type="button"
-                  onClick={() => setActiveSuggestionField(activeSuggestionField === 'emocao' ? null : 'emocao')}
-                  className="text-[9px] font-bold text-text-dim hover:underline mb-1 cursor-pointer"
-                >
-                  Sintomas Físicos
-                </button>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldAsk('emocao', '5. Intensidade Emocional')}
+                    disabled={askingField === 'emocao'}
+                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Perguntas para explorar a vivência emocional e somática com o paciente"
+                  >
+                    {askingField === 'emocao' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
+                    Perguntar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFieldFill('emocao', '5. Intensidade Emocional')}
+                    disabled={fillingField === 'emocao'}
+                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Inferir emoção predominante e intensidade via IA"
+                  >
+                    {fillingField === 'emocao' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Preencher
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveSuggestionField(activeSuggestionField === 'emocao' ? null : 'emocao')}
+                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                  >
+                    Sintomas Físicos
+                  </button>
+                </div>
               </div>
               <div className="flex items-center gap-3 bg-bg-deep p-2 border border-border-subtle rounded-xl h-[52px]">
                 <select
@@ -824,12 +1110,35 @@ Planejamento: ${cleanHtml(f.planejamento)}
             <div className="col-span-1 space-y-1.5 relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">6. Comportamento</label>
-                <button 
-                  onClick={() => setActiveSuggestionField(activeSuggestionField === 'comportamento' ? null : 'comportamento')}
-                  className="text-[9px] font-bold text-text-dim hover:underline mb-1 cursor-pointer"
-                >
-                  Sugestões
-                </button>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldAsk('comportamento', '6. Resposta Comportamental')}
+                    disabled={askingField === 'comportamento'}
+                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Perguntas socráticas para rastrear a reação comportamental do paciente"
+                  >
+                    {askingField === 'comportamento' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
+                    Perguntar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFieldFill('comportamento', '6. Resposta Comportamental')}
+                    disabled={fillingField === 'comportamento'}
+                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Formular resposta comportamental adaptativa ou desadaptativa via IA"
+                  >
+                    {fillingField === 'comportamento' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Preencher
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveSuggestionField(activeSuggestionField === 'comportamento' ? null : 'comportamento')}
+                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                  >
+                    Sugestões
+                  </button>
+                </div>
               </div>
               <textarea
                 name="comportamento"
@@ -888,12 +1197,35 @@ Planejamento: ${cleanHtml(f.planejamento)}
             <div className="col-span-1 space-y-1.5 relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">7. Conseq. Curto Prazo</label>
-                <button 
-                  onClick={() => setActiveSuggestionField(activeSuggestionField === 'consequenciasCurtoPrazo' ? null : 'consequenciasCurtoPrazo')}
-                  className="text-[9px] font-bold text-text-dim hover:underline mb-1 cursor-pointer"
-                >
-                  Sugestões
-                </button>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldAsk('consequenciasCurtoPrazo', '7. Consequências de Curto Prazo')}
+                    disabled={askingField === 'consequenciasCurtoPrazo'}
+                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Perguntas para investigar o ganho ou alívio imediato"
+                  >
+                    {askingField === 'consequenciasCurtoPrazo' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
+                    Perguntar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFieldFill('consequenciasCurtoPrazo', '7. Consequências de Curto Prazo')}
+                    disabled={fillingField === 'consequenciasCurtoPrazo'}
+                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Formular consequências imediatas e reforço via IA"
+                  >
+                    {fillingField === 'consequenciasCurtoPrazo' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Preencher
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveSuggestionField(activeSuggestionField === 'consequenciasCurtoPrazo' ? null : 'consequenciasCurtoPrazo')}
+                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                  >
+                    Sugestões
+                  </button>
+                </div>
               </div>
               <textarea
                 name="consequenciasCurtoPrazo"
@@ -925,12 +1257,35 @@ Planejamento: ${cleanHtml(f.planejamento)}
             <div className="col-span-1 space-y-1.5 relative">
               <div className="flex justify-between items-end">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">8. Conseq. Longo Prazo</label>
-                <button 
-                  onClick={() => setActiveSuggestionField(activeSuggestionField === 'consequenciasLongoPrazo' ? null : 'consequenciasLongoPrazo')}
-                  className="text-[9px] font-bold text-text-dim hover:underline mb-1 cursor-pointer"
-                >
-                  Sugestões
-                </button>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => handleFieldAsk('consequenciasLongoPrazo', '8. Consequências de Longo Prazo')}
+                    disabled={askingField === 'consequenciasLongoPrazo'}
+                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Perguntas para expor os custos cumulativos e perpetuação do esquema"
+                  >
+                    {askingField === 'consequenciasLongoPrazo' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
+                    Perguntar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFieldFill('consequenciasLongoPrazo', '8. Consequências de Longo Prazo')}
+                    disabled={fillingField === 'consequenciasLongoPrazo'}
+                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    title="Formular consequências de longo prazo via IA"
+                  >
+                    {fillingField === 'consequenciasLongoPrazo' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Preencher
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setActiveSuggestionField(activeSuggestionField === 'consequenciasLongoPrazo' ? null : 'consequenciasLongoPrazo')}
+                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                  >
+                    Sugestões
+                  </button>
+                </div>
               </div>
               <textarea
                 name="consequenciasLongoPrazo"
@@ -1215,6 +1570,16 @@ Planejamento: ${cleanHtml(f.planejamento)}
           </motion.div>
         </div>
       )}
+
+      {/* MODAL DE PERGUNTAS SOCRÁTICAS (TCC 4ª GERAÇÃO) */}
+      <ClinicalQuestionsModal
+        isOpen={questionsModal.isOpen}
+        onClose={() => setQuestionsModal(prev => ({ ...prev, isOpen: false }))}
+        fieldLabel={questionsModal.fieldLabel}
+        toolName="RID Inteligente"
+        questions={questionsModal.questions}
+        onInsertQuestion={handleInsertQuestionIntoField}
+      />
     </div>
   );
 }

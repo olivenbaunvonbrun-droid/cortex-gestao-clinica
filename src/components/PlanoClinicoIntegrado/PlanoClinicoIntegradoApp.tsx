@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PatientData, PciRecord, PciPhase } from './types';
-import { analyzePciAssessment } from '../../services/geminiService';
+import { analyzePciAssessment, generateClinicalFieldFilling, generateClinicalFieldQuestions } from '../../services/geminiService';
+import { ClinicalQuestionsModal, QuestionItem } from '../Common/ClinicalQuestionsModal';
 import { exportToHtml } from './utils/export';
 import { cn } from '../../lib/utils';
 import { db } from '../../lib/db';
@@ -34,6 +35,15 @@ import { Toaster, toast } from 'react-hot-toast';
 // Helper components
 import { ResultView } from './components/ResultView';
 import { HistoryView } from './components/HistoryView';
+
+export interface PciFieldContextType {
+  onFillField: (label: string, currentValue: string | undefined, onChange: (v: string) => void) => void;
+  onAskField: (label: string) => void;
+  fillingLabel: string | null;
+  askingLabel: string | null;
+}
+
+export const PciFieldContext = React.createContext<PciFieldContextType | null>(null);
 
 interface PlanoClinicoIntegradoAppProps {
   activePatientId?: string | null;
@@ -105,10 +115,95 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
   const [importFiles, setImportFiles] = useState<File[]>([]);
   const [isImporting, setIsImporting] = useState(false);
 
-  // Estados do Menu Suspenso de Registros de Atendimento da Sessão
+  // Controle de ativação do Dropdown de Sessões de Atendimento
+  const [isAutoFillEnabled, setIsAutoFillEnabled] = useState(false);
   const [sessionRecords, setSessionRecords] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [isExtractingSession, setIsExtractingSession] = useState(false);
+
+  // Estados dos botões de preenchimento e perguntas clínicas para o PCI
+  const [fillingLabel, setFillingLabel] = useState<string | null>(null);
+  const [askingLabel, setAskingLabel] = useState<string | null>(null);
+  const [questionsModal, setQuestionsModal] = useState<{
+    isOpen: boolean;
+    fieldLabel: string;
+    questions: QuestionItem[];
+  }>({
+    isOpen: false,
+    fieldLabel: '',
+    questions: []
+  });
+
+  const handleContextFill = async (label: string, currentValue: string | undefined, onChange: (v: string) => void) => {
+    const situation = formState.eventoQueixas?.trim() || formState.ridSituacao?.trim();
+    if (!situation && !label.toLowerCase().includes('queixa') && !label.toLowerCase().includes('situação')) {
+      toast.error("Preencha primeiro 'Evento Precipitador & Queixas' (Seção 02) ou 'Situação (Contexto)' para que a IA possa analisar e sugerir o preenchimento.", { duration: 4500 });
+      return;
+    }
+
+    setFillingLabel(label);
+    try {
+      const res = await generateClinicalFieldFilling({
+        tool: 'PCI',
+        field: label,
+        fieldLabel: label,
+        situation: situation || currentValue || 'Avaliação clínica integral',
+        patientContext: {
+          name: formState.patient?.name,
+          age: formState.idade,
+          queixa: formState.eventoQueixas
+        }
+      });
+
+      const textVal = res.tags && res.tags.length > 0
+        ? res.tags.join('; ')
+        : (res.emotion?.name ? `${res.emotion.name} (${res.emotion.intensity}%)` : (res.text || ''));
+
+      if (textVal) {
+        const newVal = currentValue && currentValue.trim() ? `${currentValue}; ${textVal}` : textVal;
+        onChange(newVal);
+        toast.success(`Campo "${label}" preenchido com sucesso!`);
+      }
+    } catch (err: any) {
+      console.error("Erro ao preencher campo do PCI via IA:", err);
+      toast.error("Falha ao analisar campo: " + (err.message || err));
+    } finally {
+      setFillingLabel(null);
+    }
+  };
+
+  const handleContextAsk = async (label: string) => {
+    const situation = formState.eventoQueixas?.trim() || formState.ridSituacao?.trim();
+    if (!situation && !label.toLowerCase().includes('queixa') && !label.toLowerCase().includes('situação')) {
+      toast.error("Preencha primeiro 'Evento Precipitador & Queixas' (Seção 02) ou 'Situação (Contexto)' para que a IA formule perguntas socráticas direcionadas.", { duration: 4500 });
+      return;
+    }
+
+    setAskingLabel(label);
+    try {
+      const questions = await generateClinicalFieldQuestions({
+        tool: 'PCI',
+        field: label,
+        fieldLabel: label,
+        situation: situation || 'Avaliação clínica do paciente',
+        patientContext: {
+          name: formState.patient?.name,
+          age: formState.idade
+        }
+      });
+
+      setQuestionsModal({
+        isOpen: true,
+        fieldLabel: label,
+        questions
+      });
+    } catch (err: any) {
+      console.error("Erro ao gerar perguntas para o PCI:", err);
+      toast.error("Falha ao gerar perguntas socráticas: " + (err.message || err));
+    } finally {
+      setAskingLabel(null);
+    }
+  };
 
   useEffect(() => {
     if (!selectedPatientId) {
@@ -806,58 +901,75 @@ Encaminhamentos: ${cleanHtml(f.encaminhamentos)}
           <div className="w-full flex-1 flex flex-col overflow-auto">
             {/* Form Tab Panel */}
             <div className={cn("w-full flex-1 flex flex-col overflow-auto", (activeTab === 'test' && !currentResult) ? "block" : "hidden")}>
-              <div className="flex flex-1 overflow-auto w-full relative">
+              <PciFieldContext.Provider value={{ onFillField: handleContextFill, onAskField: handleContextAsk, fillingLabel, askingLabel }}>
+                <div className="flex flex-1 overflow-auto w-full relative">
                   {/* LEFT SCROLLABLE FORM COLUMN */}
                   <div className="flex-1 overflow-y-auto bg-bg-deep p-6 md:p-8 scroller-hide select-text">
                     <div className="max-w-4xl mx-auto space-y-8 pb-24">
-                      {/* SELETOR DE REGISTRO DE ATENDIMENTO (DROP-DOWN) */}
+                      {/* SELETOR DE REGISTRO DE ATENDIMENTO (DROP-DOWN COM CONTROLE DE ATIVAÇÃO) */}
                       <div className="p-4 bg-bg-card/90 border border-primary/25 rounded-[2rem] space-y-3 shadow-lg">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                            <Sparkles size={13} className="animate-pulse" /> Preenchimento Automático via Sessão de Atendimento
-                          </span>
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={isAutoFillEnabled}
+                              onChange={(e) => setIsAutoFillEnabled(e.target.checked)}
+                              className="w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                            />
+                            <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                              <Sparkles size={13} className={isAutoFillEnabled ? "animate-pulse text-primary" : "text-text-dim"} /> 
+                              Preenchimento Automático via Sessão de Atendimento
+                            </span>
+                          </label>
                           <span className="text-[9px] font-bold text-text-dim">
                             {sessionRecords.length} {sessionRecords.length === 1 ? 'sessão gravada' : 'sessões gravadas'}
                           </span>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2.5">
-                          <select
-                            value={selectedSessionId}
-                            onChange={(e) => setSelectedSessionId(e.target.value)}
-                            disabled={sessionRecords.length === 0 || isExtractingSession}
-                            className="flex-1 px-4 py-2.5 bg-bg-sidebar border border-border-subtle rounded-xl text-xs font-semibold text-text-main outline-none focus:border-primary cursor-pointer disabled:opacity-50 truncate"
-                          >
-                            {sessionRecords.length === 0 ? (
-                              <option value="">Nenhum registro de atendimento encontrado para este paciente</option>
-                            ) : (
-                              sessionRecords.map((s) => {
-                                const f = s.fields || {};
-                                const label = `Sessão ${f.numeroSessao ? `#${f.numeroSessao}` : ''} • ${f.dataAtendimento || 'Sem data'} • Cód: ${f.codigoRegistro || s.id}`;
-                                return (
-                                  <option key={s.id} value={s.id} className="bg-bg-card text-text-main">
-                                    {label}
-                                  </option>
-                                );
-                              })
-                            )}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={handleExtractFromSelectedSession}
-                            disabled={sessionRecords.length === 0 || isExtractingSession || !selectedSessionId}
-                            className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-bg-deep font-black rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider cursor-pointer shrink-0 shadow-md shadow-primary/15"
-                          >
-                            {isExtractingSession ? (
-                              <>
-                                <Loader2 size={13} className="animate-spin" /> Extraindo...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles size={13} /> Preencher PCI via IA
-                              </>
-                            )}
-                          </button>
-                        </div>
+
+                        {isAutoFillEnabled ? (
+                          <div className="flex flex-col sm:flex-row gap-2.5 pt-1 border-t border-border-subtle/40">
+                            <select
+                              value={selectedSessionId}
+                              onChange={(e) => setSelectedSessionId(e.target.value)}
+                              disabled={sessionRecords.length === 0 || isExtractingSession}
+                              className="flex-1 px-4 py-2.5 bg-bg-sidebar border border-border-subtle rounded-xl text-xs font-semibold text-text-main outline-none focus:border-primary cursor-pointer disabled:opacity-50 truncate"
+                            >
+                              {sessionRecords.length === 0 ? (
+                                <option value="">Nenhum registro de atendimento encontrado para este paciente</option>
+                              ) : (
+                                sessionRecords.map((s) => {
+                                  const f = s.fields || {};
+                                  const label = `Sessão ${f.numeroSessao ? `#${f.numeroSessao}` : ''} • ${f.dataAtendimento || 'Sem data'} • Cód: ${f.codigoRegistro || s.id}`;
+                                  return (
+                                    <option key={s.id} value={s.id} className="bg-bg-card text-text-main">
+                                      {label}
+                                    </option>
+                                  );
+                                })
+                              )}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={handleExtractFromSelectedSession}
+                              disabled={sessionRecords.length === 0 || isExtractingSession || !selectedSessionId}
+                              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-bg-deep font-black rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 text-xs uppercase tracking-wider cursor-pointer shrink-0 shadow-md shadow-primary/15"
+                            >
+                              {isExtractingSession ? (
+                                <>
+                                  <Loader2 size={13} className="animate-spin" /> Extraindo...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles size={13} /> Preencher PCI via IA
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-[9.5px] text-text-dim/80 italic pl-6">
+                            Modo direto ativo. Marque a caixa acima se desejar vincular e extrair dados de uma sessão gravada anteriormente.
+                          </p>
+                        )}
                       </div>
 
                       {/* Abordagem & Fase Header selector */}
@@ -1258,6 +1370,7 @@ Encaminhamentos: ${cleanHtml(f.encaminhamentos)}
                   </aside>
 
                 </div>
+              </PciFieldContext.Provider>
               </div>
 
               {/* History Tab Panel */}
@@ -1284,6 +1397,19 @@ Encaminhamentos: ${cleanHtml(f.encaminhamentos)}
             </div>
           )}
       </main>
+
+      {/* MODAL DE PERGUNTAS SOCRÁTICAS (TCC 4ª GERAÇÃO) PARA O PCI */}
+      <ClinicalQuestionsModal
+        isOpen={questionsModal.isOpen}
+        onClose={() => setQuestionsModal(prev => ({ ...prev, isOpen: false }))}
+        fieldLabel={questionsModal.fieldLabel}
+        toolName="Plano Clínico Integrado (PCI)"
+        questions={questionsModal.questions}
+        onInsertQuestion={(qText) => {
+          navigator.clipboard.writeText(qText);
+          toast.success("Pergunta copiada para a área de transferência!");
+        }}
+      />
 
       {/* IMPORT MODAL */}
       {isImportModalOpen && (
@@ -1428,6 +1554,10 @@ function SuggestionTextArea({
   groups?: Array<{ category: string, label: string, color: string, items: any[] }>
 }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const pciActions = React.useContext(PciFieldContext);
+
+  const isFilling = pciActions?.fillingLabel === label;
+  const isAsking = pciActions?.askingLabel === label;
   
   const handleSelect = (s: any) => {
     const name = typeof s === 'string' ? s : s.name;
@@ -1446,15 +1576,41 @@ function SuggestionTextArea({
 
   return (
     <div className={cn("space-y-2 relative", className)}>
-      <div className="flex justify-between items-center px-1">
+      <div className="flex justify-between items-center px-1 flex-wrap gap-1">
         <label className="text-[9px] font-black text-text-dim uppercase tracking-widest">{label}</label>
-        <button 
-          type="button"
-          onClick={() => setShowSuggestions(!showSuggestions)}
-          className="text-[9px] font-black text-primary hover:underline uppercase tracking-wider cursor-pointer"
-        >
-          {showSuggestions ? 'Fechar' : 'Sugestões'}
-        </button>
+        <div className="flex items-center gap-1.5">
+          {pciActions && (
+            <>
+              <button
+                type="button"
+                onClick={() => pciActions.onAskField(label)}
+                disabled={isAsking}
+                className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                title="Sugerir perguntas socráticas para investigar este campo em sessão"
+              >
+                {isAsking ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
+                Perguntar
+              </button>
+              <button
+                type="button"
+                onClick={() => pciActions.onFillField(label, value, onChange)}
+                disabled={isFilling}
+                className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                title="Preencher campo com IA a partir da queixa ou situação"
+              >
+                {isFilling ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                Preencher
+              </button>
+            </>
+          )}
+          <button 
+            type="button"
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            className="text-[9px] font-black text-primary hover:underline uppercase tracking-wider cursor-pointer pl-0.5"
+          >
+            {showSuggestions ? 'Fechar' : 'Sugestões'}
+          </button>
+        </div>
       </div>
       
       <textarea 

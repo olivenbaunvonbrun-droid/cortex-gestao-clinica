@@ -1262,3 +1262,207 @@ IMPORTANTE DE FORMATAÇÃO:
   };
 }
 
+export interface FieldFillingParams {
+  tool: 'RID' | 'PCI';
+  field: string;
+  fieldLabel: string;
+  situation: string;
+  patientContext?: {
+    name?: string;
+    age?: string | number;
+    diagnostico?: string;
+    queixa?: string;
+  };
+}
+
+export interface FieldFillingResult {
+  text?: string;
+  tags?: string[];
+  emotion?: { name: string; intensity: number };
+}
+
+export async function generateClinicalFieldFilling(params: FieldFillingParams): Promise<FieldFillingResult> {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Você é um Supervisor Clínico Sênior especialista em Terapia Cognitivo-Comportamental de 4ª Geração (Terapia Baseada em Processos - PBT, ACT, FAP, DBT) e Terapia do Esquema de Jeffrey Young.
+
+SUA MISSÃO:
+Preencher o campo clínico "${params.fieldLabel}" (identificador técnico: "${params.field}") para a ferramenta ${params.tool}, baseando-se estritamente na situação clínica ou relato relatado pelo paciente a seguir:
+
+SITUAÇÃO / RELATO CLÍNICO:
+"""
+${params.situation}
+"""
+${params.patientContext?.name ? `PACIENTE: ${params.patientContext.name}` : ''}
+${params.patientContext?.age ? `IDADE: ${params.patientContext.age} anos` : ''}
+${params.patientContext?.queixa ? `QUEIXA GERAL: ${params.patientContext.queixa}` : ''}
+
+DIRETRIZES TÉCNICAS CONFORME O TIPO DE CAMPO:
+1. SE O CAMPO FOR DE NECESSIDADES BÁSICAS (ex: "necessidade", "necessidadesIdentificadas"):
+   - Identifique de 1 a 3 necessidades emocionais básicas nucleares frustradas na situação descrita (ex: "Vínculo Seguro / Conexão", "Autonomia e Competência", "Limites Realistas", "Liberdade de Expressão", "Espontaneidade e Lazer", "Aprovação e Reconhecimento", "Segurança Física e Emocional").
+   - Preencha o array "tags" com essas necessidades e "text" com uma breve síntese.
+
+2. SE O CAMPO FOR DE ESQUEMAS / EIDs (ex: "esquema", "esquemasCognitivos"):
+   - Identifique de 1 a 3 Esquemas Iniciais Desadaptativos (EIDs) ativados pelo gatilho da situação (ex: "Defectividade / Vergonha", "Abandono / Instabilidade", "Privação Emocional", "Fracasso", "Padrões Inflexíveis", "Subjugação", "Vulnerabilidade ao Dano", "Autocontrole Insuficiente").
+   - Preencha o array "tags" com os nomes exatos dos esquemas e "text" com a explicação funcional.
+
+3. SE O CAMPO FOR DE EMOÇÃO PREDOMINANTE / INTENSIDADE (ex: "emocao", "ridEmocao"):
+   - Identifique a emoção primária mais evidente: "Ansiedade", "Tristeza", "Raiva", "Culpa", "Vergonha", "Medo", "Frustração", "Alívio" ou "Alegria".
+   - Estime a intensidade subjetiva (0 a 100) com base na dramaticidade e impacto da narrativa.
+   - Preencha o objeto "emotion": { "name": "...", "intensity": ... } e "text" com o nome da emoção e descrição dos correlatos fisiológicos.
+
+4. SE O CAMPO FOR PENSAMENTO AUTOMÁTICO OU DISTORÇÕES (ex: "pensamento", "ridPensamento", "distorcoesCognitivas"):
+   - Formule os pensamentos automáticos implícitos e explícitos na voz interna do paciente (ex: "Eles vão perceber que eu não sei o que estou fazendo").
+   - Preencha "text" com os pensamentos formulados e a distorção cognitiva associada.
+
+5. SE O CAMPO FOR COMPORTAMENTO, ENFRENTAMENTO OU METAS (ex: "comportamento", "estrategiasEnfrentamento", "metasTerapeuticas", etc.):
+   - Descreva a ação ou formulação clínica de forma técnica, concisa e orientada a processos (PBT/TCC 4ª Geração).
+   - Preencha "text".
+
+6. SE O CAMPO FOR CONSEQUÊNCIAS (Curto ou Longo Prazo):
+   - Curto prazo: alívio imediato, reforço negativo ou custos momentâneos.
+   - Longo prazo: manutenção do ciclo vicioso, prejuízo existencial e afastamento de valores.
+   - Preencha "text".
+
+FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
+{
+  "text": "Texto clínico formulado diretamente aplicável ao campo",
+  "tags": ["Tag 1", "Tag 2"],
+  "emotion": { "name": "Nome da emoção", "intensity": 80 }
+}
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: {
+      maxOutputTokens: 2048,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          text: { type: Type.STRING },
+          tags: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING }
+          },
+          emotion: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              intensity: { type: Type.INTEGER }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const raw = response.text || "";
+  try {
+    const clean = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+    return JSON.parse(clean);
+  } catch (e) {
+    console.error("Erro ao analisar resposta de generateClinicalFieldFilling:", e);
+    return { text: raw.trim() };
+  }
+}
+
+export interface FieldQuestionsParams {
+  tool: 'RID' | 'PCI';
+  field: string;
+  fieldLabel: string;
+  situation: string;
+  patientContext?: {
+    name?: string;
+    age?: string | number;
+  };
+}
+
+export interface QuestionItem {
+  question: string;
+  clinicalObjective: string;
+}
+
+export async function generateClinicalFieldQuestions(params: FieldQuestionsParams): Promise<QuestionItem[]> {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Você é um Supervisor Clínico Master em Terapia Cognitivo-Comportamental de 4ª Geração (Terapia Baseada em Processos, ACT, FAP, DBT e Terapia do Esquema).
+
+O terapeuta está em atendimento clínico e precisa investigar e preencher o campo:
+"${params.fieldLabel}" (Identificador: "${params.field}") da ferramenta ${params.tool}.
+
+O relato da situação ou queixa trazida pelo paciente é:
+"""
+${params.situation}
+"""
+
+SUA TAREFA:
+Gerar de 2 a 4 perguntas clínicas evocativas, socráticas e experienciais de altíssimo nível, formuladas para o psicólogo fazer diretamente ao paciente durante a sessão.
+
+OBJETIVO DAS PERGUNTAS:
+Fazer com que o paciente reflita, acesse sua experiência somática/emocional ou cognitiva e forneça espontaneamente os elementos necessários para preencher com precisão técnica o campo "${params.fieldLabel}".
+
+DIRETRIZES DE ESTILO TCC 4ª GERAÇÃO:
+- Perguntas abertas, instigantes e empáticas (ex: "No exato momento em que isso aconteceu, se pudéssemos pausar o tempo, qual foi a sensação física mais nítida no seu corpo?").
+- Evite perguntas do tipo "sim/não".
+- Use o diálogo socrático e a decatastrofização/desfusão quando aplicável.
+- Para cada pergunta, inclua um 'clinicalObjective' explicando brevemente ao terapeuta qual processo clínico aquela pergunta visa acessar (ex: "Desfusão cognitiva", "Identificação de necessidade frustrada", "Conexão com modos esquemáticos da infância").
+
+FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
+{
+  "questions": [
+    {
+      "question": "Texto da pergunta socrática direcionada ao paciente...",
+      "clinicalObjective": "Objetivo técnico para o terapeuta"
+    }
+  ]
+}
+`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: {
+      maxOutputTokens: 2048,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          questions: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                clinicalObjective: { type: Type.STRING }
+              },
+              required: ["question", "clinicalObjective"]
+            }
+          }
+        },
+        required: ["questions"]
+      }
+    }
+  });
+
+  const raw = response.text || "";
+  try {
+    const clean = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(clean);
+    return Array.isArray(parsed.questions) ? parsed.questions : [];
+  } catch (e) {
+    console.error("Erro ao analisar perguntas clínicas:", e);
+    return [
+      {
+        question: `Como você se sentiu e o que passou pela sua mente em relação a ${params.fieldLabel}?`,
+        clinicalObjective: "Investigação socrática exploratória aberta"
+      }
+    ];
+  }
+}
+
