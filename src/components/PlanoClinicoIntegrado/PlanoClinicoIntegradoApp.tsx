@@ -19,7 +19,8 @@ import {
   HelpCircle,
   Upload,
   X,
-  Loader2
+  Loader2,
+  ListFilter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PatientData, PciRecord, PciPhase } from './types';
@@ -1576,39 +1577,48 @@ function SuggestionTextArea({
 
   return (
     <div className={cn("space-y-2 relative", className)}>
-      <div className="flex justify-between items-center px-1 flex-wrap gap-1">
-        <label className="text-[9px] font-black text-text-dim uppercase tracking-widest">{label}</label>
-        <div className="flex items-center gap-1.5">
+      <div className="flex justify-between items-center px-1 mb-1.5 flex-wrap gap-1.5">
+        <label className="text-[10px] font-black uppercase tracking-widest text-text-dim truncate">{label}</label>
+        <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
           {pciActions && (
             <>
               <button
                 type="button"
                 onClick={() => pciActions.onAskField(label)}
                 disabled={isAsking}
-                className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                 title="Sugerir perguntas socráticas para investigar este campo em sessão"
               >
-                {isAsking ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
-                Perguntar
+                {isAsking ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={11} className="text-primary/70" />}
+                <span>Perguntar</span>
               </button>
+              <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
               <button
                 type="button"
                 onClick={() => pciActions.onFillField(label, value, onChange)}
                 disabled={isFilling}
-                className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                 title="Preencher campo com IA a partir da queixa ou situação"
               >
-                {isFilling ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                Preencher
+                {isFilling ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                <span>Preencher</span>
               </button>
+              <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
             </>
           )}
           <button 
             type="button"
             onClick={() => setShowSuggestions(!showSuggestions)}
-            className="text-[9px] font-black text-primary hover:underline uppercase tracking-wider cursor-pointer pl-0.5"
+            className={cn(
+              "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+              showSuggestions
+                ? "bg-primary text-bg-deep font-black shadow-sm"
+                : "text-text-dim hover:text-text-main hover:bg-white/5"
+            )}
+            title="Abrir catálogo de sugestões clínicas"
           >
-            {showSuggestions ? 'Fechar' : 'Sugestões'}
+            <ListFilter size={11} className={showSuggestions ? "text-bg-deep" : "text-text-dim/60"} />
+            <span>{showSuggestions ? 'Fechar' : 'Sugestões'}</span>
           </button>
         </div>
       </div>

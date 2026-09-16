@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Wand2, Save, AlertCircle, Loader2, BrainCircuit, Activity, BookOpen, Search, X, Printer, Upload, Sparkles, HelpCircle } from 'lucide-react';
+import { Wand2, Save, AlertCircle, Loader2, BrainCircuit, Activity, BookOpen, Search, X, Printer, Upload, Sparkles, HelpCircle, ListFilter } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-hot-toast';
 import { RidEntry, AppSettings } from '../types';
@@ -724,35 +724,44 @@ Planejamento: ${cleanHtml(f.planejamento)}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1.5 rounded-xl transition-all relative">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">1. Situação Ocorrente</label>
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFieldAsk('situacao', '1. Situação Ocorrente')}
                     disabled={askingField === 'situacao'}
-                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Sugerir perguntas investigativas para detalhar a situação com o paciente"
                   >
-                    {askingField === 'situacao' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
-                    Perguntar
+                    {askingField === 'situacao' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={11} className="text-primary/70" />}
+                    <span>Perguntar</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => handleFieldFill('situacao', '1. Situação Ocorrente')}
                     disabled={fillingField === 'situacao'}
-                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Formular clinicamente a situação com IA"
                   >
-                    {fillingField === 'situacao' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Preencher
+                    {fillingField === 'situacao' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>Preencher</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button 
                     type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'situacao' ? null : 'situacao')}
-                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+                      activeSuggestionField === 'situacao'
+                        ? "bg-primary text-bg-deep font-black shadow-sm"
+                        : "text-text-dim hover:text-text-main hover:bg-white/5"
+                    )}
+                    title="Ver sugestões de situações comuns"
                   >
-                    Sugestões
+                    <ListFilter size={11} className={activeSuggestionField === 'situacao' ? "text-bg-deep" : "text-text-dim/60"} />
+                    <span>Sugestões</span>
                   </button>
                 </div>
               </div>
@@ -784,35 +793,44 @@ Planejamento: ${cleanHtml(f.planejamento)}
             </div>
 
             <div className="space-y-1.5 relative">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">2. Necessidade Básica</label>
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFieldAsk('necessidade', '2. Necessidade Básica')}
                     disabled={askingField === 'necessidade'}
-                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Perguntas socráticas para investigar necessidades frustradas em sessão"
                   >
-                    {askingField === 'necessidade' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
-                    Perguntar
+                    {askingField === 'necessidade' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={11} className="text-primary/70" />}
+                    <span>Perguntar</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => handleFieldFill('necessidade', '2. Necessidade Básica')}
                     disabled={fillingField === 'necessidade'}
-                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Preencher necessidades com IA a partir da Situação"
                   >
-                    {fillingField === 'necessidade' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Preencher
+                    {fillingField === 'necessidade' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>Preencher</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button 
                     type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'necessidade' ? null : 'necessidade')}
-                    className="text-[9px] font-bold text-primary hover:underline cursor-pointer pl-0.5"
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+                      activeSuggestionField === 'necessidade'
+                        ? "bg-primary text-bg-deep font-black shadow-sm"
+                        : "text-text-dim hover:text-text-main hover:bg-white/5"
+                    )}
+                    title="Ver catálogo de necessidades emocionais básicas"
                   >
-                    Sugerir
+                    <ListFilter size={11} className={activeSuggestionField === 'necessidade' ? "text-bg-deep" : "text-text-dim/60"} />
+                    <span>Sugerir</span>
                   </button>
                 </div>
               </div>
@@ -884,35 +902,44 @@ Planejamento: ${cleanHtml(f.planejamento)}
             </div>
             
             <div className="space-y-1.5 relative">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">3. Esquema Ativado</label>
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFieldAsk('esquema', '3. Esquema Inicial Desadaptativo')}
                     disabled={askingField === 'esquema'}
-                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-amber-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-amber-400 hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Perguntas socráticas para rastrear esquemas desadaptativos ativos"
                   >
-                    {askingField === 'esquema' ? <Loader2 size={10} className="animate-spin text-amber-400" /> : <HelpCircle size={10} className="text-amber-400" />}
-                    Perguntar
+                    {askingField === 'esquema' ? <Loader2 size={10} className="animate-spin text-amber-400" /> : <HelpCircle size={11} className="text-amber-400/80" />}
+                    <span>Perguntar</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => handleFieldFill('esquema', '3. Esquema Inicial Desadaptativo')}
                     disabled={fillingField === 'esquema'}
-                    className="px-2 py-0.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 text-amber-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Mapear e preencher Esquemas com IA a partir da Situação"
                   >
-                    {fillingField === 'esquema' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Preencher
+                    {fillingField === 'esquema' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>Preencher</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button 
                     type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'esquema' ? null : 'esquema')}
-                    className="text-[9px] font-bold text-amber-400 hover:underline cursor-pointer pl-0.5"
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+                      activeSuggestionField === 'esquema'
+                        ? "bg-amber-500 text-bg-deep font-black shadow-sm"
+                        : "text-text-dim hover:text-amber-400 hover:bg-white/5"
+                    )}
+                    title="Ver catálogo de esquemas iniciais desadaptativos"
                   >
-                    Sugerir
+                    <ListFilter size={11} className={activeSuggestionField === 'esquema' ? "text-bg-deep" : "text-text-dim/60"} />
+                    <span>Sugerir</span>
                   </button>
                 </div>
               </div>
@@ -958,35 +985,44 @@ Planejamento: ${cleanHtml(f.planejamento)}
             </div>
 
             <div className="col-span-2 space-y-1.5 relative">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">4. Pensamentos Automáticos</label>
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFieldAsk('pensamento', '4. Pensamento Automático')}
                     disabled={askingField === 'pensamento'}
-                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Perguntas socráticas para capturar pensamentos automáticos em sessão"
                   >
-                    {askingField === 'pensamento' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
-                    Perguntar
+                    {askingField === 'pensamento' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={11} className="text-primary/70" />}
+                    <span>Perguntar</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => handleFieldFill('pensamento', '4. Pensamento Automático')}
                     disabled={fillingField === 'pensamento'}
-                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Identificar e formular pensamentos automáticos via IA"
                   >
-                    {fillingField === 'pensamento' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Preencher
+                    {fillingField === 'pensamento' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>Preencher</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button 
                     type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'pensamento' ? null : 'pensamento')}
-                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+                      activeSuggestionField === 'pensamento'
+                        ? "bg-primary text-bg-deep font-black shadow-sm"
+                        : "text-text-dim hover:text-text-main hover:bg-white/5"
+                    )}
+                    title="Catálogo de distorções cognitivas"
                   >
-                    Distorções
+                    <ListFilter size={11} className={activeSuggestionField === 'pensamento' ? "text-bg-deep" : "text-text-dim/60"} />
+                    <span>Distorções</span>
                   </button>
                 </div>
               </div>
@@ -1019,35 +1055,44 @@ Planejamento: ${cleanHtml(f.planejamento)}
             </div>
 
             <div className="col-span-1 space-y-1.5 relative">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">5. Intensidade Emocional</label>
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFieldAsk('emocao', '5. Intensidade Emocional')}
                     disabled={askingField === 'emocao'}
-                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Perguntas para explorar a vivência emocional e somática com o paciente"
                   >
-                    {askingField === 'emocao' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
-                    Perguntar
+                    {askingField === 'emocao' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={11} className="text-primary/70" />}
+                    <span>Perguntar</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => handleFieldFill('emocao', '5. Intensidade Emocional')}
                     disabled={fillingField === 'emocao'}
-                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Inferir emoção predominante e intensidade via IA"
                   >
-                    {fillingField === 'emocao' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Preencher
+                    {fillingField === 'emocao' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>Preencher</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button 
                     type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'emocao' ? null : 'emocao')}
-                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+                      activeSuggestionField === 'emocao'
+                        ? "bg-primary text-bg-deep font-black shadow-sm"
+                        : "text-text-dim hover:text-text-main hover:bg-white/5"
+                    )}
+                    title="Ver sintomas físicos típicos"
                   >
-                    Sintomas Físicos
+                    <ListFilter size={11} className={activeSuggestionField === 'emocao' ? "text-bg-deep" : "text-text-dim/60"} />
+                    <span>Sintomas</span>
                   </button>
                 </div>
               </div>
@@ -1108,35 +1153,44 @@ Planejamento: ${cleanHtml(f.planejamento)}
             </div>
 
             <div className="col-span-1 space-y-1.5 relative">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">6. Comportamento</label>
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFieldAsk('comportamento', '6. Resposta Comportamental')}
                     disabled={askingField === 'comportamento'}
-                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Perguntas socráticas para rastrear a reação comportamental do paciente"
                   >
-                    {askingField === 'comportamento' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
-                    Perguntar
+                    {askingField === 'comportamento' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={11} className="text-primary/70" />}
+                    <span>Perguntar</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => handleFieldFill('comportamento', '6. Resposta Comportamental')}
                     disabled={fillingField === 'comportamento'}
-                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Formular resposta comportamental adaptativa ou desadaptativa via IA"
                   >
-                    {fillingField === 'comportamento' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Preencher
+                    {fillingField === 'comportamento' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>Preencher</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button 
                     type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'comportamento' ? null : 'comportamento')}
-                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+                      activeSuggestionField === 'comportamento'
+                        ? "bg-primary text-bg-deep font-black shadow-sm"
+                        : "text-text-dim hover:text-text-main hover:bg-white/5"
+                    )}
+                    title="Sugestões de comportamentos típicos"
                   >
-                    Sugestões
+                    <ListFilter size={11} className={activeSuggestionField === 'comportamento' ? "text-bg-deep" : "text-text-dim/60"} />
+                    <span>Sugestões</span>
                   </button>
                 </div>
               </div>
@@ -1151,79 +1205,61 @@ Planejamento: ${cleanHtml(f.planejamento)}
                 {activeSuggestionField === 'comportamento' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="absolute z-10 top-full left-0 right-0 mt-1 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-3 max-h-60 overflow-y-auto"
+                    className="absolute z-10 bottom-full left-0 right-0 mb-2 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2 max-h-48 overflow-y-auto grid grid-cols-1 gap-1"
                   >
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                          Desadaptativos
-                        </h4>
-                        <div className="grid grid-cols-1 gap-1">
-                          {BEHAVIOR_SUGGESTIONS.maladaptive.map(s => (
-                            <button 
-                              key={s}
-                              onClick={() => handleSelectSuggestion('comportamento', s)}
-                              className="text-left px-3 py-1.5 text-[10px] font-bold text-text-main hover:bg-rose-500/10 hover:text-rose-400 rounded-lg transition-colors border border-transparent hover:border-rose-500/20 cursor-pointer"
-                            >
-                              {s}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="pt-2 border-t border-border-subtle">
-                        <h4 className="text-[9px] font-black text-primary uppercase tracking-widest mb-2 flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          Adaptativos
-                        </h4>
-                        <div className="grid grid-cols-1 gap-1">
-                          {BEHAVIOR_SUGGESTIONS.adaptive.map(s => (
-                            <button 
-                              key={s}
-                              onClick={() => handleSelectSuggestion('comportamento', s)}
-                              className="text-left px-3 py-1.5 text-[10px] font-bold text-text-main hover:bg-primary/10 hover:text-primary rounded-lg transition-colors border border-transparent hover:border-primary/20 cursor-pointer"
-                            >
-                              {s}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {BEHAVIOR_SUGGESTIONS.map(b => (
+                      <button 
+                        key={b}
+                        onClick={() => handleSelectSuggestion('comportamento', b)}
+                        className="text-left px-3 py-1.5 text-[10px] font-bold text-text-main hover:bg-bg-sidebar hover:text-primary rounded-lg transition-colors cursor-pointer"
+                      >
+                        {b}
+                      </button>
+                    ))}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
             
             <div className="col-span-1 space-y-1.5 relative">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">7. Conseq. Curto Prazo</label>
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFieldAsk('consequenciasCurtoPrazo', '7. Consequências de Curto Prazo')}
                     disabled={askingField === 'consequenciasCurtoPrazo'}
-                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Perguntas para investigar o ganho ou alívio imediato"
                   >
-                    {askingField === 'consequenciasCurtoPrazo' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
-                    Perguntar
+                    {askingField === 'consequenciasCurtoPrazo' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={11} className="text-primary/70" />}
+                    <span>Perguntar</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => handleFieldFill('consequenciasCurtoPrazo', '7. Consequências de Curto Prazo')}
                     disabled={fillingField === 'consequenciasCurtoPrazo'}
-                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Formular consequências imediatas e reforço via IA"
                   >
-                    {fillingField === 'consequenciasCurtoPrazo' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Preencher
+                    {fillingField === 'consequenciasCurtoPrazo' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>Preencher</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button 
                     type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'consequenciasCurtoPrazo' ? null : 'consequenciasCurtoPrazo')}
-                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+                      activeSuggestionField === 'consequenciasCurtoPrazo'
+                        ? "bg-primary text-bg-deep font-black shadow-sm"
+                        : "text-text-dim hover:text-text-main hover:bg-white/5"
+                    )}
+                    title="Sugestões de consequências de curto prazo"
                   >
-                    Sugestões
+                    <ListFilter size={11} className={activeSuggestionField === 'consequenciasCurtoPrazo' ? "text-bg-deep" : "text-text-dim/60"} />
+                    <span>Sugestões</span>
                   </button>
                 </div>
               </div>
@@ -1255,35 +1291,44 @@ Planejamento: ${cleanHtml(f.planejamento)}
             </div>
 
             <div className="col-span-1 space-y-1.5 relative">
-              <div className="flex justify-between items-end">
+              <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-dim pl-1">8. Conseq. Longo Prazo</label>
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="inline-flex items-center bg-bg-card/90 border border-border-subtle rounded-xl p-0.5 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => handleFieldAsk('consequenciasLongoPrazo', '8. Consequências de Longo Prazo')}
                     disabled={askingField === 'consequenciasLongoPrazo'}
-                    className="px-2 py-0.5 rounded-lg bg-bg-card hover:bg-bg-sidebar border border-border-subtle text-text-dim hover:text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Perguntas para expor os custos cumulativos e perpetuação do esquema"
                   >
-                    {askingField === 'consequenciasLongoPrazo' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={10} className="text-primary" />}
-                    Perguntar
+                    {askingField === 'consequenciasLongoPrazo' ? <Loader2 size={10} className="animate-spin text-primary" /> : <HelpCircle size={11} className="text-primary/70" />}
+                    <span>Perguntar</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => handleFieldFill('consequenciasLongoPrazo', '8. Consequências de Longo Prazo')}
                     disabled={fillingField === 'consequenciasLongoPrazo'}
-                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                    className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                     title="Formular consequências de longo prazo via IA"
                   >
-                    {fillingField === 'consequenciasLongoPrazo' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
-                    Preencher
+                    {fillingField === 'consequenciasLongoPrazo' ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>Preencher</span>
                   </button>
+                  <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
                   <button 
                     type="button"
                     onClick={() => setActiveSuggestionField(activeSuggestionField === 'consequenciasLongoPrazo' ? null : 'consequenciasLongoPrazo')}
-                    className="text-[9px] font-bold text-text-dim hover:underline cursor-pointer pl-0.5"
+                    className={cn(
+                      "px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer",
+                      activeSuggestionField === 'consequenciasLongoPrazo'
+                        ? "bg-primary text-bg-deep font-black shadow-sm"
+                        : "text-text-dim hover:text-text-main hover:bg-white/5"
+                    )}
+                    title="Sugestões de consequências de longo prazo"
                   >
-                    Sugestões
+                    <ListFilter size={11} className={activeSuggestionField === 'consequenciasLongoPrazo' ? "text-bg-deep" : "text-text-dim/60"} />
+                    <span>Sugestões</span>
                   </button>
                 </div>
               </div>
