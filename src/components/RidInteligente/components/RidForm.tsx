@@ -35,6 +35,59 @@ interface RidFormProps {
   isSaving?: boolean;
 }
 
+function parseClinicalTag(rawTag: string): { title: string; desc?: string } {
+  const trimmed = (rawTag || '').trim();
+  if (!trimmed) return { title: '' };
+
+  // 1. Detect and parse raw JSON format (e.g. {"EMOTION": ..., "TAGS": [...], "TEXT": "..."})
+  if (trimmed.startsWith('{') || trimmed.includes('"TEXT"') || trimmed.includes('"text"')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const tags = parsed.tags || parsed.TAGS || parsed.Tags;
+      const text = parsed.text || parsed.TEXT || parsed.Texto;
+      const itens = parsed.itens || parsed.ITENS || parsed.items;
+
+      if (Array.isArray(itens) && itens.length > 0) {
+        const first = itens[0];
+        return {
+          title: first.nome || first.name || 'Esquema Ativado',
+          desc: first.justificativa || first.explanation || (typeof text === 'string' ? text : '')
+        };
+      }
+
+      if (Array.isArray(tags) && tags.length > 0) {
+        return {
+          title: tags.join(' • '),
+          desc: typeof text === 'string' ? text : undefined
+        };
+      }
+
+      if (typeof text === 'string') {
+        const sep = text.indexOf(':');
+        if (sep > 0) {
+          return { title: text.substring(0, sep).trim(), desc: text.substring(sep + 1).trim() };
+        }
+        return { title: 'Esquema Ativado', desc: text };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. Structured "Nome: Justificativa"
+  const sepIdx = trimmed.indexOf(':');
+  if (sepIdx > 0) {
+    const title = trimmed.substring(0, sepIdx).trim();
+    const desc = trimmed.substring(sepIdx + 1).trim();
+    if (desc.length > 0) {
+      return { title, desc };
+    }
+  }
+
+  // 3. Simple tag
+  return { title: trimmed };
+}
+
 export function RidForm({ onSave, onCancel, initialData, settings, patientId, patientName, patientAge, isSaving = false }: RidFormProps) {
   const [formData, setFormData] = useState<Omit<RidEntry, 'id' | 'date' | 'analysis'>>(() => {
     if (initialData) {
@@ -126,7 +179,15 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
       });
 
       if (fieldName === 'necessidade') {
-        if (res.tags && res.tags.length > 0) {
+        if (res.itens && res.itens.length > 0) {
+          const formatted = res.itens.map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
+          setFormData(prev => {
+            const existing = new Set(prev.necessidade);
+            formatted.forEach(t => existing.add(t));
+            return { ...prev, necessidade: Array.from(existing) };
+          });
+          toast.success("Necessidades identificadas com justificativa clínica!");
+        } else if (res.tags && res.tags.length > 0) {
           setFormData(prev => {
             const existing = new Set(prev.necessidade);
             res.tags!.forEach(t => existing.add(t));
@@ -142,7 +203,15 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
           toast.success("Necessidade sugerida!");
         }
       } else if (fieldName === 'esquema') {
-        if (res.tags && res.tags.length > 0) {
+        if (res.itens && res.itens.length > 0) {
+          const formatted = res.itens.map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
+          setFormData(prev => {
+            const existing = new Set(prev.esquema);
+            formatted.forEach(t => existing.add(t));
+            return { ...prev, esquema: Array.from(existing) };
+          });
+          toast.success("Esquemas mapeados com justificativa clínica!");
+        } else if (res.tags && res.tags.length > 0) {
           setFormData(prev => {
             const existing = new Set(prev.esquema);
             res.tags!.forEach(t => existing.add(t));
@@ -174,16 +243,16 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         if (res.text) {
           setFormData(prev => ({
             ...prev,
-            situacao: prev.situacao && prev.situacao.trim() ? `${prev.situacao}\n${res.text}` : res.text!
+            situacao: prev.situacao && prev.situacao.trim() ? `${prev.situacao}\n\n${res.text}` : res.text!
           }));
-          toast.success("Situação enriquecida com formulação de 4ª geração!");
+          toast.success("Situação formulada com sucesso!");
         }
       } else {
         // Campos de texto: pensamento, comportamento, consequenciasCurtoPrazo, consequenciasLongoPrazo
         if (res.text) {
           setFormData(prev => {
             const current = (prev as any)[fieldName] as string;
-            const newVal = current && current.trim() ? `${current}\n${res.text}` : res.text!;
+            const newVal = current && current.trim() ? `${current}\n\n${res.text}` : res.text!;
             return { ...prev, [fieldName]: newVal };
           });
           toast.success(`Campo "${fieldLabel}" preenchido com sucesso!`);
@@ -834,17 +903,45 @@ Planejamento: ${cleanHtml(f.planejamento)}
                   </button>
                 </div>
               </div>
-              <div className="w-full min-h-[64px] p-2 bg-bg-deep border border-border-subtle rounded-xl flex flex-wrap gap-1.5 items-start focus-within:border-primary transition-all">
-                {formData.necessidade.map((n, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-black rounded-lg uppercase tracking-wider">
-                    {n}
-                    <button onClick={() => handleRemoveTag('necessidade', i)} className="hover:text-primary-hover cursor-pointer"><X size={10} /></button>
-                  </span>
-                ))}
+              <div className="w-full min-h-[64px] p-2 bg-bg-deep border border-border-subtle rounded-xl flex flex-col gap-2 items-start focus-within:border-primary transition-all">
+                {formData.necessidade.map((n, i) => {
+                  const { title, desc } = parseClinicalTag(n);
+                  if (!title) return null;
+
+                  if (desc) {
+                    return (
+                      <div key={i} className="w-full p-2.5 bg-primary/10 border border-primary/25 rounded-xl text-left relative group shadow-sm transition-all hover:border-primary/40">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[11px] font-black text-primary uppercase tracking-wider">
+                            {title}
+                          </span>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveTag('necessidade', i)} 
+                            className="p-1 text-text-dim hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
+                            title="Remover necessidade"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-text-main/90 font-medium leading-relaxed normal-case">
+                          {desc}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                      <span>{title}</span>
+                      <button onClick={() => handleRemoveTag('necessidade', i)} className="hover:text-primary-hover cursor-pointer"><X size={10} /></button>
+                    </span>
+                  );
+                })}
                 <input 
                   type="text"
-                  placeholder={formData.necessidade.length === 0 ? "Adicionar necessidade..." : ""}
-                  className="flex-1 min-w-[80px] bg-transparent border-none text-xs text-text-main focus:ring-0 p-0.5 placeholder:text-text-dim/40 outline-none"
+                  placeholder={formData.necessidade.length === 0 ? "Adicionar necessidade..." : "Adicionar outra necessidade..."}
+                  className="w-full bg-transparent border-none text-xs text-text-main focus:ring-0 p-1 placeholder:text-text-dim/40 outline-none"
                   onKeyDown={(e) => handleAddCustomTag('necessidade', e)}
                 />
               </div>
@@ -943,17 +1040,45 @@ Planejamento: ${cleanHtml(f.planejamento)}
                   </button>
                 </div>
               </div>
-              <div className="w-full min-h-[64px] p-2 bg-bg-deep border border-border-subtle rounded-xl flex flex-wrap gap-1.5 items-start focus-within:border-primary transition-all">
-                {formData.esquema.map((s, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black rounded-lg uppercase tracking-wider">
-                    {s}
-                    <button onClick={() => handleRemoveTag('esquema', i)} className="hover:text-amber-300 cursor-pointer"><X size={10} /></button>
-                  </span>
-                ))}
+              <div className="w-full min-h-[64px] p-2 bg-bg-deep border border-border-subtle rounded-xl flex flex-col gap-2 items-start focus-within:border-primary transition-all">
+                {formData.esquema.map((s, i) => {
+                  const { title, desc } = parseClinicalTag(s);
+                  if (!title) return null;
+
+                  if (desc) {
+                    return (
+                      <div key={i} className="w-full p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-left relative group shadow-sm transition-all hover:border-amber-500/40">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider">
+                            {title}
+                          </span>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveTag('esquema', i)} 
+                            className="p-1 text-text-dim hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
+                            title="Remover esquema"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-text-main/90 font-medium leading-relaxed normal-case">
+                          {desc}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                      <span>{title}</span>
+                      <button onClick={() => handleRemoveTag('esquema', i)} className="hover:text-amber-300 cursor-pointer"><X size={10} /></button>
+                    </span>
+                  );
+                })}
                 <input 
                   type="text"
-                  placeholder={formData.esquema.length === 0 ? "Adicionar esquema..." : ""}
-                  className="flex-1 min-w-[80px] bg-transparent border-none text-xs text-text-main focus:ring-0 p-0.5 placeholder:text-text-dim/40 outline-none"
+                  placeholder={formData.esquema.length === 0 ? "Adicionar esquema..." : "Adicionar outro esquema..."}
+                  className="w-full bg-transparent border-none text-xs text-text-main focus:ring-0 p-1 placeholder:text-text-dim/40 outline-none"
                   onKeyDown={(e) => handleAddCustomTag('esquema', e)}
                 />
               </div>

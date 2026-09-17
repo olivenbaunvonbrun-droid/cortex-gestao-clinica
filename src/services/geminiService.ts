@@ -1275,10 +1275,16 @@ export interface FieldFillingParams {
   };
 }
 
+export interface ClinicalItemWithJustification {
+  nome: string;
+  justificativa: string;
+}
+
 export interface FieldFillingResult {
   text?: string;
   tags?: string[];
-  emotion?: { name: string; intensity: number };
+  itens?: ClinicalItemWithJustification[];
+  emotion?: { name: string; intensity: number; justificativa?: string };
 }
 
 export async function generateClinicalFieldFilling(params: FieldFillingParams): Promise<FieldFillingResult> {
@@ -1289,7 +1295,7 @@ export async function generateClinicalFieldFilling(params: FieldFillingParams): 
 Você é um Supervisor Clínico Sênior especialista em Terapia Cognitivo-Comportamental de 4ª Geração (Terapia Baseada em Processos - PBT, ACT, FAP, DBT) e Terapia do Esquema de Jeffrey Young.
 
 SUA MISSÃO:
-Preencher o campo clínico "${params.fieldLabel}" (identificador técnico: "${params.field}") para a ferramenta ${params.tool}, baseando-se estritamente na situação clínica ou relato relatado pelo paciente a seguir:
+Preencher o campo clínico "${params.fieldLabel}" (identificador técnico: "${params.field}") para a ferramenta ${params.tool}, baseando-se estritamente na situação clínica ou relato a seguir:
 
 SITUAÇÃO / RELATO CLÍNICO:
 """
@@ -1299,38 +1305,59 @@ ${params.patientContext?.name ? `PACIENTE: ${params.patientContext.name}` : ''}
 ${params.patientContext?.age ? `IDADE: ${params.patientContext.age} anos` : ''}
 ${params.patientContext?.queixa ? `QUEIXA GERAL: ${params.patientContext.queixa}` : ''}
 
-DIRETRIZES TÉCNICAS CONFORME O TIPO DE CAMPO:
-1. SE O CAMPO FOR DE NECESSIDADES BÁSICAS (ex: "necessidade", "necessidadesIdentificadas"):
-   - Identifique de 1 a 3 necessidades emocionais básicas nucleares frustradas na situação descrita (ex: "Vínculo Seguro / Conexão", "Autonomia e Competência", "Limites Realistas", "Liberdade de Expressão", "Espontaneidade e Lazer", "Aprovação e Reconhecimento", "Segurança Física e Emocional").
-   - Preencha o array "tags" com essas necessidades e "text" com uma breve síntese.
+DIRETRIZES TÉCNICAS MANDATÓRIAS POR TIPO DE CAMPO:
+1. SE O CAMPO FOR DE ESQUEMAS ATIVADOS / EIDs (ex: "esquema", "esquemasCognitivos"):
+   - Identifique QUAIS Esquemas Iniciais Desadaptativos (EIDs) estão ativados (ex: "Abuso / Desconfiança", "Defectividade / Vergonha", "Abandono / Instabilidade", "Privação Emocional", "Subjugação", "Vulnerabilidade ao Dano", "Padrões Inflexíveis", etc.).
+   - Para CADA esquema identificado, elabore uma JUSTIFICATIVA CLÍNICA rica e contextualizada, explicando por que e como o gatilho da situação ativou este esquema na história do paciente.
+   - Preencha o array "itens" com cada objeto contendo "nome" (nome do esquema) e "justificativa" (explicação clínica).
+   - Formate o campo "text" em tópicos claros:
+     • [Nome do Esquema]: [Justificativa clínica contextualizada]
 
-2. SE O CAMPO FOR DE ESQUEMAS / EIDs (ex: "esquema", "esquemasCognitivos"):
-   - Identifique de 1 a 3 Esquemas Iniciais Desadaptativos (EIDs) ativados pelo gatilho da situação (ex: "Defectividade / Vergonha", "Abandono / Instabilidade", "Privação Emocional", "Fracasso", "Padrões Inflexíveis", "Subjugação", "Vulnerabilidade ao Dano", "Autocontrole Insuficiente").
-   - Preencha o array "tags" com os nomes exatos dos esquemas e "text" com a explicação funcional.
+2. SE O CAMPO FOR DE NECESSIDADES BÁSICAS (ex: "necessidade", "necessidadesIdentificadas"):
+   - Identifique QUAIS necessidades emocionais básicas nucleares foram frustradas na situação (ex: "Segurança Básica e Proteção", "Vínculo Seguro e Conexão", "Autonomia e Competência", "Limites Realistas", "Liberdade de Expressão", "Espontaneidade e Lazer").
+   - Para CADA necessidade, forneça a JUSTIFICATIVA CLÍNICA explicando como e por quem ela foi frustrada no relato.
+   - Preencha "itens" com "nome" e "justificativa".
+   - Formate "text" em tópicos claros:
+     • [Nome da Necessidade]: [Justificativa clínica da frustração]
 
-3. SE O CAMPO FOR DE EMOÇÃO PREDOMINANTE / INTENSIDADE (ex: "emocao", "ridEmocao"):
-   - Identifique a emoção primária mais evidente: "Ansiedade", "Tristeza", "Raiva", "Culpa", "Vergonha", "Medo", "Frustração", "Alívio" ou "Alegria".
-   - Estime a intensidade subjetiva (0 a 100) com base na dramaticidade e impacto da narrativa.
-   - Preencha o objeto "emotion": { "name": "...", "intensity": ... } e "text" com o nome da emoção e descrição dos correlatos fisiológicos.
+3. SE O CAMPO FOR DE PENSAMENTO AUTOMÁTICO OU DISTORÇÕES (ex: "pensamento", "ridPensamento", "distorcoesCognitivas", "crencasCentrais", "crencasPerifericas"):
+   - Formule os pensamentos automáticos na voz do paciente com as distorções cognitivas associadas (ex: Catastrofização, Leitura Mental, Raciocínio Emocional, Pensamento Tudo-ou-Nada).
+   - Para cada um, justifique clinicamente o impacto cognitivo.
+   - Preencha "itens" e formate "text" em tópicos elegantes.
 
-4. SE O CAMPO FOR PENSAMENTO AUTOMÁTICO OU DISTORÇÕES (ex: "pensamento", "ridPensamento", "distorcoesCognitivas"):
-   - Formule os pensamentos automáticos implícitos e explícitos na voz interna do paciente (ex: "Eles vão perceber que eu não sei o que estou fazendo").
-   - Preencha "text" com os pensamentos formulados e a distorção cognitiva associada.
+4. SE O CAMPO FOR DE EMOÇÃO PREDOMINANTE / INTENSIDADE (ex: "emocao", "ridEmocao"):
+   - Identifique a emoção primária mais evidente ("Ansiedade", "Tristeza", "Raiva", "Culpa", "Vergonha", "Medo", "Frustração", "Alívio", etc.).
+   - Estime a intensidade subjetiva (0 a 100).
+   - Descreva a justificativa clínica com os correlatos somáticos e fisiológicos associados.
+   - Preencha o objeto "emotion": { "name": "...", "intensity": ..., "justificativa": "..." }.
 
-5. SE O CAMPO FOR COMPORTAMENTO, ENFRENTAMENTO OU METAS (ex: "comportamento", "estrategiasEnfrentamento", "metasTerapeuticas", etc.):
-   - Descreva a ação ou formulação clínica de forma técnica, concisa e orientada a processos (PBT/TCC 4ª Geração).
-   - Preencha "text".
+5. SE O CAMPO FOR COMPORTAMENTO OU ENFRENTAMENTO (ex: "comportamento", "ridComportamento", "excessosComp", "deficitsHab"):
+   - Descreva o comportamento observado e JUSTIFIQUE sua função clínica (estilo de enfrentamento: hipercompensação, evitação ou resignação funcional).
+   - Preencha "itens" e formate "text" em tópicos claros.
 
 6. SE O CAMPO FOR CONSEQUÊNCIAS (Curto ou Longo Prazo):
-   - Curto prazo: alívio imediato, reforço negativo ou custos momentâneos.
-   - Longo prazo: manutenção do ciclo vicioso, prejuízo existencial e afastamento de valores.
-   - Preencha "text".
+   - Curto prazo: justifique o alívio imediato e os reforços negativos imediatos.
+   - Longo prazo: justifique a manutenção do ciclo vicioso, prejuízo interpessoal e cronificação dos esquemas.
+   - Preencha "text" e "itens".
 
-FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
+7. DEMAIS CAMPOS CLÍNICOS DO PCI (ex: "eventoQueixas", "familiaOrigem", "rotina", "diagTopo", "diagFunc", "projetoTerap", "relacionamentoTerap"):
+   - Preencha de forma técnica, profunda e estruturada, apresentando os elementos centrais acompanhados de sua justificativa clínica em português.
+
+REGRAS CRÍTICAS DE IDIOMA E FORMATAÇÃO:
+- IDIOMA: 100% em Português do Brasil impecável. NUNCA utilize palavras em inglês como "TEXT", "TAGS", "EMOTION", "INTENSITY" ou "NAME" dentro dos textos clínicos.
+- APARÊNCIA: O texto deve ser estético, fluido e profissional. NUNCA insira JSON cru ou chaves {} dentro de "text".
+
+FORMATO DE RESPOSTA (JSON estrito):
 {
-  "text": "Texto clínico formulado diretamente aplicável ao campo",
-  "tags": ["Tag 1", "Tag 2"],
-  "emotion": { "name": "Nome da emoção", "intensity": 80 }
+  "text": "Texto clínico formatado com marcadores • pronto para o prontuário",
+  "itens": [
+    {
+      "nome": "Nome técnico do elemento (ex: Abuso / Desconfiança)",
+      "justificativa": "Explicação clínica detalhada e contextualizada do porquê foi ativado ou como opera no relato"
+    }
+  ],
+  "tags": ["Nome 1", "Nome 2"],
+  "emotion": { "name": "Nome da emoção", "intensity": 80, "justificativa": "Explicação dos correlatos fisiológicos" }
 }
 `;
 
@@ -1344,6 +1371,17 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
         type: Type.OBJECT,
         properties: {
           text: { type: Type.STRING },
+          itens: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                nome: { type: Type.STRING },
+                justificativa: { type: Type.STRING }
+              },
+              required: ["nome", "justificativa"]
+            }
+          },
           tags: {
             type: Type.ARRAY,
             items: { type: Type.STRING }
@@ -1352,7 +1390,8 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
             type: Type.OBJECT,
             properties: {
               name: { type: Type.STRING },
-              intensity: { type: Type.INTEGER }
+              intensity: { type: Type.INTEGER },
+              justificativa: { type: Type.STRING }
             }
           }
         }
@@ -1363,7 +1402,43 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
   const raw = response.text || "";
   try {
     const clean = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
-    return JSON.parse(clean);
+    const parsed = JSON.parse(clean);
+
+    const normalized: FieldFillingResult = {};
+
+    const textVal = parsed.text || parsed.TEXT || parsed.Texto || parsed.texto;
+    const tagsVal = parsed.tags || parsed.TAGS || parsed.Tags;
+    const itensVal = parsed.itens || parsed.ITENS || parsed.items || parsed.ITEMS;
+    const emotionVal = parsed.emotion || parsed.EMOTION || parsed.emocao || parsed.EMOCAO;
+
+    if (Array.isArray(itensVal) && itensVal.length > 0) {
+      normalized.itens = itensVal.map((it: any) => ({
+        nome: it.nome || it.NOME || it.name || it.NAME || it.title || it.item || String(it),
+        justificativa: it.justificativa || it.JUSTIFICATIVA || it.explanation || it.EXPLANATION || it.descricao || it.desc || ''
+      }));
+    }
+
+    if (Array.isArray(tagsVal) && tagsVal.length > 0) {
+      normalized.tags = tagsVal;
+    } else if (normalized.itens && normalized.itens.length > 0) {
+      normalized.tags = normalized.itens.map(it => it.nome);
+    }
+
+    if (emotionVal && typeof emotionVal === 'object') {
+      normalized.emotion = {
+        name: emotionVal.name || emotionVal.NAME || emotionVal.nome || emotionVal.NOME || '',
+        intensity: Number(emotionVal.intensity || emotionVal.INTENSITY || emotionVal.intensidade || 50),
+        justificativa: emotionVal.justificativa || emotionVal.explanation || ''
+      };
+    }
+
+    if (textVal && typeof textVal === 'string' && !textVal.trim().startsWith('{')) {
+      normalized.text = textVal.trim();
+    } else if (normalized.itens && normalized.itens.length > 0) {
+      normalized.text = normalized.itens.map(it => `• ${it.nome}: ${it.justificativa}`).join('\n');
+    }
+
+    return normalized;
   } catch (e) {
     console.error("Erro ao analisar resposta de generateClinicalFieldFilling:", e);
     return { text: raw.trim() };

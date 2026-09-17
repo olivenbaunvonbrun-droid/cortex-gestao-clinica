@@ -156,12 +156,22 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
         }
       });
 
-      const textVal = res.tags && res.tags.length > 0
-        ? res.tags.join('; ')
-        : (res.emotion?.name ? `${res.emotion.name} (${res.emotion.intensity}%)` : (res.text || ''));
+      let textVal = '';
+      if (res.itens && res.itens.length > 0) {
+        textVal = res.itens.map(it => `• ${it.nome}: ${it.justificativa}`).join('\n');
+      } else if (res.text && !res.text.trim().startsWith('{')) {
+        textVal = res.text.trim();
+      } else if (res.tags && res.tags.length > 0) {
+        textVal = res.tags.join('; ');
+      } else if (res.emotion?.name) {
+        textVal = `${res.emotion.name} (${res.emotion.intensity}%)` + (res.emotion.justificativa ? ` - ${res.emotion.justificativa}` : '');
+      }
 
       if (textVal) {
-        const newVal = currentValue && currentValue.trim() ? `${currentValue}; ${textVal}` : textVal;
+        const isCurrentJson = currentValue && (currentValue.trim().startsWith('{') || currentValue.includes('"TEXT"'));
+        const newVal = (currentValue && currentValue.trim() && !isCurrentJson) 
+          ? `${currentValue}\n\n${textVal}` 
+          : textVal;
         onChange(newVal);
         toast.success(`Campo "${label}" preenchido com sucesso!`);
       }

@@ -7,6 +7,27 @@ import { RidEntry, AppSettings } from '../types';
 import { marked } from 'marked';
 import { sanitizeAnalysis } from './stringUtils';
 
+function formatTagList(items: string[] | string): string {
+  if (!items) return '--';
+  const arr = Array.isArray(items) ? items : [items];
+  return arr.map(item => {
+    const trimmed = (item || '').trim();
+    if (trimmed.startsWith('{') || trimmed.includes('"TEXT"')) {
+      try {
+        const p = JSON.parse(trimmed);
+        const tags = p.tags || p.TAGS;
+        const text = p.text || p.TEXT;
+        if (tags && text) return `<strong>${Array.isArray(tags) ? tags.join(', ') : tags}</strong>: ${text}`;
+      } catch {}
+    }
+    const sep = trimmed.indexOf(':');
+    if (sep > 0) {
+      return `<strong>${trimmed.substring(0, sep).trim()}</strong>: ${trimmed.substring(sep + 1).trim()}`;
+    }
+    return trimmed;
+  }).join('<br><br>');
+}
+
 export function generateClinicalReportHTML(entry: RidEntry, settings: AppSettings): string {
   const dateStr = new Date(entry.date).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -294,11 +315,11 @@ export function generateClinicalReportHTML(entry: RidEntry, settings: AppSetting
         </div>
         <div class="grid-item">
             <b>Necessidades Psicológicas</b>
-            <div class="grid-content">${Array.isArray(entry.necessidade) ? entry.necessidade.join(', ') : entry.necessidade}</div>
+            <div class="grid-content">${formatTagList(entry.necessidade)}</div>
         </div>
         <div class="grid-item">
             <b>Ativação de Esquemas</b>
-            <div class="grid-content">${Array.isArray(entry.esquema) ? entry.esquema.join(', ') : entry.esquema}</div>
+            <div class="grid-content">${formatTagList(entry.esquema)}</div>
         </div>
     </div>
 
