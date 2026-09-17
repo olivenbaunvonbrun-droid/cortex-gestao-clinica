@@ -1097,11 +1097,7 @@ export async function transcribeAudioChunk(audioBase64: string, mimeType: string
       { text: "Transcreva fielmente este segmento de áudio de atendimento clínico de psicologia." },
       { inlineData: { mimeType: safeMime, data: audioBase64 } }
     ],
-    config: {
-      systemInstruction,
-      temperature: 0.1,
-      maxOutputTokens: 4096
-    }
+    config: { systemInstruction }
   });
 
   return (response.text || "").trim();
@@ -1168,8 +1164,7 @@ IMPORTANTE DE FORMATAÇÃO:
     model: "gemini-3.5-flash",
     contents: prompt,
     config: {
-      temperature: 0.2,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 8192,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -1364,8 +1359,7 @@ FORMATO DE RESPOSTA (JSON estrito):
     model: "gemini-3.5-flash",
     contents: prompt,
     config: {
-      temperature: 0.2,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 2048,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -1503,8 +1497,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
     model: "gemini-3.5-flash",
     contents: prompt,
     config: {
-      temperature: 0.2,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 2048,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
