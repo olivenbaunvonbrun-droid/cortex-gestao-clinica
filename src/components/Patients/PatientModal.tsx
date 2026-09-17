@@ -755,7 +755,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
           }
         }}
       >
-        <div className="flex items-center justify-between mb-10 pb-6 border-b border-border-subtle">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-border-subtle">
           <div>
             <h2 className="text-3xl font-display font-bold text-text-main tracking-tight">
               {patient ? 'Prontuário de Paciente' : 'Novo Registro Clínico'}
@@ -801,54 +801,48 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-10">
+        <form onSubmit={handleSave} className="space-y-6">
           {activeTab === 'dados' && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
               
-              {/* Card de Auto-Cadastro pelo Paciente via WhatsApp */}
-              <div className="mb-8 p-5 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/25 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
-                    <MessageCircle size={24} />
+              {/* Barra Compacta de Auto-Cadastro pelo Paciente via WhatsApp */}
+              <div className="mb-5 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-bg-sidebar/60 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                    <MessageCircle size={14} />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                        Auto-Cadastro pelo Paciente via WhatsApp
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Link Seguro
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-text-dim mt-1 leading-relaxed max-w-xl">
+                  <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
+                      Auto-Cadastro via WhatsApp
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                      Link Seguro
+                    </span>
+                    <span className="text-[10px] text-text-dim hidden md:inline truncate">
                       {canSendRegistrationLink ? (
-                        <span>
-                          Solicite que <strong className="text-text-main font-bold">{firstName}</strong> preencha os dados cadastrais complementares (sobrenome, CPF, e-mail, nascimento, endereço e UF) diretamente pelo celular.
-                        </span>
+                        <span>• Envie o link para <strong className="text-text-main font-semibold">{firstName}</strong> preencher no celular</span>
                       ) : (
-                        <span className="text-amber-400/90 font-medium">
-                          Insira pelo menos o <strong>primeiro nome</strong> e o <strong>número de WhatsApp com DDD</strong> para liberar o envio do link.
-                        </span>
+                        <span className="text-amber-400/90">• Digite nome e WhatsApp com DDD para liberar</span>
                       )}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                   <button
                     type="button"
                     disabled={!canSendRegistrationLink}
                     onClick={handleSendWhatsAppLink}
                     title={canSendRegistrationLink ? "Enviar link de cadastro via WhatsApp" : "Preencha primeiro nome e WhatsApp para habilitar"}
                     className={cn(
-                      "flex-1 md:flex-initial px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-md",
+                      "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm",
                       canSendRegistrationLink
-                        ? "bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white shadow-emerald-500/20 hover:-translate-y-0.5 cursor-pointer"
+                        ? "bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white shadow-emerald-500/20 cursor-pointer"
                         : "bg-bg-sidebar border border-border-subtle text-text-dim/40 cursor-not-allowed opacity-50"
                     )}
                   >
-                    <MessageCircle size={15} />
-                    Enviar Link WhatsApp
+                    <MessageCircle size={12} />
+                    <span>Enviar Link</span>
                   </button>
 
                   {canSendRegistrationLink && (
@@ -856,9 +850,9 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
                       type="button"
                       onClick={handleCopyRegistrationLink}
                       title="Copiar link de auto-cadastro para a área de transferência"
-                      className="p-2.5 bg-bg-sidebar hover:bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 transition-all active:scale-95 cursor-pointer"
+                      className="p-1.5 bg-bg-sidebar/90 hover:bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 transition-all active:scale-95 cursor-pointer"
                     >
-                      {isCopiedLink ? <Check size={16} className="text-emerald-400" /> : <LinkIcon size={16} />}
+                      {isCopiedLink ? <Check size={13} className="text-emerald-400" /> : <LinkIcon size={13} />}
                     </button>
                   )}
 
@@ -866,15 +860,15 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
                     type="button"
                     onClick={() => setShowImportModal(true)}
                     title="Importar dados preenchidos pelo paciente a partir do WhatsApp"
-                    className="px-3.5 py-2.5 bg-bg-sidebar hover:bg-white/5 border border-border-subtle hover:border-text-dim/40 rounded-xl text-[10px] font-black uppercase tracking-widest text-text-dim hover:text-text-main transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                    className="px-2.5 py-1.5 bg-bg-sidebar/90 hover:bg-white/5 border border-border-subtle hover:border-text-dim/40 rounded-xl text-[9px] font-black uppercase tracking-wider text-text-dim hover:text-text-main transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
                   >
-                    <Download size={14} />
-                    Importar do WhatsApp
+                    <Download size={12} />
+                    <span>Importar</span>
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-col lg:flex-row gap-12 mb-10">
+              <div className="flex flex-col lg:flex-row gap-8 mb-6">
                 <div className="flex flex-col items-center gap-6">
                   <div className="relative w-40 h-40 rounded-[2.5rem] bg-bg-sidebar border-2 border-dashed border-border-subtle flex items-center justify-center overflow-hidden group shadow-inner">
                     {formData.fotoPerfilDataUrl ? (
@@ -984,7 +978,20 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest ml-1">Telefone / WhatsApp</label>
+                    <div className="flex justify-between items-center ml-1">
+                      <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Telefone / WhatsApp</label>
+                      {canSendRegistrationLink && (
+                        <button
+                          type="button"
+                          onClick={handleSendWhatsAppLink}
+                          className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Enviar link de auto-cadastro para este número via WhatsApp"
+                        >
+                          <MessageCircle size={10} />
+                          <span>Enviar link</span>
+                        </button>
+                      )}
+                    </div>
                     <input
                       type="text"
                       name="telefone"
