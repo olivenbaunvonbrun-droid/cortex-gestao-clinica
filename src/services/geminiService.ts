@@ -14,14 +14,8 @@ export function sanitizeAudioMimeType(mime?: string): string {
 
 export const GEMINI_MODELS = [
   "gemini-3.5-flash",
-  "gemini-3.6-flash",
-  "gemini-3.7-flash",
-  "gemini-3.8-flash",
-  "gemini-flash-latest",
   "gemini-2.5-flash",
-  "gemini-3.1-pro-preview",
-  "gemini-pro-latest",
-  "gemini-2.5-pro"
+  "gemini-flash-latest"
 ];
 
 export class GoogleGenAI extends OriginalGoogleGenAI {
@@ -1103,7 +1097,11 @@ export async function transcribeAudioChunk(audioBase64: string, mimeType: string
       { text: "Transcreva fielmente este segmento de áudio de atendimento clínico de psicologia." },
       { inlineData: { mimeType: safeMime, data: audioBase64 } }
     ],
-    config: { systemInstruction }
+    config: {
+      systemInstruction,
+      temperature: 0.1,
+      maxOutputTokens: 4096
+    }
   });
 
   return (response.text || "").trim();
@@ -1170,7 +1168,8 @@ IMPORTANTE DE FORMATAÇÃO:
     model: "gemini-3.5-flash",
     contents: prompt,
     config: {
-      maxOutputTokens: 8192,
+      temperature: 0.2,
+      maxOutputTokens: 4096,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -1365,7 +1364,8 @@ FORMATO DE RESPOSTA (JSON estrito):
     model: "gemini-3.5-flash",
     contents: prompt,
     config: {
-      maxOutputTokens: 2048,
+      temperature: 0.2,
+      maxOutputTokens: 1024,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -1503,7 +1503,8 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
     model: "gemini-3.5-flash",
     contents: prompt,
     config: {
-      maxOutputTokens: 2048,
+      temperature: 0.2,
+      maxOutputTokens: 1024,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,

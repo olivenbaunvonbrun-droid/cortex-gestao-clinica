@@ -505,7 +505,7 @@ export function ClinicalAudioRecorder({
     await processAudioSegments(segmentsToProcess);
   };
 
-  // Processador sequencial resiliente de blocos de áudio (para gravação ao vivo ou arquivo enviado)
+  // Processador concorrente resiliente de blocos de áudio (para gravação ao vivo ou arquivo enviado)
   const processAudioSegments = async (blobs: Blob[], initialTranscript = '') => {
     setRecordingStatus('processing');
     recordingStatusRef.current = 'processing';
@@ -513,36 +513,49 @@ export function ClinicalAudioRecorder({
 
     try {
       const total = blobs.length;
-      const transcriptParts: string[] = runningTranscript ? [runningTranscript] : [];
+      const chunkResults: string[] = new Array(total).fill('');
+      let completedCount = 0;
 
-      for (let i = 0; i < total; i++) {
-        const chunkBlob = blobs[i];
-        const sizeMB = (chunkBlob.size / (1024 * 1024)).toFixed(1);
-        const progressMsg = total > 1
-          ? `Transcrevendo capítulo ${i + 1} de ${total} (${sizeMB} MB)...`
-          : `Transcrevendo áudio clínico (${sizeMB} MB)...`;
-        setProcessingStep(progressMsg);
+      const progressMsg = (done: number) => total > 1
+        ? `Transcrevendo capítulos em alta velocidade (${done}/${total} concluídos)...`
+        : `Transcrevendo áudio clínico...`;
+      setProcessingStep(progressMsg(0));
 
-        const base64 = await blobToBase64(chunkBlob);
-        const rawMime = chunkBlob.type || 'audio/webm';
-        const cleanMime = rawMime.split(';')[0].trim().toLowerCase() || 'audio/webm';
+      // Fila concorrente controlada (máx 3 simultâneos para conciliar velocidade máxima e estabilidade de cota)
+      const CONCURRENCY_LIMIT = Math.min(3, total);
+      let nextIndex = 0;
 
-        try {
-          const partText = await transcribeAudioChunk(base64, cleanMime);
-          if (partText && partText.trim()) {
-            transcriptParts.push(partText.trim());
-            runningTranscript = transcriptParts.join('\n\n');
-            setAccumulatedTranscript(runningTranscript);
-            // Salva progresso incremental no cofre
-            await saveToVault(blobs, durationSeconds, runningTranscript);
+      const worker = async () => {
+        while (nextIndex < total) {
+          const currentIndex = nextIndex++;
+          const chunkBlob = blobs[currentIndex];
+          const rawMime = chunkBlob.type || 'audio/webm';
+          const cleanMime = rawMime.split(';')[0].trim().toLowerCase() || 'audio/webm';
+
+          try {
+            const base64 = await blobToBase64(chunkBlob);
+            const partText = await transcribeAudioChunk(base64, cleanMime);
+            if (partText && partText.trim()) {
+              chunkResults[currentIndex] = partText.trim();
+            }
+          } catch (chunkErr: any) {
+            console.warn(`Aviso no capítulo ${currentIndex + 1}:`, chunkErr);
+          } finally {
+            completedCount++;
+            setProcessingStep(progressMsg(completedCount));
+            const currentCombined = [runningTranscript, ...chunkResults].filter(Boolean).join('\n\n');
+            if (currentCombined) {
+              setAccumulatedTranscript(currentCombined);
+              await saveToVault(blobs, durationSeconds, currentCombined);
+            }
           }
-        } catch (chunkErr: any) {
-          console.warn(`Aviso no capítulo ${i + 1}:`, chunkErr);
-          // Permite que capítulos subsequentes continuem sendo processados
         }
-      }
+      };
 
-      const fullTranscript = transcriptParts.join('\n\n');
+      const workers = Array.from({ length: CONCURRENCY_LIMIT }, () => worker());
+      await Promise.all(workers);
+
+      const fullTranscript = [runningTranscript, ...chunkResults].filter(Boolean).join('\n\n');
       if (!fullTranscript || fullTranscript.trim().length < 10) {
         throw new Error('A inteligência artificial não identificou falas clínicas audíveis no áudio. A gravação continua protegida no cofre.');
       }

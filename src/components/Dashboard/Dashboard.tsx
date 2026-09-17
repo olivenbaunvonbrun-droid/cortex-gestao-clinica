@@ -99,8 +99,12 @@ export default function Dashboard({ onSectionChange, openTool }: DashboardProps 
         db.agendamentos.toArray(),
         db.settings.toArray()
       ]);
-      setPatients(ps);
-      setAppointments(apps);
+      // Exclui pacientes inativos do dashboard conforme diretriz clínica
+      const activePs = ps.filter(p => p.status !== 'inativo');
+      const activePatientIds = new Set(activePs.map(p => p.id));
+      const activeApps = apps.filter(a => !a.pacienteId || activePatientIds.has(a.pacienteId));
+      setPatients(activePs);
+      setAppointments(activeApps);
       const s: any = {};
       setts.forEach(item => s[item.key] = item.value);
       setSettings(s);

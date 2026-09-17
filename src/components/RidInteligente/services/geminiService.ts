@@ -62,6 +62,10 @@ export async function analyzeRid(data: Omit<RidEntry, 'id' | 'date' | 'analysis'
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: prompt,
+      config: {
+        temperature: 0.3,
+        maxOutputTokens: 2048
+      }
     });
     
     return response.text || "Não foi possível gerar a análise no momento.";
