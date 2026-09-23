@@ -12,10 +12,20 @@ export function sanitizeAudioMimeType(mime?: string): string {
   return 'audio/webm';
 }
 
+export const DEFAULT_CLINICAL_MODEL = "gemini-flash-latest";
+
 export const GEMINI_MODELS = [
-  "gemini-3.5-flash",
+  "gemini-flash-latest",
+  "gemini-flash-lite-latest",
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-3.8-flash",
   "gemini-2.5-flash",
-  "gemini-flash-latest"
+  "gemini-3.5-flash",
+  "gemini-pro-latest",
+  "gemini-3.1-pro-preview",
+  "gemini-3.5-live-translate-preview"
 ];
 
 export class GoogleGenAI extends OriginalGoogleGenAI {
@@ -24,7 +34,7 @@ export class GoogleGenAI extends OriginalGoogleGenAI {
     const originalGenerateContent = this.models.generateContent.bind(this.models);
     this.models.generateContent = async (params: any) => {
       let lastError: any = null;
-      const requestedModel = params?.model;
+      const requestedModel = params?.model || DEFAULT_CLINICAL_MODEL;
       let candidateModels: string[];
 
       if (requestedModel && GEMINI_MODELS.includes(requestedModel)) {
@@ -34,25 +44,24 @@ export class GoogleGenAI extends OriginalGoogleGenAI {
       }
 
       for (const modelName of candidateModels) {
-        for (let attempt = 1; attempt <= 2; attempt++) {
-          try {
-            console.log(`[Resiliência] Tentando modelo Gemini: ${modelName} (tentativa ${attempt})`);
-            return await originalGenerateContent({
-              ...params,
-              model: modelName
-            });
-          } catch (err: any) {
-            lastError = err;
-            const msg = err?.message || String(err);
-            const isTransient = msg.includes("503") || err?.status === 503 || msg.includes("UNAVAILABLE");
-            if (isTransient && attempt === 1) {
-              console.warn(`[Resiliência] 503 temporário em ${modelName}. Aguardando 1.2s para retry...`);
-              await new Promise(r => setTimeout(r, 1200));
-              continue;
-            }
-            console.warn(`[Resiliência] Falha no modelo ${modelName}:`, msg);
-            break;
-          }
+        // gemini-3.5-live-translate-preview só suporta streaming bidirecional em tempo real
+        if (modelName === "gemini-3.5-live-translate-preview") continue;
+
+        try {
+          console.log(`[Resiliência IA] Chamando Gemini (${modelName})...`);
+          return await originalGenerateContent({
+            ...params,
+            model: modelName
+          });
+        } catch (err: any) {
+          lastError = err;
+          const msg = err?.message || String(err);
+          const is503 = msg.includes("503") || err?.status === 503 || msg.includes("UNAVAILABLE") || msg.includes("high demand");
+          const is429 = msg.includes("429") || err?.status === 429 || msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED");
+
+          console.warn(`[Resiliência IA] Modelo ${modelName} indisponível (${is503 ? '503 Sobrecarga Temporária' : is429 ? '429 Cota de Requisições' : msg.slice(0, 100)}). Alternando imediatamente para o próximo modelo do pool...`);
+          // Alterna imediatamente para o próximo modelo sem travar o usuário
+          continue;
         }
       }
       throw lastError || new Error("Todos os modelos candidatos do Gemini falharam.");
@@ -94,7 +103,7 @@ export async function generateContentWithSystemInstruction(prompt: string, syste
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: { systemInstruction }
   });
@@ -112,7 +121,7 @@ export async function transcribeAudioFile(audioBase64: string, mimeType: string)
   `;
   const safeMime = sanitizeAudioMimeType(mimeType);
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: [
       { text: "Por favor, realize a transcrição clínica estruturada deste áudio." },
       { inlineData: { mimeType: safeMime, data: audioBase64 } }
@@ -147,7 +156,7 @@ export async function clinicalInsight(patientHistory: string, currentSession: st
   `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -178,7 +187,7 @@ export async function processClinicalAudio(audioBase64: string, approach: string
   `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: [
       { text: "Por favor, realize a transcrição clínica estruturada deste áudio." },
       { inlineData: { mimeType: "audio/webm", data: audioBase64 } }
@@ -205,7 +214,7 @@ export async function charcotConsult(query: string, patientContext: string) {
   `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: query,
     config: { systemInstruction }
   });
@@ -226,7 +235,7 @@ export async function analyzeClinicalFiles(files: { data: string, mimeType: stri
   } as any);
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: { parts } as any,
   });
 
@@ -257,7 +266,7 @@ export async function generateLongitudinalProfile(historyText: string, approach:
   `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt
   });
 
@@ -305,7 +314,7 @@ Instruções importantes:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -350,7 +359,7 @@ Instruções importantes:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -390,7 +399,7 @@ Instruções importantes:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -438,7 +447,7 @@ Sua resposta DEVE ser em formato HTML (sem tags <html> ou <body>, apenas <h4>, <
 Use linguagem profissional e científica de acordo com as diretrizes do CRP/CFP.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -481,7 +490,7 @@ ${rawAnswersSummary}
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -553,7 +562,7 @@ Instruções importantes:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -596,7 +605,7 @@ Instruções importantes:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -656,7 +665,7 @@ Instruções importantes:
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: contents as any,
   });
 
@@ -697,7 +706,7 @@ Instruções importantes:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -752,7 +761,7 @@ Instruções importantes:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -788,7 +797,7 @@ Retorne os dados em formato JSON estrito conforme o schema especificado. Seja pr
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -885,7 +894,7 @@ Por favor, escreva de maneira compassiva, ética, com jargão técnico refinado 
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
   });
 
@@ -922,7 +931,7 @@ Retorne em formato JSON estrito conforme o schema.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -1015,7 +1024,7 @@ Retorne em formato JSON estrito conforme o schema.
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -1092,7 +1101,7 @@ export async function transcribeAudioChunk(audioBase64: string, mimeType: string
 
   const safeMime = sanitizeAudioMimeType(mimeType);
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: [
       { text: "Transcreva fielmente este segmento de áudio de atendimento clínico de psicologia." },
       { inlineData: { mimeType: safeMime, data: audioBase64 } }
@@ -1161,7 +1170,7 @@ IMPORTANTE DE FORMATAÇÃO:
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
       maxOutputTokens: 8192,
@@ -1356,7 +1365,7 @@ FORMATO DE RESPOSTA (JSON estrito):
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
       maxOutputTokens: 2048,
@@ -1494,7 +1503,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
+    model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
       maxOutputTokens: 2048,

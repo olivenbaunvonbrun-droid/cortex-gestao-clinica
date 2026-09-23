@@ -521,8 +521,8 @@ export function ClinicalAudioRecorder({
         : `Transcrevendo áudio clínico...`;
       setProcessingStep(progressMsg(0));
 
-      // Fila concorrente controlada (máx 3 simultâneos para conciliar velocidade máxima e estabilidade de cota)
-      const CONCURRENCY_LIMIT = Math.min(3, total);
+      // Fila concorrente controlada (máx 2 simultâneos para conciliar velocidade máxima e estabilidade de cota)
+      const CONCURRENCY_LIMIT = Math.min(2, total);
       let nextIndex = 0;
 
       const worker = async () => {
