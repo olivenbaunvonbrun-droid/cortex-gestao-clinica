@@ -7,7 +7,7 @@ import AssessmentWizard from "./components/AssessmentWizard";
 import HistoryPanel from "./components/HistoryPanel";
 import { Tool, Report, PatientInfo } from "./types";
 import { INITIAL_TOOLS } from "./data";
-import { FileDown, Sparkles, BookOpen, Clock, Activity, MessageSquare, History } from "lucide-react";
+import { FileDown, Sparkles, BookOpen, Clock, Activity, MessageSquare, History, X } from "lucide-react";
 import { db } from "../../lib/db";
 import { psicometrikDbWrapper } from "./lib/psicometrikDbWrapper";
 import { toast } from "react-hot-toast";
@@ -429,10 +429,10 @@ export default function App({ activePatientId, lockPatient, userId, onClose }: B
               {openWindows.map(win => {
                 const isActive = activeWindowId === win.id;
                 return (
-                  <button
+                  <div
                     key={win.id}
                     onClick={() => handleToggleMinimize(win.id)}
-                    className={`flex items-center gap-2.5 px-4 h-10 rounded-lg text-xs font-medium border transition-all duration-200 ${
+                    className={`flex items-center gap-2 pl-3.5 pr-1.5 h-10 rounded-lg text-xs font-medium border transition-all duration-200 cursor-pointer select-none ${
                       isActive 
                         ? 'bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/40 shadow-lg' 
                         : 'bg-gray-900/40 text-gray-400 border-gray-800/60 hover:bg-gray-800/40 hover:text-gray-200'
@@ -440,7 +440,18 @@ export default function App({ activePatientId, lockPatient, userId, onClose }: B
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${win.isMinimized ? 'bg-gray-600' : 'bg-emerald-500 animate-pulse'}`} />
                     <span className="max-w-[120px] truncate">{win.tool.title}</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCloseWindow(win.id);
+                      }}
+                      className="p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors ml-1 cursor-pointer flex items-center justify-center"
+                      title={`Fechar ${win.tool.title}`}
+                    >
+                      <X size={11} strokeWidth={2.5} />
+                    </button>
+                  </div>
                 );
               })}
             </div>

@@ -43,7 +43,7 @@ function WindowLoadingFallback() {
 }
 
 import { Window } from './components/ui/Window';
-import { Brain, Cloud, Users, Sparkles, ClipboardList, Layers, TrendingUp, FileSpreadsheet, Activity, BookOpen, Video, Pin, Zap } from 'lucide-react';
+import { Brain, Cloud, Users, Sparkles, ClipboardList, Layers, TrendingUp, FileSpreadsheet, Activity, BookOpen, Video, Pin, Zap, X } from 'lucide-react';
 import { cn } from './lib/utils';
 import LGPDNotice from './components/LGPDNotice';
 import { useFirebase } from './hooks/useFirebase';
@@ -696,6 +696,12 @@ export default function App() {
                         handleOpenTool(toolId, selectedPatientId);
                       }
                     }}
+                    onContextMenu={(e) => {
+                      if (isOpened) {
+                        e.preventDefault();
+                        handleCloseTool(toolId);
+                      }
+                    }}
                     className={cn(
                       "p-2 rounded-xl transition-all relative group cursor-pointer flex items-center justify-center shrink-0 w-9 h-9 border",
                       isActive 
@@ -704,7 +710,7 @@ export default function App() {
                           ? 'bg-white/5 border-white/10 text-text-main hover:bg-white/10' 
                           : 'bg-transparent border-transparent text-text-dim hover:text-text-main hover:bg-white/5'
                     )}
-                    title={`${meta.title}${isOpened ? ' (Ativo)' : ' (Acesso Rápido)'}`}
+                    title={`${meta.title}${isOpened ? ' (Ativo - Clique com botão direito para fechar)' : ' (Acesso Rápido)'}`}
                   >
                     <Icon size={14} />
                     {isOpened && (
@@ -725,7 +731,7 @@ export default function App() {
             {openWindows.map(win => {
               const isActive = !win.isMinimized && win.zIndex === maxZIndex;
               return (
-                <button
+                <div
                   key={`taskbar-${win.id}`}
                   onClick={() => {
                     if (isActive) {
@@ -738,7 +744,7 @@ export default function App() {
                     }
                   }}
                   className={cn(
-                    "flex items-center gap-2 px-3.5 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all duration-200 cursor-pointer shrink-0",
+                    "group/item flex items-center gap-2 pl-3.5 pr-2 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all duration-200 cursor-pointer shrink-0 select-none",
                     isActive 
                       ? 'bg-primary/10 text-primary border-primary/30 shadow-lg' 
                       : 'bg-bg-card/45 border-border-subtle/50 text-text-dim hover:text-text-main hover:bg-bg-card/85'
@@ -747,10 +753,21 @@ export default function App() {
                   <Brain size={12} className={cn(isActive ? "text-primary animate-pulse" : "text-text-dim")} />
                   <span className="max-w-[120px] truncate">{win.title}</span>
                   <span className={cn(
-                    "w-1.5 h-1.5 rounded-full ml-1",
+                    "w-1.5 h-1.5 rounded-full ml-0.5",
                     win.isMinimized ? 'bg-text-dim/40' : 'bg-emerald-500 animate-pulse'
                   )} />
-                </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloseTool(win.id);
+                    }}
+                    className="p-1 rounded-lg hover:bg-red-500/20 text-text-dim/70 hover:text-red-400 transition-colors ml-1 cursor-pointer flex items-center justify-center"
+                    title={`Fechar ${win.title}`}
+                  >
+                    <X size={11} strokeWidth={2.5} />
+                  </button>
+                </div>
               );
             })}
           </div>

@@ -36,13 +36,33 @@ export function Window({
   defaultWidth = 850,
   defaultHeight = 650,
 }: WindowProps) {
-  const [width, setWidth] = useState(defaultWidth);
-  const [height, setHeight] = useState(defaultHeight);
+  const [width, setWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return Math.min(defaultWidth, Math.max(500, window.innerWidth - 64));
+    }
+    return defaultWidth;
+  });
+  const [height, setHeight] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return Math.min(defaultHeight, Math.max(400, window.innerHeight - 56 - 120));
+    }
+    return defaultHeight;
+  });
   const windowRef = useRef<HTMLDivElement>(null);
+  const boundaryRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
 
   const [showSnapMenu, setShowSnapMenu] = useState(false);
   const snapMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleScreenResize = () => {
+      setWidth(prev => Math.min(prev, Math.max(500, window.innerWidth - 32)));
+      setHeight(prev => Math.min(prev, Math.max(400, window.innerHeight - 56 - 40)));
+    };
+    window.addEventListener('resize', handleScreenResize);
+    return () => window.removeEventListener('resize', handleScreenResize);
+  }, []);
 
   useEffect(() => {
     if (!isMinimized) {
@@ -90,7 +110,7 @@ export function Window({
     }, 250);
   };
 
-  // Track window resizing
+  // Track window resizing with strict boundaries (never exceeds viewport or taskbar)
   const handleResize = (
     direction: 'r' | 'b' | 'br',
     e: React.PointerEvent<HTMLDivElement>
@@ -104,14 +124,22 @@ export function Window({
     const startX = e.clientX;
     const startY = e.clientY;
 
+    const rect = windowRef.current?.getBoundingClientRect();
+    const currentLeft = rect ? rect.left : 0;
+    const currentTop = rect ? rect.top : 0;
+
+    // Boundaries: window cannot be resized outside the screen or into the 56px taskbar
+    const maxAllowedWidth = Math.max(500, window.innerWidth - currentLeft);
+    const maxAllowedHeight = Math.max(400, window.innerHeight - 56 - currentTop);
+
     const onPointerMove = (moveEvent: PointerEvent) => {
       if (direction === 'r' || direction === 'br') {
         const deltaX = moveEvent.clientX - startX;
-        setWidth(Math.max(500, startWidth + deltaX));
+        setWidth(Math.min(maxAllowedWidth, Math.max(500, startWidth + deltaX)));
       }
       if (direction === 'b' || direction === 'br') {
         const deltaY = moveEvent.clientY - startY;
-        setHeight(Math.max(400, startHeight + deltaY));
+        setHeight(Math.min(maxAllowedHeight, Math.max(400, startHeight + deltaY)));
       }
     };
 
@@ -198,14 +226,21 @@ export function Window({
   }
 
   return (
-    <motion.div
-      ref={windowRef}
-      drag={!isMaximized && snapState !== 'left' && snapState !== 'right' && snapState !== 'top-left' && snapState !== 'top-right' && snapState !== 'bottom-left' && snapState !== 'bottom-right'}
-      dragListener={false}
-      dragControls={dragControls}
-      dragMomentum={false}
-      dragElastic={0.05}
-      dragConstraints={{ top: 0 }}
+    <>
+      {/* Invisible boundary element covering the entire Cortex view area above the taskbar */}
+      <div
+        ref={boundaryRef}
+        aria-hidden="true"
+        className="fixed top-0 left-0 right-0 bottom-14 pointer-events-none -z-50"
+      />
+      <motion.div
+        ref={windowRef}
+        drag={!isMaximized && snapState !== 'left' && snapState !== 'right' && snapState !== 'top-left' && snapState !== 'top-right' && snapState !== 'bottom-left' && snapState !== 'bottom-right'}
+        dragListener={false}
+        dragControls={dragControls}
+        dragMomentum={false}
+        dragElastic={0}
+        dragConstraints={boundaryRef}
       onPointerDown={(e) => {
         onFocus();
         const target = e.target as HTMLElement;
@@ -440,6 +475,7 @@ export function Window({
           </div>
         </>
       )}
-    </motion.div>
+      </motion.div>
+    </>
   );
 }

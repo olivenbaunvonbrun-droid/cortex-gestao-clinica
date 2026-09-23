@@ -271,8 +271,10 @@ export default function AssessmentWizard({
       const deltaX = moveEvent.clientX - startX;
       const deltaY = moveEvent.clientY - startY;
       
-      const newX = Math.max(0, Math.min(window.innerWidth - 100, initialX + deltaX));
-      const newY = Math.max(0, Math.min(window.innerHeight - 50, initialY + deltaY));
+      const maxX = Math.max(0, window.innerWidth - width);
+      const maxY = Math.max(0, window.innerHeight - 56 - height);
+      const newX = Math.max(0, Math.min(maxX, initialX + deltaX));
+      const newY = Math.max(0, Math.min(maxY, initialY + deltaY));
       
       if (onUpdatePosition) {
         onUpdatePosition(newX, newY);
@@ -309,10 +311,12 @@ export default function AssessmentWizard({
       let newHeight = initialHeight;
 
       if (direction === 'e' || direction === 'se') {
-        newWidth = Math.max(480, Math.min(window.innerWidth - 40, initialWidth + deltaX));
+        const maxWidth = Math.max(480, window.innerWidth - x);
+        newWidth = Math.max(480, Math.min(maxWidth, initialWidth + deltaX));
       }
       if (direction === 's' || direction === 'se') {
-        newHeight = Math.max(400, Math.min(window.innerHeight - 100, initialHeight + deltaY));
+        const maxHeight = Math.max(400, window.innerHeight - 56 - y);
+        newHeight = Math.max(400, Math.min(maxHeight, initialHeight + deltaY));
       }
 
       if (onUpdateSize) {
