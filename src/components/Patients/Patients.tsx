@@ -83,7 +83,7 @@ export default function Patients({ onOpenProntuario }: PatientsProps) {
       });
 
       const baseUrl = window.location.origin + window.location.pathname;
-      const link = `${baseUrl}?cadastro_paciente=${encodeURIComponent(token)}`;
+      const link = `${baseUrl}?c=${encodeURIComponent(token)}`;
       const greeting = firstName ? `Olá, ${firstName}!` : 'Olá!';
       const message = `${greeting} Para agilizar seu atendimento e formalizar seu prontuário em ${clinicTitle}, por favor preencha seus dados cadastrais através deste link seguro: ${link}`;
 

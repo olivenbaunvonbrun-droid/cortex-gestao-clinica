@@ -68,22 +68,39 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Check for patient self-registration link in URL (?cadastro_paciente=... ou ?cadastro=...)
+  // Check for patient self-registration link in URL (?c=... ou ?cad=... ou legado ?cadastro_paciente=...)
   const [selfRegistrationToken] = useState<string | null>(() => {
     try {
       const searchParams = new URLSearchParams(window.location.search);
-      const token = searchParams.get('cadastro_paciente') || searchParams.get('cadastro');
+      const token = searchParams.get('c') || searchParams.get('cad') || searchParams.get('cadastro_paciente') || searchParams.get('cadastro');
       if (token) return token;
 
-      if (window.location.hash.includes('cadastro_paciente=') || window.location.hash.includes('cadastro=')) {
-        const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
-        return hashParams.get('cadastro_paciente') || hashParams.get('cadastro');
+      if (window.location.hash.includes('c=') || window.location.hash.includes('cad=') || window.location.hash.includes('cadastro_paciente=') || window.location.hash.includes('cadastro=')) {
+        const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || window.location.hash.replace('#', ''));
+        return hashParams.get('c') || hashParams.get('cad') || hashParams.get('cadastro_paciente') || hashParams.get('cadastro');
       }
     } catch {
       return null;
     }
     return null;
   });
+
+  // Redirecionamento instantâneo para teleatendimento com link curto (?v=... ou ?tele=...)
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const teleRoom = searchParams.get('v') || searchParams.get('tele') || searchParams.get('sala');
+      if (teleRoom) {
+        const domain = searchParams.get('srv') || localStorage.getItem('cortex_teleconsulta_server') || 'jitsi.riot.im';
+        const quality = searchParams.get('q') || localStorage.getItem('cortex_teleconsulta_quality') || '480';
+        const resNumber = quality === '720p' || quality === '720' ? 720 : quality === '360p' || quality === '360' ? 360 : 480;
+        const redirectUrl = `https://${domain}/${teleRoom}#config.p2p.enabled=true&config.resolution=${resNumber}&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.prejoinPageEnabled=false&config.disableDeepLinking=true`;
+        window.location.replace(redirectUrl);
+      }
+    } catch (e) {
+      console.warn("Teleconsultation short-link redirect error:", e);
+    }
+  }, []);
 
   // === UNIFIED WINDOW MANAGER ===
   interface ToolWindow {

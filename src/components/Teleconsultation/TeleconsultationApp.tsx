@@ -67,31 +67,46 @@ export default function TeleconsultationApp({
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Helper para gerar o link otimizado (com parâmetros hash anti-lag para o paciente)
-  const getMeetingLink = () => {
+  // Helper para gerar o identificador curto de sala
+  const getTeleRoomName = () => {
     if (!selectedPatientId) return '';
-    const roomName = `cortex-teleconsulta-${selectedPatientId.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const cleanId = selectedPatientId.replace(/[^a-zA-Z0-9]/g, '');
+    return `ctx-${cleanId.slice(0, 12)}`;
+  };
+
+  // Helper para gerar o link encurtado inteligente (apenas ~40-45 caracteres no total)
+  const getMeetingLink = (fullDirect = false) => {
+    if (!selectedPatientId) return '';
+    const roomName = getTeleRoomName();
     const domain = jitsiServer.trim() || 'jitsi.riot.im';
     const resNum = videoQuality === '720p' ? 720 : videoQuality === '360p' ? 360 : 480;
-    // Parâmetros de URL hash que forçam o celular/navegador do paciente a rodar em modo leve P2P direto
-    return `https://${domain}/${roomName}#config.p2p.enabled=true&config.resolution=${resNum}&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.prejoinPageEnabled=false&config.disableDeepLinking=true`;
+
+    if (fullDirect) {
+      return `https://${domain}/${roomName}#config.p2p.enabled=true&config.resolution=${resNum}&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.prejoinPageEnabled=false&config.disableDeepLinking=true`;
+    }
+
+    // Link curto nativo do Cortex (apenas ~45 caracteres no domínio da própria clínica)
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?v=${roomName}`;
   };
 
   const handleCopyLink = () => {
     const meetingLink = getMeetingLink();
     if (!meetingLink) return;
     navigator.clipboard.writeText(meetingLink);
-    toast.success('Link otimizado anti-lag copiado para a área de transferência!');
+    toast.success('Link curto da teleconsulta copiado!');
   };
 
   const handleSendLinkWA = () => {
     if (!patient) return;
     const meetingLink = getMeetingLink();
     if (!meetingLink) return;
-    const text = `Olá, ${patient.nome}. Aqui está o link para o nosso teleatendimento virtual: ${meetingLink}`;
+    const text = `Olá, ${patient.nome}. Aqui está o link para nosso teleatendimento virtual: ${meetingLink}`;
     const cleanPhone = patient.telefone ? patient.telefone.replace(/\D/g, '') : '';
     if (!cleanPhone) {
-      toast.error('Paciente não possui telefone cadastrado!');
+      navigator.clipboard.writeText(meetingLink).catch(() => {});
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+      toast.success('Link copiado! Selecione o contato no WhatsApp.');
       return;
     }
     const phoneWithCountry = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
@@ -183,7 +198,7 @@ export default function TeleconsultationApp({
       setSessionStartTime(new Date());
 
       const domain = jitsiServer.trim() || 'jitsi.riot.im';
-      const roomName = `cortex-teleconsulta-${selectedPatientId.replace(/[^a-zA-Z0-9]/g, '')}`;
+      const roomName = getTeleRoomName();
 
       const resNumber = videoQuality === '720p' ? 720 : videoQuality === '360p' ? 360 : 480;
       const idealWidth = videoQuality === '720p' ? 1280 : videoQuality === '360p' ? 480 : 640;
@@ -538,16 +553,14 @@ export default function TeleconsultationApp({
                   <Copy size={11} />
                   Copiar Link
                 </button>
-                {patient.telefone && (
-                  <button
-                    onClick={handleSendLinkWA}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 hover:bg-green-500 hover:text-white text-green-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
-                    title="Enviar Link por WhatsApp para o Paciente"
-                  >
-                    <MessageCircle size={11} />
-                    Enviar WA
-                  </button>
-                )}
+                <button
+                  onClick={handleSendLinkWA}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 hover:bg-green-500 hover:text-white text-green-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                  title="Enviar Link Curto por WhatsApp para o Paciente"
+                >
+                  <MessageCircle size={11} />
+                  Enviar WA
+                </button>
               </div>
             )}
 

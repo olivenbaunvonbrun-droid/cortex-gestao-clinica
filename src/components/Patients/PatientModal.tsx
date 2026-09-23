@@ -136,7 +136,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
     });
 
     const baseUrl = window.location.origin + window.location.pathname;
-    return `${baseUrl}?cadastro_paciente=${encodeURIComponent(token)}`;
+    return `${baseUrl}?c=${encodeURIComponent(token)}`;
   };
 
   const handleSendWhatsAppLink = async () => {

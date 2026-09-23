@@ -48,19 +48,39 @@ interface PatientSelfRegistrationProps {
 
 export function decodeRegistrationToken(token: string): RegistrationTokenPayload | null {
   try {
-    const jsonStr = decodeURIComponent(escape(atob(token)));
-    return JSON.parse(jsonStr);
-  } catch {
+    let jsonStr = '';
     try {
-      return JSON.parse(atob(token));
+      jsonStr = decodeURIComponent(escape(atob(token)));
     } catch {
-      return null;
+      jsonStr = atob(token);
     }
+    const data = JSON.parse(jsonStr);
+    
+    // Suporta tanto o novo formato ultra-compacto (i, n, t, p, pt) quanto o formato legado longo
+    return {
+      id: data.i || data.id,
+      primeiroNome: data.n || data.primeiroNome || '',
+      telefone: data.t || data.telefone || '',
+      psicologoNome: data.p || data.psicologoNome || 'Consultório de Psicologia',
+      psicologoTelefone: data.pt || data.psicologoTelefone || '',
+      ts: data.ts
+    };
+  } catch {
+    return null;
   }
 }
 
 export function encodeRegistrationToken(payload: RegistrationTokenPayload): string {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  // Serialização ultra-compacta: chaves de 1 caractere, suprime vazios e títulos padrão
+  const compact: Record<string, any> = {};
+  if (payload.id) compact.i = payload.id;
+  if (payload.primeiroNome) compact.n = payload.primeiroNome;
+  if (payload.telefone) compact.t = payload.telefone;
+  if (payload.psicologoNome && payload.psicologoNome !== 'Consultório de Psicologia') {
+    compact.p = payload.psicologoNome;
+  }
+  if (payload.psicologoTelefone) compact.pt = payload.psicologoTelefone;
+  return btoa(unescape(encodeURIComponent(JSON.stringify(compact))));
 }
 
 export default function PatientSelfRegistration({ token }: PatientSelfRegistrationProps) {
