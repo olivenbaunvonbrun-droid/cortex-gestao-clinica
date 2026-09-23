@@ -137,33 +137,34 @@ async function getApiKey(): Promise<string> {
 
 // Framework de Parâmetros Clínicos Avançados (TCC de 4ª Geração, Process-Based Therapy e THP)
 export const CLINICAL_FRAMEWORK_PROMPT = `
-DIRETRIZES DO FRAMEWORK DE PARÂMETROS CLÍNICOS AVANÇADOS (TCC DE 4ª GERAÇÃO, TERAPIA BASEADA EM PROCESSOS - PBT E THP):
-1. TERAPIA BASEADA EM PROCESSOS (PBT - Hofmann & Hayes): Análise das redes funcionais e causais em 6 dimensões clínicas dinâmicas: Cognição, Afeto, Atenção, Self, Motivação e Comportamento Overt. Identificar processos adaptativos vs. inadaptativos e alavancas de mudança comportamental.
-2. CONTEXTUALISMO FUNCIONAL, RFT E ACT (Hexaflex):
-   - Desfusão Cognitiva vs. Fusão Cognitiva (diferenciar pensamento de fato factual).
-   - Aceitação Experiencial vs. Esquiva/Evitação Experiencial.
-   - Contato com o Momento Presente / Atenção Plena e Ancoragem Somática.
-   - Self-como-Contexto vs. Self-como-Conteúdo (apego a auto-rótulos rígidos).
-   - Valores Fundamentais Clarificados vs. Complacência social e regras impostas.
-   - Ação com Propósito / Comprometida vs. Impulsividade ou Inação.
-3. TERAPIA DO ESQUEMA AVANÇADA (Jeffrey Young):
-   - Mapear os 18 Esquemas Iniciais Desadaptativos (EIDs) e os Esquemas Adaptativos (YPQ - Apego Seguro, Autonomia, Competência, Valor Pessoal).
-   - Modos Esquemáticos ativos em sessão e na vida: Modos Criança (Vulnerável, Irritada, Impulsiva), Modos Pais Disfuncionais (Crítico/Punitivo, Exigente/Perfeccionista), Modos de Enfrentamento Desadaptativo (Protetor Desligado/Evitativo, Submisso Resignado, Hipercompensador/Grandioso) e Fortalecimento do Modo Adulto Saudável.
-   - Reparentalização limitada e confrontação empática.
-4. MODELO DAS 10 HABILIDADES PSICOLÓGICAS (THP - Poubel & Rodrigues):
-   Identificar com precisão déficits e avanços no repertório das 10 HPs:
-   1. Autoconhecimento (reconhecimento de estados internos, gatilhos, modos e valores).
-   2. Autorregulação Emocional (modulação da ativação fisiológica, tolerância ao mal-estar e desescalada).
-   3. Raciocínio Realisticamente Otimista (exame rigoroso de evidências, alternativas realistas, descatastrofização).
-   4. Autoestima (autovalorização incondicional, autocompaixão diante de falhas e desarmamento do crítico interno).
-   5. Resolutividade e Enfrentamento (definição de problemas, tomada de decisão e hierarquia de exposição ativa).
-   6. Autocontrole (manejo de impulsos, "Urge Surfing", controle de estímulos e adiamento da gratificação).
-   7. Sociabilidade (assertividade, comunicação não-violenta, início e manutenção de conexões saudáveis).
-   8. Imunidade Social (capacidade de dizer não, tolerância a críticas/rejeições e blindagem contra pressões).
-   9. Sensibilidade Social (escuta ativa, empatia genuína, validação emocional e leitura de pistas não-verbais).
-   10. Hedonismo Responsável (planejamento de reforçadores naturais, savoring/desfrute consciente e equilíbrio dever/prazer).
-5. FAP (Psicoterapia Analítica Funcional): Mapeamento de Comportamentos Clinicamente Relevantes em sessão (CRB1: problemas em sessão; CRB2: melhoras/avanços em sessão; CRB3: interpretações funcionais pelo paciente).
-6. RESOLUÇÃO CFP Nº 06/2019: Linguagem técnica formal, objetiva, preservação de falas literais de impacto entre aspas e respeito à dignidade humana e confidencialidade.
+DIRETRIZES DO FRAMEWORK CLÍNICO INTEGRADO (5 PILARES CIENTÍFICOS AVANÇADOS):
+1. TCC DE 4ª GERAÇÃO & TERAPIA BASEADA EM PROCESSOS (PBT - Hofmann & Hayes):
+   - Mapeamento das redes funcionais e causais em 6 dimensões dinâmicas: Cognição, Afeto, Atenção, Self, Motivação e Comportamento Overt.
+   - Contextualismo Funcional, RFT e ACT (Hexaflex): desfusão cognitiva vs fusão; aceitação experiencial vs esquiva; contato com o momento presente e ancoragem somática; self-como-contexto vs apego a auto-rótulos conceituados; valores nucleares clarificados e ações comprometidas com propósito.
+   - Terapia Comportamental Dialética (DBT): balanço dialético entre aceitação radical e mudança comportamental ativa.
+2. TERAPIA DO ESQUEMA AVANÇADA (Jeffrey Young):
+   - 18 Esquemas Iniciais Desadaptativos (EIDs) e os 5 domínios esquemáticos.
+   - Frustração de Necessidades Emocionais Básicas (Apego/Vínculo Seguro, Autonomia/Competência, Limites Realistas, Autoexpressão Espontânea e Lazer).
+   - Modos Esquemáticos ativos: Modos Criança (Vulnerável, Irritada, Impulsiva), Modos Pais Disfuncionais (Crítico/Punitivo, Exigente), Modos de Enfrentamento Desadaptativo (Protetor Desligado/Evitativo, Submisso Resignado, Hipercompensador) e Fortalecimento do Modo Adulto Saudável.
+3. ANÁLISE DO COMPORTAMENTO (Behaviorismo Radical & Contextualismo Funcional):
+   - Análise Funcional de Contingências (Tríplice Contingência S-R-C): Estímulos antecedentes discriminativos (Sd e S-delta), Respostas operantes públicas/encobertas e Consequências mantenedoras.
+   - Operantes de Reforçamento Positivo, Reforçamento Negativo (fuga e esquiva experiencial), Punição e Extinção.
+   - Comportamento Governado por Regras Verbais rígidas (pliance, tracking, augmenting) versus Comportamento moldado por contingências naturais.
+4. PSICOLOGIA POSITIVA & CIÊNCIA DO BEM-ESTAR (Peterson, Seligman, VIA Institute & Fredrickson):
+   - Mapeamento e mobilização das 24 Forças de Caráter e Virtudes (VIA).
+   - Teoria do Bem-Estar Multidimensional PERMA (Positive Emotions, Engagement, Relationships, Meaning, Accomplishment).
+   - Teoria Broaden-and-Build (ampliação e construção de recursos biopsicossociais via afetos positivos), Autoeficácia (Bandura) e Fatores de Resiliência.
+5. NEUROCIÊNCIA CLÍNICA & PSICOBIOLOGIA:
+   - Sistema Nervoso Autônomo e Teoria Polivagal de Stephen Porges: estados ventral-vagal (segurança, conexão e engajamento social), simpático (mobilização, hiperarousal, luta ou fuga) e dorsal-vagal (desconexão, colapso somático e imobilização).
+   - Ativação do Eixo HPA (Hipotálamo-Pituitária-Adrenal), hipercortisolemia e tônus autonômico.
+   - Regulação Córtico-Límbica: regulação top-down do Córtex Pré-Frontal (CPF dorsolateral e ventromedial) sobre a Amígdala e ínsula.
+   - Neuroplasticidade Baseada em Experiência: reconsolidação de memórias emocionais e fortalecimento de circuitos neurais adaptativos.
+6. MODELO DAS 10 HABILIDADES PSICOLÓGICAS (THP - Poubel & Rodrigues):
+   - Identificar com precisão déficits e alvos de treino deliberado nas 10 HPs: Autoconhecimento, Autorregulação Emocional, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade e Enfrentamento, Autocontrole, Sociabilidade, Imunidade Social, Sensibilidade Social e Hedonismo Responsável.
+7. FAP (Psicoterapia Analítica Funcional):
+   - Mapeamento de Comportamentos Clinicamente Relevantes em sessão (CRB1: problemas em sessão; CRB2: melhoras/avanços em sessão; CRB3: interpretações funcionais pelo paciente).
+8. RESOLUÇÃO CFP Nº 06/2019 E RIGOR SEMIOLÓGICO:
+   - Linguagem técnica formal, impessoal, densa, preservação literal de falas de impacto do paciente entre aspas duplas ("> '...'"), confidencialidade e rigor ético.
 `;
 
 export async function generateContentWithSystemInstruction(prompt: string, systemInstruction: string) {
@@ -1217,26 +1218,31 @@ REGRAS DE OURO DE FIDELIDADE CLÍNICA E PRESERVAÇÃO LEXICAL:
    - Termos de impacto, expressões emocionais nucleares e metáforas utilizadas pelo próprio paciente (ex: "sinto um buraco no peito", "estou pisando em ovos", "minha cabeça parece que vai explodir", "me sinto uma fraude") DEVEM ser preservados literalmente entre aspas duplas ("> '...'") no Relato Detalhado e nas Observações Clínicas.
 2. FIDELIDADE ESTRITA AOS FATOS (ANTI-ALUCINAÇÃO):
    - Baseie-se estritamente no que foi verbalizado ou observado no atendimento.
-   - Se um tema não foi abordado na sessão, NÃO invente dados nem use clichês. Ausência de menção deve resultar em texto conciso e direto.
+   - Se um tema não foi abordado na sessão, NÃO invente dados nem use clichês. Ausência de menção deve resultar em fundamentação contextual concisa.
    - Descreva o comportamento e o afeto observado faticamente (ex: "falou do trabalho com respiração acelerada e hesitação vocal") em vez de rótulos inferidos sem evidência.
-3. RIGOR DE TCC DE 4ª GERAÇÃO E TERAPIA DO ESQUEMA:
-   - Identifique com clareza os EIDs ativados, os modos esquemáticos adotados e as necessidades emocionais básicas negligenciadas.
+3. PROFUNDIDADE TÉCNICO-DIAGNÓSTICA E VOLUME ANALÍTICO AMPLIADO (OS 5 PILARES FUNDAMENTAIS):
+   - O preenchimento NÃO deve ser superficial ou telegráfico. Formule textos ricos, com substancial densidade semiológica e fundamentação detalhada baseada em:
+     a) TCC de 4ª Geração (Process-Based Therapy - PBT, ACT/Hexaflex, FAP, DBT);
+     b) Terapia do Esquema (18 EIDs, Necessidades Emocionais Básicas, Dinâmica de Modos Esquemáticos);
+     c) Análise do Comportamento (Análise Funcional S-R-C, Operantes, Reforçamento Negativo da Esquiva, Comportamento Governado por Regras);
+     d) Psicologia Positiva (Forças de Caráter VIA, Teoria do Bem-Estar PERMA, Resiliência, Autoeficácia);
+     e) Neurociência Clínica (Eixo HPA, Sistema Nervoso Autônomo e Teoria Polivagal de Porges, Balanço CPF vs Amígdala, Neuroplasticidade).
 4. LINGUAGEM DE PRONTUÁRIO TÉCNICO (RESOLUÇÃO CFP Nº 06/2019):
-   - Redação na voz profissional do psicólogo ("Paciente relatou...", "Foi realizada intervenção de...", "Observou-se postura de...").
+   - Redação formal, impessoal e densa na voz profissional do psicólogo clínico ("Constatou-se...", "Paciente relatou...", "Foi realizada intervenção de...", "Observou-se postura de...").
 
-INSTRUÇÕES E DIRETRIZES DE CADA CAMPO:
-1. relatoCliente: A transcrição/relato clínico estruturado da sessão, organizado semiologicamente em subtópicos (Contexto/Situação, Necessidades e Tríplice Resposta, Intervenções e Consequências). Inclua as falas marcantes do paciente entre aspas. Formatar em HTML clássico com parágrafos justificados (<p style='text-align: justify;'>), tópicos (<ul><li>) e ênfases (<strong>).
-2. motivoConsulta: Motivo da consulta/queixa primária trazida na sessão e as necessidades emocionais básicas violadas identificadas (1-2 parágrafos justificados em HTML).
-3. objetivosCliente: Objetivos da sessão declarados pelo próprio paciente e sua relação com déficits em Habilidades Psicológicas (HTML com <ul><li>).
-4. objetivosTerapeuta: Objetivos técnicos do terapeuta na sessão sob a ótica de 4ª Geração (enfraquecimento de EIDs, treino de HPs, reestruturação) (HTML com <ul><li>).
-5. intervencoes: Técnicas e posturas clínicas efetivamente aplicadas durante o atendimento (ex: validação emocional, reestruturação cognitiva, metáforas da ACT, diálogos de modos esquemáticos) (HTML com <ul><li>).
-6. observacoes: Observações semiológicas e clínicas sobre o estado mental do paciente, crenças nucleares/regras ativadas e estilo de enfrentamento habitual (resignação, evitação, hipercompensação) com citações do paciente (HTML com <p style='text-align: justify;'>).
-7. insights: Insights clínicos emergentes alcançados na sessão conectando dores atuais a origens formativas (HTML com <ul><li>).
-8. percepcaoCliente: Percepção subjetiva de encerramento do paciente, nível de adesão, aliança terapêutica e engajamento (HTML com <p style='text-align: justify;'>).
+INSTRUÇÕES E DIRETRIZES DE CADA CAMPO (PROFUNDIDADE E VOLUME EXPANDIDOS):
+1. relatoCliente: Relato clínico estruturado completo e detalhado da sessão, organizado semiologicamente em subtópicos (Contexto Fático e Estímulos Antecedentes Sd; Tríplice Resposta Somática/Autonômica, Cognitiva com falas entre aspas e Motora/Enfrentamento; Análise Funcional de Contingências e custos de longo prazo; Forças VIA e recursos adaptativos). Formatar em HTML clássico com parágrafos justificados (<p style='text-align: justify;'>), tópicos (<ul><li>) e ênfases (<strong>).
+2. motivoConsulta: Motivo da consulta/queixa primária formulado sob a ótica da TCC de 4ª Geração, Análise Funcional e Esquemas, diferenciando a queixa manifesta superficial da função comportamental operante latente e apontando as necessidades emocionais básicas violadas e ativação autonômica (2 parágrafos justificados em HTML).
+3. objetivosCliente: Objetivos da sessão declarados pelo paciente, traduzidos tecnicamente nas 10 HPs (Habilidades Psicológicas - Poubel & Rodrigues), pilares do modelo PERMA e valores centrais (HTML com <ul><li>).
+4. objetivosTerapeuta: 4 a 6 metas clínicas estruturadas do terapeuta cobrindo os 5 pilares: enfraquecimento de EIDs, flexibilidade psicológica (ACT), regulação autonômica neurovegetativa, treino deliberado de HPs e consolidação do Adulto Saudável (HTML com <ul><li>).
+5. intervencoes: Registro detalhado e fundamentado das intervenções e posturas clínicas de 4ª Geração aplicadas (Rastreamento Funcional S-R-C, Validação Dialética DBT, Metáforas ACT, Regulação Somática Polivagal, Diálogo de Modos Esquemáticos, Psicoeducação em HPs e Forças VIA), descrevendo a resposta clínica e psicofisiológica imediata do paciente (HTML com <ul><li>).
+6. observacoes: Exame do Estado Mental aprofundado (afeto, congruência ideo-afetiva, curso do pensamento, ativação simpática/dorsal-vagal), dinâmica de Modos Esquemáticos em sessão, regras condicionais latentes e análise funcional da relação terapêutica (FAP: CRB1 e CRB2) com citações do paciente (HTML com <p style='text-align: justify;'>).
+7. insights: Insights clínicos densos articulando os gatilhos atuais às contingências ontogenéticas (origens formativas dos EIDs), diferenciação funcional de contextos (Self-como-Contexto) e ativação de forças de caráter (HTML com <ul><li>).
+8. percepcaoCliente: Avaliação aprofundada da aliança de trabalho, engajamento, prontidão para a mudança (Prochaska & DiClemente) e disposição para abertura experiencial diante de desconfortos temporários (HTML com <p style='text-align: justify;'>).
 9. progresso: Avaliação resumida do progresso clínico. Escolha OBRIGATORIAMENTE uma das 4 opções canônicas do prontuário: "Excelente", "Satisfatório", "Em desenvolvimento" ou "Necessita de ajuste".
-10. tarefas: Tarefas intersessão recomendadas com foco no PDP (Plano de Desenvolvimento de HPs), como monitoramento de RIDs, exercícios de desfusão ou mindfulness (HTML com <ul><li>).
-11. planejamento: Planejamento e eixos temáticos priorizados para a próxima sessão (HTML com <p style='text-align: justify;'> ou <ul><li>).
-12. encaminhamentos: Encaminhamentos sugeridos (médicos, psiquiátricos, exames) ou declaração de ausência de necessidade no momento (HTML com <p style='text-align: justify;'>).
+10. tarefas: Prescrições comportamentais do PDP (HPs) com regras operacionais "Se [gatilho/afeto aversivo] -> Então [ativar HP / técnica polivagal / ação de valor]", registro automonitorado (RID) e exercício de Forças VIA (HTML com <ul><li>).
+11. planejamento: Planejamento estratégico longitudinal para as próximas sessões baseado nas alavancas da rede de processos (PBT), reprocessamento de memórias de esquemas em imaginação e manejo antecipatório de esquivas (HTML com <p style='text-align: justify;'> ou <ul><li>).
+12. encaminhamentos: Parecer técnico-diagnóstico fundamentado sobre suporte interdisciplinar (psiquiatria, neuropsicologia, nutrição/medicina) ou justificativa técnica consistente para acompanhamento exclusivo em psicoterapia clínica no momento (HTML com <p style='text-align: justify;'>).
 
 IMPORTANTE DE FORMATAÇÃO:
 - Os campos HTML devem conter apenas marcações de texto limpo (<p>, <ul>, <li>, <strong>), sem tags <html>, <head> ou <body>.
@@ -1440,23 +1446,26 @@ ${suggestionsBlock}
 
 DIRETRIZES DE PREENCHIMENTO BASEADO EM SUGESTÕES E JUSTIFICATIVAS CLÍNICAS (RID E PCI):
 1. SELEÇÃO BASEADA NAS SUGESTÕES (SEM RESTRIÇÃO ARTIFICIAL DE 2 ITENS):
-   - Avalie profundamente a situação clínica e selecione TODOS os itens pertinentes do catálogo de sugestões que realmente se aplicam e atuam no relato do paciente (NÃO restrinja artificialmente a 1 ou 2 itens; inclua todos os esquemas, necessidades violadas, distorções ou padrões comportamentais identificados).
-2. JUSTIFICATIVA CLÍNICA CONTEXTUALIZADA PARA CADA ITEM:
-   - Para CADA item selecionado do catálogo, você DEVE fornecer uma JUSTIFICATIVA CLÍNICA contextualizada, explicando concretamente como e por que ele atua ou foi ativado no evento relatado (evidenciando os gatilhos, afetos e contingências funcionais).
-   - Evite preâmbulos genéricos ou introduções vazias como "Com base no relato...", indo direto à fundamentação técnica.
+   - Avalie profundamente a situação clínica e selecione os itens pertinentes do catálogo de sugestões que realmente se aplicam ao relato do paciente (não restrinja a 1 ou 2 itens; inclua todos os esquemas, necessidades violadas, distorções ou padrões comportamentais identificados).
+2. CONCISÃO E OBJETIVIDADE MANDATÓRIA (ANTI-PROLIXIDADE E SEM SUPERINFERÊNCIAS):
+   - Para campos de seleção em cards/tags ("necessidade", "esquema"):
+     • CADA item selecionado DEVE ser retornado no array "itens" com seu "nome" canônico e uma "justificativa" sucinta e objetiva (1 frase direta de no máximo 15 a 20 palavras), fundamentando estritamente o gatilho factual relatado.
+     • NÃO elabore formulações de caso longas ou inferências especulativas excessivas dentro dos cards do RID (a análise aprofundada é de responsabilidade do relatório clínico).
+     • NUNCA retorne múltiplos itens aglomerados em um único texto, nem chaves literais "{}" ou termos como "TEXT" ou "text".
+   - Evite preâmbulos vazios como "Com base no relato...", indo direto ao fato disparador.
 3. CAMPOS DE TEXTO E FORMULAÇÃO (ex: pensamento, comportamento, consequências):
    - Descreva com rigor funcional e fidelidade semiológica, sem omissões de processos clínicos relevantes.
 4. PADRONIZAÇÃO DO CAMPO "text":
-   - Formate o campo "text" em tópicos elegantes e prontos para o prontuário:
-     • [Nome do Item]: [Justificativa clínica contextualizada]
+   - Formate o campo "text" em tópicos elegantes e limpos prontos para prontuário:
+     • [Nome do Item]: [Justificativa clínica sucinta]
 
 DIRETRIZES TÉCNICAS ESPECÍFICAS POR TIPO DE CAMPO:
 1. SE FOR ESQUEMAS ATIVADOS / EIDs ("esquema", "esquemasCognitivos"):
    - Identifique todos os EIDs do catálogo ativados pelo gatilho (ex: Abandono, Defectividade, Privação Emocional, Padrões Inflexíveis).
-   - Justificativa: elabore a explicação clínica de ativação para cada um.
+   - Justificativa: elabore a explicação clínica sucinta de ativação para cada um (15-20 palavras).
 2. SE FOR NECESSIDADES BÁSICAS ("necessidade", "necessidadesIdentificadas"):
    - Mapeie todas as necessidades nucleares do catálogo frustradas na situação.
-   - Justificativa: explique de que forma cada necessidade foi violada no contexto.
+   - Justificativa: explique objetivamente como cada necessidade foi violada no contexto (15-20 palavras).
 3. SE FOR PENSAMENTO AUTOMÁTICO OU DISTORÇÕES ("pensamento", "distorcoesCognitivas", "crencasCentrais"):
    - Formule os pensamentos na voz do paciente com suas respectivas distorções e crenças associadas.
 4. SE FOR EMOÇÃO / INTENSIDADE ("emocao", "ridEmocao"):
@@ -1473,7 +1482,7 @@ FORMATO DE RESPOSTA (JSON estrito):
   "itens": [
     {
       "nome": "Nome do elemento do catálogo",
-      "justificativa": "Justificativa clínica contextualizada explicando a operação ou ativação."
+      "justificativa": "Justificativa clínica concisa e direta (15 a 20 palavras)."
     }
   ],
   "tags": ["Nome 1", "Nome 2"],
@@ -1532,14 +1541,38 @@ FORMATO DE RESPOSTA (JSON estrito):
     const emotionVal = parsed.emotion || parsed.EMOTION || parsed.emocao || parsed.EMOCAO;
 
     if (Array.isArray(itensVal) && itensVal.length > 0) {
-      normalized.itens = itensVal.map((it: any) => ({
-        nome: it.nome || it.NOME || it.name || it.NAME || it.title || it.item || String(it),
-        justificativa: it.justificativa || it.JUSTIFICATIVA || it.explanation || it.EXPLANATION || it.descricao || it.desc || ''
-      }));
+      normalized.itens = itensVal.map((it: any) => {
+        let n = (it.nome || it.NOME || it.name || it.NAME || it.title || it.item || String(it)).trim();
+        let j = (it.justificativa || it.JUSTIFICATIVA || it.explanation || it.EXPLANATION || it.descricao || it.desc || '').trim();
+        // Limpar artefatos JSON residuais
+        n = n.replace(/^[{"'\s*]+/, '').replace(/["'}\s*]+$/, '');
+        j = j.replace(/^[{"'\s*]+/, '').replace(/["'}\s*]+$/, '');
+        return { nome: n, justificativa: j };
+      }).filter(it => Boolean(it.nome));
+    }
+
+    // Se itens não veio estruturado mas textVal contém múltiplos itens, fazer parse
+    if ((!normalized.itens || normalized.itens.length === 0) && textVal && typeof textVal === 'string') {
+      const splitItems: { nome: string; justificativa: string }[] = [];
+      const lines = textVal.split(/\r?\n|(?<=\n|^)\s*[-*•]\s+/g);
+      for (const line of lines) {
+        const cleanL = line.replace(/^[-*•\d.)\s]+/, '').replace(/^[{"'\s]+/, '').replace(/[}"'\s]+$/, '').trim();
+        const sep = cleanL.indexOf(':');
+        if (sep > 0) {
+          const n = cleanL.substring(0, sep).replace(/[*_#]/g, '').trim();
+          const j = cleanL.substring(sep + 1).replace(/[*_#]/g, '').trim();
+          if (n && !/^(?:TEXT|ITENS|TAGS)$/i.test(n)) {
+            splitItems.push({ nome: n, justificativa: j });
+          }
+        }
+      }
+      if (splitItems.length > 0) {
+        normalized.itens = splitItems;
+      }
     }
 
     if (Array.isArray(tagsVal) && tagsVal.length > 0) {
-      normalized.tags = tagsVal;
+      normalized.tags = tagsVal.map(t => String(t).replace(/^[{"'\s*]+/, '').replace(/["'}\s*]+$/, '').trim()).filter(Boolean);
     } else if (normalized.itens && normalized.itens.length > 0) {
       normalized.tags = normalized.itens.map(it => it.nome);
     }
@@ -1561,7 +1594,12 @@ FORMATO DE RESPOSTA (JSON estrito):
     return normalized;
   } catch (e) {
     console.error("Erro ao analisar resposta de generateClinicalFieldFilling:", e);
-    return { text: raw.trim() };
+    const cleaned = raw.replace(/^\{?\s*"?(?:text|TEXT)"?\s*:\s*"?/i, '')
+                       .replace(/"?\s*\}?$/i, '')
+                       .replace(/\\n/g, '\n')
+                       .replace(/\\"/g, '"')
+                       .trim();
+    return { text: cleaned };
   }
 }
 

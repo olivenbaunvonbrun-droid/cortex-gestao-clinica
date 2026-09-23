@@ -36,57 +36,122 @@ interface RidFormProps {
   isSaving?: boolean;
 }
 
-function parseClinicalTag(rawTag: string): { title: string; desc?: string } {
-  const trimmed = (rawTag || '').trim();
-  if (!trimmed) return { title: '' };
+export function splitAndCleanClinicalTags(input: any): string[] {
+  if (!input) return [];
 
-  // 1. Detect and parse raw JSON format (e.g. {"EMOTION": ..., "TAGS": [...], "TEXT": "..."})
-  if (trimmed.startsWith('{') || trimmed.includes('"TEXT"') || trimmed.includes('"text"')) {
+  if (Array.isArray(input)) {
+    return input.flatMap(it => splitAndCleanClinicalTags(it)).filter(Boolean);
+  }
+
+  let text = String(input).trim();
+  if (!text) return [];
+
+  // Check for raw JSON format (e.g., {"TEXT": "...", "itens": [...], "tags": [...]})
+  if (text.startsWith('{') || text.includes('"TEXT"') || text.includes('"text"') || text.includes('"itens"') || text.includes('"tags"')) {
     try {
-      const parsed = JSON.parse(trimmed);
-      const tags = parsed.tags || parsed.TAGS || parsed.Tags;
-      const text = parsed.text || parsed.TEXT || parsed.Texto;
-      const itens = parsed.itens || parsed.ITENS || parsed.items;
-
-      if (Array.isArray(itens) && itens.length > 0) {
-        const first = itens[0];
-        return {
-          title: first.nome || first.name || 'Esquema Ativado',
-          desc: first.justificativa || first.explanation || (typeof text === 'string' ? text : '')
-        };
+      const parsed = JSON.parse(text);
+      if (parsed.itens && Array.isArray(parsed.itens)) {
+        return parsed.itens.map((it: any) => {
+          const nome = (it.nome || it.name || it.item || '').trim();
+          const just = (it.justificativa || it.explanation || it.desc || '').trim();
+          return just ? `${nome}: ${just}` : nome;
+        }).filter(Boolean);
       }
-
-      if (Array.isArray(tags) && tags.length > 0) {
-        return {
-          title: tags.join(' • '),
-          desc: typeof text === 'string' ? text : undefined
-        };
+      if (parsed.tags && Array.isArray(parsed.tags)) {
+        return parsed.tags.flatMap((t: any) => splitAndCleanClinicalTags(t)).filter(Boolean);
       }
-
-      if (typeof text === 'string') {
-        const sep = text.indexOf(':');
-        if (sep > 0) {
-          return { title: text.substring(0, sep).trim(), desc: text.substring(sep + 1).trim() };
-        }
-        return { title: 'Esquema Ativado', desc: text };
+      if (parsed.text || parsed.TEXT) {
+        text = String(parsed.text || parsed.TEXT);
       }
     } catch {
-      // ignore
+      // Regex stripping of JSON wrapper
+      text = text.replace(/^{\s*"(?:TEXT|text|itens|tags)"\s*:\s*"?/i, '')
+                 .replace(/"?\s*}\s*$/, '')
+                 .replace(/\\n/g, '\n')
+                 .replace(/\\"/g, '"');
     }
   }
 
-  // 2. Structured "Nome: Justificativa"
+  // Remove outer braces or quotation marks
+  text = text.replace(/^[{\s"']+/, '').replace(/[}"'\s]+$/, '');
+
+  // Split by newlines or bullet markers (*, •, -, or numbered list 1., 2.)
+  const rawParts = text.split(/\r?\n|(?<=\n|^)\s*[-*•]\s+/g);
+  const results: string[] = [];
+
+  for (let part of rawParts) {
+    let line = part.trim();
+    if (!line) continue;
+
+    // Strip bullet chars (*, -, •, numbers like "1.")
+    line = line.replace(/^[-*•\d.)\s]+/, '').trim();
+    // Strip surrounding quotes or braces
+    line = line.replace(/^[{"'\s]+/, '').replace(/[}"'\s]+$/, '').trim();
+
+    if (!line || line === '{' || line === '}' || /^"?(?:TEXT|text)"?:?$/i.test(line)) {
+      continue;
+    }
+
+    const sep = line.indexOf(':');
+    if (sep > 0) {
+      let title = line.substring(0, sep).replace(/[*_#]/g, '').trim();
+      let desc = line.substring(sep + 1).replace(/[*_#]/g, '').trim();
+
+      title = title.replace(/^["'{]+/, '').replace(/["'}]+$/, '').trim();
+      desc = desc.replace(/^["'{]+/, '').replace(/["'}]+$/, '').trim();
+
+      if (/^(?:TEXT|ITENS|TAGS)$/i.test(title)) {
+        if (desc) {
+          results.push(...splitAndCleanClinicalTags(desc));
+        }
+        continue;
+      }
+
+      if (title) {
+        results.push(desc ? `${title}: ${desc}` : title);
+      }
+    } else {
+      const cleanLine = line.replace(/[*_#]/g, '').replace(/^["'{]+/, '').replace(/["'}]+$/, '').trim();
+      if (cleanLine && !/^(?:TEXT|ITENS|TAGS)$/i.test(cleanLine)) {
+        results.push(cleanLine);
+      }
+    }
+  }
+
+  return results.filter(Boolean);
+}
+
+function parseClinicalTag(rawTag: string): { title: string; desc?: string } {
+  let trimmed = (rawTag || '').trim();
+  if (!trimmed) return { title: '' };
+
+  // Strip leading/trailing JSON markers
+  trimmed = trimmed.replace(/^[{\s"']+/, '').replace(/[}"'\s]+$/, '').trim();
+  if (/^"?TEXT"?:/i.test(trimmed)) {
+    trimmed = trimmed.replace(/^"?TEXT"?:\s*"?/i, '').replace(/"?$/, '').trim();
+  }
+
   const sepIdx = trimmed.indexOf(':');
   if (sepIdx > 0) {
-    const title = trimmed.substring(0, sepIdx).trim();
-    const desc = trimmed.substring(sepIdx + 1).trim();
+    let title = trimmed.substring(0, sepIdx).trim();
+    let desc = trimmed.substring(sepIdx + 1).trim();
+
+    title = title.replace(/^["'{*]+/, '').replace(/["'}*]+$/, '').trim();
+    desc = desc.replace(/^["'{*]+/, '').replace(/["'}*]+$/, '').trim();
+
+    if (/^TEXT$/i.test(title)) {
+      const sub = parseClinicalTag(desc);
+      return sub.title ? sub : { title: desc };
+    }
+
     if (desc.length > 0) {
       return { title, desc };
     }
+    return { title };
   }
 
-  // 3. Simple tag
-  return { title: trimmed };
+  const cleanTitle = trimmed.replace(/^["'{*]+/, '').replace(/["'}*]+$/, '').trim();
+  return { title: cleanTitle };
 }
 
 export function RidForm({ onSave, onCancel, initialData, settings, patientId, patientName, patientAge, isSaving = false }: RidFormProps) {
@@ -102,9 +167,9 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         consequenciasCurtoPrazo: initialData.consequenciasCurtoPrazo || (initialData as any).consequencias || '',
         consequenciasLongoPrazo: initialData.consequenciasLongoPrazo || '',
         ...initialData,
-        // Safety check for legacy string data in localStorage
-        necessidade: Array.isArray(initialData.necessidade) ? initialData.necessidade : (typeof initialData.necessidade === 'string' && initialData.necessidade ? (initialData.necessidade as string).split(',').map(s => s.trim()) : []),
-        esquema: Array.isArray(initialData.esquema) ? initialData.esquema : (typeof initialData.esquema === 'string' && initialData.esquema ? (initialData.esquema as string).split(',').map(s => s.trim()) : []),
+        // Normalização e separação em tags clínicas independentes e limpas
+        necessidade: splitAndCleanClinicalTags(initialData.necessidade),
+        esquema: splitAndCleanClinicalTags(initialData.esquema),
       };
     }
     return {
@@ -214,54 +279,31 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         availableSuggestions
       });
 
-      if (fieldName === 'necessidade') {
+      if (fieldName === 'necessidade' || fieldName === 'esquema') {
+        const rawItems: string[] = [];
         if (res.itens && res.itens.length > 0) {
-          const formatted = res.itens.map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
-          setFormData(prev => {
-            const existing = new Set(prev.necessidade);
-            formatted.forEach(t => existing.add(t));
-            return { ...prev, necessidade: Array.from(existing) };
+          res.itens.forEach(it => {
+            const n = it.nome?.trim();
+            const j = it.justificativa?.trim();
+            if (n) rawItems.push(j ? `${n}: ${j}` : n);
           });
-          toast.success("Necessidades identificadas com justificativas clínicas!");
         } else if (res.tags && res.tags.length > 0) {
-          setFormData(prev => {
-            const existing = new Set(prev.necessidade);
-            res.tags!.forEach(t => existing.add(t));
-            return { ...prev, necessidade: Array.from(existing) };
-          });
-          toast.success("Necessidades identificadas e adicionadas!");
+          res.tags.forEach(t => rawItems.push(t));
         } else if (res.text) {
-          setFormData(prev => {
-            const existing = new Set(prev.necessidade);
-            existing.add(res.text!);
-            return { ...prev, necessidade: Array.from(existing) };
-          });
-          toast.success("Necessidade sugerida!");
+          rawItems.push(res.text);
         }
-      } else if (fieldName === 'esquema') {
-        if (res.itens && res.itens.length > 0) {
-          const formatted = res.itens.map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
-          setFormData(prev => {
-            const existing = new Set(prev.esquema);
-            formatted.forEach(t => existing.add(t));
-            return { ...prev, esquema: Array.from(existing) };
-          });
-          toast.success("Esquemas mapeados com justificativas clínicas!");
-        } else if (res.tags && res.tags.length > 0) {
-          setFormData(prev => {
-            const existing = new Set(prev.esquema);
-            res.tags!.forEach(t => existing.add(t));
-            return { ...prev, esquema: Array.from(existing) };
-          });
-          toast.success("Esquemas mapeados e adicionados!");
-        } else if (res.text) {
-          setFormData(prev => {
-            const existing = new Set(prev.esquema);
-            existing.add(res.text!);
-            return { ...prev, esquema: Array.from(existing) };
-          });
-          toast.success("Esquema sugerido!");
-        }
+
+        const cleanedTags = splitAndCleanClinicalTags(rawItems);
+        setFormData(prev => {
+          const currentList = (prev[fieldName] as string[]) || [];
+          const existing = new Set(currentList);
+          cleanedTags.forEach(t => existing.add(t));
+          return { ...prev, [fieldName]: Array.from(existing) };
+        });
+        toast.success(fieldName === 'necessidade' 
+          ? "Necessidades identificadas e adicionadas!" 
+          : "Esquemas mapeados e adicionados!"
+        );
       } else if (fieldName === 'emocao') {
         if (res.emotion && res.emotion.name) {
           setFormData(prev => ({
@@ -378,6 +420,20 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
     loadSessions();
   }, [patientId]);
 
+  // Auto-limpeza e separação de tags antigas ou com artefatos JSON para garantir caixas independentes
+  useEffect(() => {
+    setFormData(prev => {
+      const cleanNec = splitAndCleanClinicalTags(prev.necessidade);
+      const cleanEsq = splitAndCleanClinicalTags(prev.esquema);
+      const isNecSame = cleanNec.length === prev.necessidade.length && cleanNec.every((v, i) => v === prev.necessidade[i]);
+      const isEsqSame = cleanEsq.length === prev.esquema.length && cleanEsq.every((v, i) => v === prev.esquema[i]);
+      if (!isNecSame || !isEsqSame) {
+        return { ...prev, necessidade: cleanNec, esquema: cleanEsq };
+      }
+      return prev;
+    });
+  }, []);
+
   const handleExtractFromSelectedSession = async () => {
     if (!selectedSessionId) {
       toast.error("Selecione um registro de atendimento no menu suspenso.");
@@ -426,8 +482,8 @@ Planejamento: ${cleanHtml(f.planejamento)}
           name: data.emocao.name || prev.emocao.name,
           intensity: data.emocao.intensity !== undefined ? data.emocao.intensity : prev.emocao.intensity
         } : prev.emocao,
-        necessidade: Array.isArray(data.necessidade) && data.necessidade.length > 0 ? data.necessidade : prev.necessidade,
-        esquema: Array.isArray(data.esquema) && data.esquema.length > 0 ? data.esquema : prev.esquema
+        necessidade: data.necessidade && data.necessidade.length > 0 ? splitAndCleanClinicalTags(data.necessidade) : prev.necessidade,
+        esquema: data.esquema && data.esquema.length > 0 ? splitAndCleanClinicalTags(data.esquema) : prev.esquema
       }));
 
       toast.success("Campos do RID preenchidos com IA a partir da sessão!");
@@ -499,8 +555,8 @@ Planejamento: ${cleanHtml(f.planejamento)}
           name: data.emocao.name || prev.emocao.name,
           intensity: data.emocao.intensity !== undefined ? data.emocao.intensity : prev.emocao.intensity
         } : prev.emocao,
-        necessidade: Array.isArray(data.necessidade) && data.necessidade.length > 0 ? data.necessidade : prev.necessidade,
-        esquema: Array.isArray(data.esquema) && data.esquema.length > 0 ? data.esquema : prev.esquema
+        necessidade: data.necessidade && data.necessidade.length > 0 ? splitAndCleanClinicalTags(data.necessidade) : prev.necessidade,
+        esquema: data.esquema && data.esquema.length > 0 ? splitAndCleanClinicalTags(data.esquema) : prev.esquema
       }));
 
       toast.success("Dados extraídos e preenchidos com sucesso!");

@@ -725,13 +725,15 @@ export default function RegistroAtendimentoApp({
   };
 
   const triggerAiForField = async (fieldName: string, promptType: string) => {
-    let promptHeader = "Você é um Supervisor Clínico Sênior e Especialista de Alto Nível em Terapia Cognitivo-Comportamental de 4ª Geração (Terapia Baseada em Processos - PBT de Stefan Hofmann & Steven Hayes, Contextualismo Funcional, RFT, ACT, FAP, DBT) e Terapia do Esquema Avançada de Jeffrey Young.\n\n";
-    promptHeader += "DIRETRIZES TÉCNICAS MANDATÓRIAS DE 4ª GERAÇÃO:\n";
-    promptHeader += "1. TERAPIA BASEADA EM PROCESSOS (PBT): Analise as redes de processos e contingências causais em 6 dimensões clínicas dinâmicas: Cognição, Afeto, Atenção, Self, Motivação e Comportamento Overt.\n";
-    promptHeader += "2. CONTEXTUALISMO FUNCIONAL & ACT (HEXAFLEX): Analise a flexibilidade psicológica (desfusão cognitiva vs fusão; aceitação experiencial vs evitação/esquiva; momento presente e ancoragem somática; self-como-contexto; valores e ações comprometidas com propósito).\n";
-    promptHeader += "3. TERAPIA DO ESQUEMA & MODOS: Mapeie os 18 EIDs, necessidades emocionais básicas violadas e dinâmicas de Modos Esquemáticos (Criança Vulnerável/Irritada, Pais Disfuncionais Punitivo/Exigente, Modos de Enfrentamento Protetor Desligado/Hipercompensador/Submisso e Modo Adulto Saudável).\n";
-    promptHeader += "4. MODELO DAS 10 HABILIDADES PSICOLÓGICAS (THP - Poubel & Rodrigues): Avalie déficits e alvos de treino nas 10 HPs: Autoconhecimento, Autorregulação Emocional, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade e Enfrentamento, Autocontrole, Sociabilidade, Imunidade Social, Sensibilidade Social e Hedonismo Responsável.\n";
-    promptHeader += "5. RIGOR SEMIOLÓGICO E RESOLUÇÃO CFP Nº 06/2019: Linguagem clínica culta, impessoal, densa, preservando citações literais marcantes do paciente entre aspas duplas (\"> '...'\").\n\n";
+    let promptHeader = "Você é um Supervisor Clínico Sênior e Especialista de Mais Alto Nível em Psicologia Clínica Integrada, com domínio absoluto dos seguintes 5 PILARES FUNDAMENTAIS:\n";
+    promptHeader += "1. TCC DE 4ª GERAÇÃO & TERAPIA BASEADA EM PROCESSOS (PBT de Stefan Hofmann & Steven Hayes, Contextualismo Funcional, RFT, ACT/Hexaflex, FAP, DBT): Analise redes causais e alavancas dinâmicas nas 6 dimensões clínicas (Cognição, Afeto, Atenção, Self, Motivação e Comportamento Overt). Promova flexibilidade psicológica (desfusão vs fusão; aceitação experiencial vs esquiva; momento presente; self-como-contexto; valores vitais e ações comprometidas).\n";
+    promptHeader += "2. TERAPIA DO ESQUEMA AVANÇADA (Jeffrey Young): Mapeamento aprofundado dos 18 EIDs, necessidades emocionais básicas negligenciadas na história de vida e dinâmicas de Modos Esquemáticos (Criança Vulnerável/Irritada, Pais Disfuncionais Crítico/Punitivo/Exigente, Modos de Enfrentamento Desadaptativo e fortalecimento do Adulto Saudável).\n";
+    promptHeader += "3. ANÁLISE DO COMPORTAMENTO (Behaviorismo Radical & Contextualismo Funcional): Análise Funcional de Contingências (Tríplice Contingência S-R-C: Estímulos Antecedentes discriminativos Sd/S-delta, Respostas operantes públicas/encobertas e Consequências mantenedoras). Discrimine reforçamento positivo de reforçamento negativo (fuga e esquiva experiencial), contingências de extinção/punição e Comportamento Governado por Regras Verbais rígidas.\n";
+    promptHeader += "4. PSICOLOGIA POSITIVA & CIÊNCIA DO BEM-ESTAR (Peterson, Seligman, VIA Institute & Fredrickson): Mapeie e alavanque as Forças de Caráter e Virtudes (VIA), os 5 pilares do modelo PERMA (Positive Emotions, Engagement, Relationships, Meaning, Accomplishment), fatores de resiliência, autoeficácia (Bandura) e ampliação de recursos adaptativos (Broaden-and-Build).\n";
+    promptHeader += "5. NEUROCIÊNCIA CLÍNICA & PSICOBIOLOGIA: Avalie a ativação psicofisiológica do Sistema Nervoso Autônomo sob a Teoria Polivagal de Stephen Porges (estados ventral-vagal de conexão e segurança, simpático de hiperarousal/luta/fuga e dorsal-vagal de colapso/imobilização), modulação do Eixo HPA, balanço de regulação Córtico-Límbica (Córtex Pré-Frontal vs Amígdala) e estimulação da neuroplasticidade dependente de experiência.\n\n";
+
+    promptHeader += "DIRETRIZ MANDATÓRIA DE VOLUME ANALÍTICO E PROFUNDIDADE TÉCNICO-DIAGNÓSTICA:\n";
+    promptHeader += "O conteúdo produzido DEVE ser substancial, denso, aprofundado e de alta excelência médica/psicológica. NÃO produza resumos superficiais, telegráficos ou burocráticos. Desenvolva redações clínicas completas, com parágrafos justificados extensos (<p style='text-align: justify;'>), tópicos analíticos detalhados (<ul> e <li>) e citações literais do paciente preservadas entre aspas duplas (\"> '...'\") em conformidade estrita com a Resolução CFP nº 06/2019.\n\n";
 
     if (patientClinicalBackground) {
       promptHeader += "CONFORMIDADE CLÍNICA MANDATÓRIA COM O HISTÓRICO INTEGRADO DO PRONTUÁRIO (RID + PCI + ESCALAS):\n";
@@ -750,10 +752,10 @@ export default function RegistroAtendimentoApp({
 
     switch (promptType) {
       case "motivo-consulta":
-        customPrompt = `Elabore uma formulação profunda do "Motivo da Consulta e Queixa Primária" sob a ótica da TCC de 4ª Geração e Terapia do Esquema em 1-2 parágrafos justificados (<p style='text-align: justify;'>):\n` +
-          `- Diferencie a queixa manifesta superficial da função comportamental latente (o que o paciente está tentando evitar ou controlar);\n` +
-          `- Identifique explicitamente quais Necessidades Emocionais Básicas foram violadas ou permanecem negligenciadas;\n` +
-          `- Aponte as hipóteses de EIDs (Esquemas Iniciais Desadaptativos) ativados como gatilhos primários do sofrimento.\n\n` +
+        customPrompt = `Elabore uma formulação técnico-diagnóstica aprofundada do "Motivo da Consulta e Queixa Primária" em 2 a 3 parágrafos densos e justificados (<p style='text-align: justify;'>), integrando os 5 pilares clínicos:\n` +
+          `1. <strong>Queixa Manifesta vs. Função Comportamental Operante:</strong> Diferencie a queixa declarada imediata da função mantenedora latente (esquiva experiencial, reforçamento negativo, evitação de afetos aversivos);\n` +
+          `2. <strong>Necessidades Emocionais Básicas e EIDs:</strong> Identifique explicitamente quais Necessidades Nucleares foram negligenciadas na história formativa e quais EIDs (Esquemas Iniciais Desadaptativos) operam como gatilhos primários do sofrimento contemporâneo;\n` +
+          `3. <strong>Correlatos Psicofisiológicos e Neurociência:</strong> Mapeie os sinais de ativação neurovegetativa (tônus autonômico, mobilização do Eixo HPA ou estado de desligamento dorsal-vagal) associados à queixa.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "formatar-relato":
@@ -761,82 +763,87 @@ export default function RegistroAtendimentoApp({
           toast.error("Preencha o relato do cliente antes de formatar.");
           return;
         }
-        customPrompt = `Reformule na íntegra o relato a seguir, transformando-o em um Relato Clínico Estruturado de Alta Precisão Semiológica baseado no método de 4ª Geração e Análise Funcional:\n` +
-          `- Utilize parágrafos justificados (<p style='text-align: justify;'>) e subtópicos claros em <strong>:\n` +
-          `  1. <strong>Contexto Fático e Estímulos Antecedentes:</strong> Descrição factual do cenário disparador, sem julgamentos moralistas.\n` +
-          `  2. <strong>Tríplice Resposta Clínica:</strong>\n` +
-          `     • <em>Dimensão Fisiológica/Somática e Afeto:</em> ativação autonômica, aperto, taquicardia ou embotamento;\n` +
-          `     • <em>Dimensão Cognitiva e Regras Verbais:</em> pensamentos automáticos com preservação literal das falas do paciente entre aspas (\"> '...'\");\n` +
-          `     • <em>Dimensão Motora/Comportamental:</em> estilo de enfrentamento manifesto (evitação, resignação ou hipercompensação);\n` +
-          `  3. <strong>Consequências Funcionais e Custos:</strong> Alívio imediato a curto prazo (reforço negativo da esquiva) versus cronificação e prejuízos a longo prazo.\n\n` +
+        customPrompt = `Reformule na íntegra o relato a seguir, transformando-o em um Relato Clínico Estruturado de Alta Precisão Semiológica, Análise Funcional e Volume Analítico Expandido, organizado em 4 seções com subtópicos em <strong> e parágrafos justificados (<p style='text-align: justify;'>):\n` +
+          `  1. <strong>Contexto Fático e Estímulos Antecedentes Discriminativos (Sd):</strong> Descrição pormenorizada do cenário disparador, contingências ambientais imediatas e eventos históricos evocadores, com precisão descritiva e ausência de julgamentos morais.\n` +
+          `  2. <strong>Tríplice Resposta Clínica e Psicobiológica:</strong>\n` +
+          `     • <em>Dimensão Fisiológica/Somática e Tônus Autonômico:</em> Ativação do SNA sob a Teoria Polivagal (hiperativação simpática com taquicardia/tensão muscular ou colapso dorsal-vagal com congelamento/embotamento), mobilização do Eixo HPA e sintomas corporais somatizados;\n` +
+          `     • <em>Dimensão Cognitiva, EIDs e Regras Verbais:</em> Pensamentos automáticos, distorções de Beck, regras condicionais ("Se... então...") e modos esquemáticos ativados, preservando literalmente as falas e metáforas do paciente entre aspas (\"> '...'\");\n` +
+          `     • <em>Dimensão Motora/Comportamental Operante:</em> Comportamentos manifestos de enfrentamento (evitação experiencial, resignação complacente ou hipercompensação agressiva/perfeccionista) e padrões de ação.\n` +
+          `  3. <strong>Análise Funcional de Contingências e Custos Evolutivos:</strong> Função de alívio imediato (reforçamento negativo da esquiva a curto prazo) versus manutenção do ciclo disfuncional, erosão de vínculos e prejuízos cumulativos a longo prazo.\n` +
+          `  4. <strong>Recursos Protetivos, Forças de Caráter (VIA) e Resiliência:</strong> Forças de caráter identificadas no paciente (ex: perseverança, bravura, integridade, autorregulação) e pontos de alavancagem para desenvolvimento de flexibilidade psicológica e bem-estar (PERMA).\n\n` +
           `Original: "${relatoSecText}"`;
         break;
       case "objetivos-cliente":
-        customPrompt = `Analise o relato e extraia em tópicos estruturados (<ul> e <li>) os objetivos declarados pelo próprio cliente, articulando-os tecnicamente com os déficits no repertório das 10 HPs (Habilidades Psicológicas - Poubel & Rodrigues):\n` +
-          `- Identifique a meta explícita na voz do cliente;\n` +
-          `- Traduza para a HP correspondente que precisa ser desenvolvida (ex: se busca 'conseguir falar com o chefe', vincular ao déficit em Imunidade Social e Sociabilidade; se 'parar de explodir com os filhos', vincular à Autorregulação Emocional e Autocontrole).\n\n` +
+        customPrompt = `Analise detalhadamente o relato e formule em tópicos estruturados (<ul> e <li>) os objetivos declarados pelo próprio paciente, articulando-os tecnicamente com os 5 pilares:\n` +
+          `- Meta explícita na voz do cliente, preservando suas palavras entre aspas;\n` +
+          `- Tradução técnica para os déficits funcionais nas 10 HPs (Habilidades Psicológicas - Poubel & Rodrigues: Autoconhecimento, Autorregulação, Autoestima, Imunidade Social, etc.);\n` +
+          `- Conexão direta com os pilares do modelo PERMA da Psicologia Positiva (cultivo de emoções positivas, engajamento autêntico, vínculos fortalecidos, sentido existencial e realizações com propósito).\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "objetivos-terapeuta":
-        customPrompt = `Elabore de 3 a 5 objetivos clínicos do terapeuta para o Plano de Tratamento baseados na TCC de 4ª Geração (PBT, ACT e Esquemas) estruturados em tópicos (<ul> e <li>):\n` +
-          `- Focar no enfraquecimento de EIDs específicos identificados no relato;\n` +
-          `- Promover flexibilidade psicológica (desfusão de crenças rígidas e aceitação de afeto aversivo);\n` +
-          `- Prescrever alvos de treino deliberado nas 10 HPs em déficit com critérios operacionais claros de evolução.\n\n` +
+        customPrompt = `Elabore de 4 a 6 objetivos clínicos do terapeuta de alta densidade técnico-diagnóstica para o tratamento, estruturados em tópicos (<ul> e <li>) baseados nos 5 pilares:\n` +
+          `- Desativação e enfraquecimento de EIDs e modos esquemáticos disfuncionais específicos mapeados na sessão;\n` +
+          `- Promoção de flexibilidade psicológica via PBT/ACT (desfusão de regras verbais rígidas, aceitação de desconforto experiencial e ações comprometidas com valores vitais);\n` +
+          `- Regulação neurovegetativa e autonômica (estimulação do tônus ventral-vagal e atenuação da hiperatividade amigdalar/simpática);\n` +
+          `- Prescrição de alvos de treino deliberado nas 10 HPs em déficit com critérios operacionais claros de evolução clínica;\n` +
+          `- Mobilização de forças de caráter VIA para consolidação e autonomia do Modo Adulto Saudável.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "intervencoes":
-        customPrompt = `Analise o relato da sessão e documente detalhadamente em tópicos estruturados (<ul> e <li>) as intervenções e posturas clínicas de 4ª Geração aplicadas pelo terapeuta:\n` +
-          `- Especifique procedimentos técnicos concretos (ex: Validação Dialética, Rastreamento Funcional de Contingências, Desfusão Cognitiva via Metáforas da ACT, Ancoragem Somática no Momento Presente, Diálogo de Modos Esquemáticos, Confrontação Empática, Psicoeducação em HPs);\n` +
-          `- Descreva a resposta inicial do paciente a cada intervenção realizada em sessão.\n\n` +
+        customPrompt = `Analise a sessão e documente minuciosamente em tópicos analíticos estruturados (<ul> e <li>) as intervenções e posturas clínicas de 4ª Geração aplicadas pelo terapeuta, com alta fundamentação técnica:\n` +
+          `- Especifique procedimentos clínicos concretos (ex: Rastreamento Funcional S-R-C de Contingências, Validação Dialética e Regulação Emocional DBT, Metáforas de Desfusão Cognitiva da ACT, Ancoragem Somática Polivagal no Momento Presente, Trabalho de Cadeiras e Diálogo de Modos Esquemáticos, Confrontação Empática, Psicoeducação em Forças de Caráter VIA e HPs);\n` +
+          `- Descreva detalhadamente a resposta clínica, verbal e psicofisiológica do paciente a cada intervenção durante a sessão.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "observacoes":
-        customPrompt = `Elabore uma descrição clínica e semiológica detalhada sobre o estado mental do paciente em parágrafos justificados (<p style='text-align: justify;'>):\n` +
-          `- Avalie o exame do estado mental (afeto, congruência ideo-afetiva, curso do pensamento, velocidade da fala, postura e contato visual);\n` +
-          `- Mapeie a dinâmica dos Modos Esquemáticos em sessão (predomínio de Modo Criança Vulnerável, Modo Protetor Desligado, Pais Críticos/Punitivos ou Adulto Saudável);\n` +
-          `- Identifique as regras condicionais verbais latentes ("Se eu expressar o que sinto, serei rejeitado") e preserve termos e metáforas originais do paciente entre aspas.\n\n` +
+        customPrompt = `Elabore uma descrição clínica e semiológica aprofundada sobre o estado mental do paciente e dinâmica psicodinâmico-funcional em parágrafos justificados (<p style='text-align: justify;'>):\n` +
+          `- Exame do Estado Mental semiológico minucioso (afeto, gama emocional, modulação e congruência ideo-afetiva, curso e velocidade do pensamento, psicomotricidade);\n` +
+          `- Estado neuroautonômico e reatividade polivagal observada ao longo do atendimento;\n` +
+          `- Mapeamento da dinâmica dos Modos Esquemáticos em sessão (Criança Vulnerável, Protetor Desligado, Pais Críticos/Exigentes ou Adulto Saudável);\n` +
+          `- Análise funcional da relação terapêutica (FAP): identificação de Comportamentos Clinicamente Relevantes em sessão (CRB1 - padrões disfuncionais emitidos na consulta; CRB2 - progressos e ensaios adaptativos em tempo real);\n` +
+          `- Identificação das regras condicionais implícitas com preservação das metáforas e termos originais do paciente entre aspas.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "insights":
-        customPrompt = `Extraia de 2 a 4 insights clínicos cruciais alcançados na sessão ou a serem promovidos, estruturados em tópicos (<ul> e <li>):\n` +
-          `- Conecte os gatilhos e sintomas atuais aos esquemas nucleares formativos da infância/adolescência (origem das regras de sobrevivência);\n` +
-          `- Destaque diferenciações funcionais essenciais (ex: reconhecer que a ameaça pertencia ao passado familiar e não ao contexto adulto atual - Self-como-Contexto);\n` +
-          `- Enfatize momentos de autocompaixão e tomada de perspectiva alcançados.\n\n` +
+        customPrompt = `Extraia de 3 a 5 insights clínicos densos alcançados na sessão ou a serem promovidos, estruturados em tópicos (<ul> e <li>):\n` +
+          `- Conexão ontogenética e funcional entre os gatilhos e sintomas atuais e as experiências formativas da infância/adolescência (origem biográfica dos EIDs e das regras de sobrevivência);\n` +
+          `- Diferenciação funcional de contextos (Self-como-Contexto vs Self-como-Conteúdo): reconhecimento de que a ameaça pertencia ao contexto familiar prévio e não à realidade presente;\n` +
+          `- Desmantelamento de regras verbais rígidas e fortalecimento de autocompaixão, tomada de perspectiva e reconexão com forças de caráter.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "percepcao-cliente":
-        customPrompt = `Resuma o fechamento da sessão sob a ótica de adesão, aliança terapêutica e engajamento em parágrafo justificado (<p style='text-align: justify;'>):\n` +
-          `- Avalie o nível de vinculação e confiança com o terapeuta (aliança empírica);\n` +
-          `- Especifique o estágio de prontidão para a mudança (Pré-contemplação, Contemplação, Preparação ou Ação de Prochaska & DiClemente);\n` +
-          `- Registre o grau de disposição verbalizada pelo cliente para tolerar desconforto temporário em prol de seus valores vitais.\n\n` +
+        customPrompt = `Elabore uma avaliação profunda sobre o fechamento da sessão sob a ótica da aliança terapêutica e engajamento em parágrafos justificados (<p style='text-align: justify;'>):\n` +
+          `- Qualidade do vínculo e da aliança terapêutica empírica (confiança, segurança psicológica e colaboração ativa);\n` +
+          `- Estágio motivacional de prontidão para a mudança (Pré-contemplação, Contemplação, Preparação ou Ação de Prochaska & DiClemente);\n` +
+          `- Grau de abertura e disposição experiencial manifestada pelo cliente para tolerar desconfortos e vulnerabilidades em prol de seus valores vitais.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "tarefas":
-        customPrompt = `Sugira de 2 a 4 tarefas comportamentais intersessão estruturadas com foco no PDP (Plano de Desenvolvimento de HPs de Poubel & Rodrigues) em tópicos (<ul> e <li>):\n` +
-          `- Defina a tarefa em formato de micro-passos comportamentais factíveis (ex: Preenchimento de 2 registros de RID na semana, 3 minutos diários de respiração 4-7-8, treino de dizer 1 'não' sem justificar);\n` +
-          `- Inclua a regra de contingência: "Se [gatilho/desconforto surgir], Então [ativar a HP treinada]";\n` +
-          `- Estabeleça a estratégia de automonitoramento ou registro do exercício.\n\n` +
+        customPrompt = `Prescreva de 3 a 5 tarefas comportamentais intersessão altamente estruturadas sob o PDP (Plano de Desenvolvimento de HPs de Poubel & Rodrigues) em tópicos (<ul> e <li>):\n` +
+          `- Formato de micro-passos comportamentais graduados e factíveis (ex: Preenchimento de 2 registros de RID na semana, 3 minutos diários de respiração ventral 4-7-8, treino de limite assertivo sem justificativas excessivas);\n` +
+          `- Regra de contingência operacional: "Se [gatilho ou ativação somática aversiva surgir], Então [ativar HP treinada / técnica polivagal / ação de valor]";\n` +
+          `- Ativação deliberada de Forças de Caráter VIA e método de automonitoramento ou registro do exercício.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "planejamento":
-        customPrompt = `Construa um planejamento técnico e estratégico para as próximas sessões em tópicos estruturados (<ul> e <li>):\n` +
-          `- Defina os eixos temáticos prioritários baseados nas alavancas centrais da rede de processos (PBT);\n` +
-          `- Indique técnicas específicas a serem introduzidas (ex: trabalho de imaginação com reescrita para desativar memórias traumáticas de esquemas, treino assertivo em role-play);\n` +
-          `- Preveja possíveis esquivas ou resistências comportamentais do paciente a serem manejadas com empatia e firmeza terapêutica.\n\n` +
+        customPrompt = `Construa um planejamento técnico e estratégico longitudinal para as próximas sessões em tópicos analíticos estruturados (<ul> e <li>):\n` +
+          `- Eixos temáticos e alavancas prioritárias na rede de processos de mudança (PBT);\n` +
+          `- Técnicas específicas a serem introduzidas (ex: Trabalho de imaginação com reescrita - Imagery Rescripting - para ressignificação de memórias formativas de esquemas, role-playing de assertividade, intervenções somáticas polivagais);\n` +
+          `- Manejo antecipatório e empático de possíveis esquivas experienciais, comportamentos de fuga ou resistências do paciente.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       case "confidencialidade":
         customPrompt = `Escreva uma declaração técnica formal de confidencialidade e sigilo profissional em conformidade com o Código de Ética Profissional do Psicólogo (Resolução CFP nº 010/2005 e Resolução CFP nº 006/2019 sobre registros documentais), destacando a guarda sigilosa dos registros de atendimento.`;
         break;
       case "encaminhamentos":
-        customPrompt = `Analise minuciosamente o relato clínico e emita um parecer técnico justificado sobre a necessidade ou não de encaminhamentos interdisciplinares em parágrafo justificado (<p style='text-align: justify;'>):\n` +
-          `- Avalie indicadores para suporte médico/psiquiátrico (sintomas autonômicos graves, insônia persistente, oscilações severas de humor, ideação);\n` +
-          `- Considere avaliação neuropsicológica, nutricional ou médica geral quando houver suspeitas de comorbidades orgânicas;\n` +
-          `- Se não houver necessidade imediata, registre explicitamente a conduta de acompanhamento exclusivo em psicoterapia clínica no momento.\n\n` +
+        customPrompt = `Analise minuciosamente o quadro clínico e emita um parecer técnico-diagnóstico aprofundado e fundamentado sobre suporte interdisciplinar em parágrafos justificados (<p style='text-align: justify;'>):\n` +
+          `- Avalie indicadores psicofisiológicos para suporte médico/psiquiátrico (sintomas autonômicos refratários, alteração crônica do ciclo sono-vigília, oscilações severas de humor, ideação);\n` +
+          `- Considere pertinência de interconsultas em neuropsicologia, nutrição clínica ou medicina geral quando houver suspeitas de desregulação somática/metabólica;\n` +
+          `- Caso não haja necessidade imediata de encaminhamento, explicite tecnicamente a justificativa e segurança do plano de acompanhamento exclusivo em psicoterapia clínica no momento.\n\n` +
           `Relato Clínico: "${relatoSecText || "Não fornecido"}"`;
         break;
       default:
-        customPrompt = `Elabore um parecer clínico estruturado baseado em TCC de 4ª Geração.`;
+        customPrompt = `Elabore um parecer clínico estruturado e aprofundado baseado na TCC de 4ª Geração, Terapia do Esquema, Análise do Comportamento, Psicologia Positiva e Neurociência Clínica.`;
     }
 
     setAiLoadingFields(prev => ({ ...prev, [fieldName]: true }));
