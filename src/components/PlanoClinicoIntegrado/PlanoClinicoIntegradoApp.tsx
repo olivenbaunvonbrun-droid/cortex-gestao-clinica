@@ -31,6 +31,7 @@ import { cn } from '../../lib/utils';
 import { db } from '../../lib/db';
 import { dbWrapper } from './lib/pciDbWrapper';
 import { TCC_CONCEPTS } from './constants';
+import { CLINICAL_SUGGESTIONS_DB } from '../BibliotecaAvaliacao/components/ClinicalSuggestionsHelper';
 import { Toaster, toast } from 'react-hot-toast';
 
 // Helper components
@@ -135,6 +136,58 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
     questions: []
   });
 
+  const getSuggestionsForPciField = (label: string) => {
+    const l = label.toLowerCase();
+    if (l.includes('esquema') || l.includes('eid')) {
+      return [
+        ...(CLINICAL_SUGGESTIONS_DB.esquemas?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.esquemas_adaptativos?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.modos_esquematicos?.items || [])
+      ];
+    }
+    if (l.includes('necessidade')) {
+      return [
+        ...(CLINICAL_SUGGESTIONS_DB.necessidades_emocionais_frustradas?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.necessidades_emocionais_atendidas?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.necessidades_infantil?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.necessidades_adulto?.items || [])
+      ];
+    }
+    if (l.includes('crença') || l.includes('crenca') || l.includes('regra')) {
+      return [
+        ...(CLINICAL_SUGGESTIONS_DB.crencas_centrais?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.crencas_intermediarias?.items || [])
+      ];
+    }
+    if (l.includes('distorç') || l.includes('distorc') || l.includes('viés') || l.includes('vies') || l.includes('pensamento')) {
+      return [
+        ...(CLINICAL_SUGGESTIONS_DB.distorcoes?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.vieses_cognitivos?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.pensamentos_automaticos_negativos?.items || [])
+      ];
+    }
+    if (l.includes('comportamento') || l.includes('enfrentamento') || l.includes('excesso') || l.includes('déficit') || l.includes('deficit')) {
+      return [
+        ...(CLINICAL_SUGGESTIONS_DB.enfrentamento?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.padroes_comportamentais_disfuncionais?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.padroes_comportamentais_funcionais?.items || [])
+      ];
+    }
+    if (l.includes('afeto') || l.includes('emoção') || l.includes('emocao') || l.includes('sentimento')) {
+      return [
+        ...(CLINICAL_SUGGESTIONS_DB.sentimentos?.items || []),
+        ...(CLINICAL_SUGGESTIONS_DB.sentimentos_funcionais?.items || [])
+      ];
+    }
+    if (l.includes('estilo parental') || l.includes('família') || l.includes('familia')) {
+      return CLINICAL_SUGGESTIONS_DB.estilos_parentais?.items || [];
+    }
+    return [
+      ...(CLINICAL_SUGGESTIONS_DB.parametros_avancados?.items || []),
+      ...(CLINICAL_SUGGESTIONS_DB.fatores_protetivos?.items || [])
+    ];
+  };
+
   const handleContextFill = async (label: string, currentValue: string | undefined, onChange: (v: string) => void) => {
     const situation = formState.eventoQueixas?.trim() || formState.ridSituacao?.trim();
     if (!situation && !label.toLowerCase().includes('queixa') && !label.toLowerCase().includes('situação')) {
@@ -144,6 +197,7 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
 
     setFillingLabel(label);
     try {
+      const availableSuggestions = getSuggestionsForPciField(label);
       const res = await generateClinicalFieldFilling({
         tool: 'PCI',
         field: label,
@@ -153,7 +207,8 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
           name: formState.patient?.name,
           age: formState.idade,
           queixa: formState.eventoQueixas
-        }
+        },
+        availableSuggestions
       });
 
       let textVal = '';
@@ -173,7 +228,7 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
           ? `${currentValue}\n\n${textVal}` 
           : textVal;
         onChange(newVal);
-        toast.success(`Campo "${label}" preenchido com sucesso!`);
+        toast.success(`Campo "${label}" preenchido com sugestões justificadas!`);
       }
     } catch (err: any) {
       console.error("Erro ao preencher campo do PCI via IA:", err);
@@ -192,6 +247,7 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
 
     setAskingLabel(label);
     try {
+      const availableSuggestions = getSuggestionsForPciField(label);
       const questions = await generateClinicalFieldQuestions({
         tool: 'PCI',
         field: label,
@@ -200,7 +256,8 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
         patientContext: {
           name: formState.patient?.name,
           age: formState.idade
-        }
+        },
+        availableSuggestions
       });
 
       setQuestionsModal({

@@ -53,6 +53,7 @@ export default function RegistroAtendimentoApp({
   const [currentPage, setCurrentPage] = useState<"new-record" | "list-records" | "settings">("new-record");
   const [patients, setPatients] = useState<any[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
+  const [patientClinicalBackground, setPatientClinicalBackground] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState("");
   const [autoSaveStatus, setAutoSaveStatus] = useState("");
   const [recordsList, setRecordsList] = useState<AttendanceRecord[]>([]);
@@ -201,9 +202,96 @@ export default function RegistroAtendimentoApp({
     initApp();
   }, []);
 
-  // Fetch history when selectedPatientId changes
+  const loadPatientClinicalBackground = async (patientId: string) => {
+    if (!patientId) {
+      setPatientClinicalBackground('');
+      return;
+    }
+    try {
+      const record = await db.prontuarios.get(patientId);
+      if (!record || !record.entradas || record.entradas.length === 0) {
+        setPatientClinicalBackground('');
+        return;
+      }
+
+      const sections: string[] = [];
+
+      // 1. PCI (Plano Clínico Integrado)
+      const pciEntries = record.entradas.filter(e => e.tipo === 'pci' || e.metadata?.type === 'pci');
+      if (pciEntries.length > 0) {
+        const latestPci = pciEntries[pciEntries.length - 1]?.metadata?.pciData;
+        if (latestPci) {
+          sections.push(
+            `### PLANO CLÍNICO INTEGRADO (PCI):\n` +
+            `- Queixa Principal/Evento: ${latestPci.eventoQueixas || 'N/A'}\n` +
+            `- Diagnóstico Topográfico: ${latestPci.diagTopo || 'N/A'}\n` +
+            `- Hipótese Diagnóstica/Etiológica: ${latestPci.hipoteseDiag || 'N/A'}\n` +
+            `- Esquemas/EIDs Identificados: ${latestPci.esquemasEids || 'N/A'}\n` +
+            `- Necessidades Emocionais Básicas: ${latestPci.necessidadesEmocionais || 'N/A'}\n` +
+            `- Crenças Nucleares/Centrais: ${latestPci.crencasCentrais || 'N/A'}\n` +
+            `- Distorções Cognitivas/Regras: ${latestPci.distorcoesRegras || 'N/A'}\n` +
+            `- Estilo de Enfrentamento/Modos: ${latestPci.estiloEnfrentamento || 'N/A'}\n` +
+            `- Projeto Terapêutico & Metas: ${latestPci.projetoTerap || 'N/A'}\n` +
+            (latestPci.aiAnalysis ? `- Análise Clínica da Formulação:\n${latestPci.aiAnalysis}\n` : '')
+          );
+        }
+      }
+
+      // 2. RIDs Recentes (Registros de Informações Diárias)
+      const ridEntries = record.entradas.filter(e => e.tipo === 'rid' || e.metadata?.type === 'rid');
+      if (ridEntries.length > 0) {
+        const recentRids = ridEntries.slice(-3).map(e => e.metadata?.ridData).filter(Boolean);
+        const ridSummaries = recentRids.map((rid, idx) => 
+          `RID ${idx + 1} (${rid.date || 'Data N/D'}): Situação: "${rid.situacao || ''}" | Pensamento: "${rid.pensamento || ''}" | Emoção: ${rid.emocao?.name || ''} (${rid.emocao?.intensity || ''}%) | Necessidade: ${Array.isArray(rid.necessidade) ? rid.necessidade.join(', ') : (rid.necessidade || '')} | Esquema: ${Array.isArray(rid.esquema) ? rid.esquema.join(', ') : (rid.esquema || '')} | Enfrentamento/Comportamento: "${rid.comportamento || ''}"`
+        ).join('\n');
+        sections.push(`### REGISTROS DE INFORMAÇÕES DIÁRIAS (RID) RECENTES:\n${ridSummaries}`);
+      }
+
+      // 3. Escalas e Avaliações Psicométricas (YSQ, IHP, IHS, ASRS-18, etc.)
+      const scaleEntries = record.entradas.filter(e => 
+        ['ysq', 'ihp', 'ihs', 'asrs18', 'dfc', 'psicodiagnostico'].includes(e.tipo || '') ||
+        ['ysq', 'ihp', 'ihs', 'asrs18', 'dfc', 'psicodiagnostico'].includes(e.metadata?.type || '')
+      );
+      if (scaleEntries.length > 0) {
+        const scaleSummaries = scaleEntries.map(e => {
+          const type = (e.tipo || e.metadata?.type || '').toUpperCase();
+          const date = e.data || (e.timestamp ? new Date(e.timestamp).toLocaleDateString('pt-BR') : '');
+          const meta = e.metadata || {};
+          let detail = '';
+          if (meta.ysqData?.aiAnalysis) detail = `Análise YSQ: ${meta.ysqData.aiAnalysis.substring(0, 250)}...`;
+          else if (meta.ihpData?.aiAnalysis) detail = `Análise IHP: ${meta.ihpData.aiAnalysis.substring(0, 250)}...`;
+          else if (meta.ihsData?.aiAnalysis) detail = `Análise IHS: ${meta.ihsData.aiAnalysis.substring(0, 250)}...`;
+          else if (meta.asrs18Data?.aiAnalysis) detail = `Análise ASRS-18: ${meta.asrs18Data.aiAnalysis.substring(0, 250)}...`;
+          else if (meta.summary) detail = meta.summary;
+          return `- ${type} (${date})${detail ? `: ${detail}` : ''}`;
+        }).join('\n');
+        sections.push(`### RESULTADOS DE ESCALAS & AVALIAÇÕES PSICOMÉTRICAS:\n${scaleSummaries}`);
+      }
+
+      // 4. Longitudinal Profile / Tratamento
+      if (record.longitudinalProfile) {
+        sections.push(`### PERFIL LONGITUDINAL DO PACIENTE:\n${record.longitudinalProfile}`);
+      }
+      if (record.treatmentPlan?.goals && record.treatmentPlan.goals.length > 0) {
+        const goalsList = record.treatmentPlan.goals.map(g => `- [${g.completed ? 'X' : ' '}] ${g.text}`).join('\n');
+        sections.push(`### METAS TERAPÊUTICAS ATIVAS:\n${goalsList}\nNotas: ${record.treatmentPlan.notes || 'N/A'}`);
+      }
+
+      setPatientClinicalBackground(sections.join('\n\n'));
+    } catch (err) {
+      console.error("Erro ao carregar histórico clínico integrado do paciente:", err);
+      setPatientClinicalBackground('');
+    }
+  };
+
+  // Fetch history and clinical background when selectedPatientId changes
   useEffect(() => {
     fetchHistory();
+    if (selectedPatientId) {
+      loadPatientClinicalBackground(selectedPatientId);
+    } else {
+      setPatientClinicalBackground('');
+    }
   }, [selectedPatientId]);
 
   // Pre-fill fields from selected patient
@@ -644,6 +732,12 @@ export default function RegistroAtendimentoApp({
     promptHeader += "3. TERAPIA DO ESQUEMA & MODOS: Mapeie os 18 EIDs, necessidades emocionais básicas violadas e dinâmicas de Modos Esquemáticos (Criança Vulnerável/Irritada, Pais Disfuncionais Punitivo/Exigente, Modos de Enfrentamento Protetor Desligado/Hipercompensador/Submisso e Modo Adulto Saudável).\n";
     promptHeader += "4. MODELO DAS 10 HABILIDADES PSICOLÓGICAS (THP - Poubel & Rodrigues): Avalie déficits e alvos de treino nas 10 HPs: Autoconhecimento, Autorregulação Emocional, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade e Enfrentamento, Autocontrole, Sociabilidade, Imunidade Social, Sensibilidade Social e Hedonismo Responsável.\n";
     promptHeader += "5. RIGOR SEMIOLÓGICO E RESOLUÇÃO CFP Nº 06/2019: Linguagem clínica culta, impessoal, densa, preservando citações literais marcantes do paciente entre aspas duplas (\"> '...'\").\n\n";
+
+    if (patientClinicalBackground) {
+      promptHeader += "CONFORMIDADE CLÍNICA MANDATÓRIA COM O HISTÓRICO INTEGRADO DO PRONTUÁRIO (RID + PCI + ESCALAS):\n";
+      promptHeader += "A sua formulação DEVE seguir rigorosamente a mesma linha diagnóstica, os mesmos Esquemas Iniciais Desadaptativos (EIDs), as mesmas Necessidades Emocionais Básicas violadas e as metas terapêuticas consolidadas no histórico clínico do paciente:\n";
+      promptHeader += `${patientClinicalBackground}\n\n`;
+    }
 
     if (abordagensSessao.length > 0) {
       promptHeader += `Seu direcionamento teórico prioritário deve ser: ${abordagensSessao.join(", ")}.\n\n`;
@@ -1209,7 +1303,7 @@ export default function RegistroAtendimentoApp({
               <form onSubmit={(e) => e.preventDefault()} className="space-y-6 select-text pb-20">
                 {/* Módulo Escriba Clínico de IA (Noa Health / Voa Notes) */}
                 <ClinicalAudioRecorder 
-                  patient={{ id: selectedPatientId, name: nomeCliente, age: idadeCliente }}
+                  patient={{ id: selectedPatientId, name: nomeCliente, age: idadeCliente, clinicalProfile: patientClinicalBackground }}
                   approaches={abordagensSessao.length > 0 ? abordagensSessao : ['TCC 4ª Geração']}
                   onTranscriptionComplete={handleScribeComplete}
                   onProgressiveUpdate={handleScribeProgressiveUpdate}

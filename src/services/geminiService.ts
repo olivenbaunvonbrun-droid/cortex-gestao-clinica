@@ -1182,7 +1182,7 @@ export async function transcribeAudioChunk(audioBase64: string, mimeType: string
 // Análise Clínica Abrangente (Escriba IA) para Preenchimento do Registro de Atendimento
 export async function analyzeSessionTranscriptComprehensive(
   transcript: string,
-  patient: { name: string; age?: string },
+  patient: { name: string; age?: string; clinicalProfile?: string },
   approaches: string[] = ["TCC 4ª Geração"],
   onProgressiveUpdate?: (fields: Record<string, string>) => void
 ) {
@@ -1199,6 +1199,13 @@ DADOS DO PACIENTE:
 - Nome: ${patient.name || "Não informado"}
 - Idade: ${patient.age || "Não informada"}
 - Abordagens Norteadoras: ${approaches.join(", ")}
+${patient.clinicalProfile ? `
+===================================================
+RELATÓRIO CLÍNICO INTEGRADO DO PACIENTE (RID + PCI + ESCALAS):
+O preenchimento de todos os 12 campos DEVE OBRIGATORIAMENTE seguir rigorosamente a mesma análise diagnóstica, esquemas (EIDs), necessidades nucleares e metas estabelecidos neste histórico integrado do prontuário:
+${patient.clinicalProfile}
+===================================================
+` : ''}
 
 TRANSCRIÇÃO DA CONSULTA / ATENDIMENTO:
 """
@@ -1431,46 +1438,45 @@ ${params.patientContext?.queixa ? `QUEIXA GERAL: ${params.patientContext.queixa}
 
 ${suggestionsBlock}
 
-REGRAS MANDATÓRIAS DE CONCISÃO CIRÚRGICA E ANTI-PROLIXIDADE (EXTREMA IMPORTÂNCIA):
-1. SELEÇÃO CIRÚRGICA (MÁXIMO 1 A 2 ITENS - NO MÁXIMO 3):
-   - NUNCA selecione mais de 2 ou 3 itens. Escolha exclusivamente os 1 ou 2 itens que possuem a mais direta e inquestionável relevância funcional para a situação informada.
-2. JUSTIFICATIVA EM LINHA ÚNICA (MÁXIMO DE 20 A 25 PALAVRAS POR ITEM):
-   - A justificativa de cada item DEVE ser redigida em EXATAMENTE UMA FRASE CURTA E DIRETA (máx. 25 palavras), explicando objetivamente qual foi o gatilho na situação.
-   - É ESTRITAMENTE PROIBIDO escrever parágrafos longos, dissertações ou preâmbulos vazios como "Com base no relato apresentado...", "Podemos observar que o paciente...", etc. Vá direto ao ponto técnico.
-3. CAMPOS DE TEXTO OU LISTA (ex: pensamento, comportamento, consequências):
-   - Gere no máximo 1 a 2 tópicos objetivos (ou 1 frase direta e cristalina), sem repetir prolixamente o que o paciente já disse.
+DIRETRIZES DE PREENCHIMENTO BASEADO EM SUGESTÕES E JUSTIFICATIVAS CLÍNICAS (RID E PCI):
+1. SELEÇÃO BASEADA NAS SUGESTÕES (SEM RESTRIÇÃO ARTIFICIAL DE 2 ITENS):
+   - Avalie profundamente a situação clínica e selecione TODOS os itens pertinentes do catálogo de sugestões que realmente se aplicam e atuam no relato do paciente (NÃO restrinja artificialmente a 1 ou 2 itens; inclua todos os esquemas, necessidades violadas, distorções ou padrões comportamentais identificados).
+2. JUSTIFICATIVA CLÍNICA CONTEXTUALIZADA PARA CADA ITEM:
+   - Para CADA item selecionado do catálogo, você DEVE fornecer uma JUSTIFICATIVA CLÍNICA contextualizada, explicando concretamente como e por que ele atua ou foi ativado no evento relatado (evidenciando os gatilhos, afetos e contingências funcionais).
+   - Evite preâmbulos genéricos ou introduções vazias como "Com base no relato...", indo direto à fundamentação técnica.
+3. CAMPOS DE TEXTO E FORMULAÇÃO (ex: pensamento, comportamento, consequências):
+   - Descreva com rigor funcional e fidelidade semiológica, sem omissões de processos clínicos relevantes.
 4. PADRONIZAÇÃO DO CAMPO "text":
-   - Formate o campo "text" de modo limpo e direto:
-     • [Nome]: [Justificativa curta em 1 frase]
+   - Formate o campo "text" em tópicos elegantes e prontos para o prontuário:
+     • [Nome do Item]: [Justificativa clínica contextualizada]
 
 DIRETRIZES TÉCNICAS ESPECÍFICAS POR TIPO DE CAMPO:
 1. SE FOR ESQUEMAS ATIVADOS / EIDs ("esquema", "esquemasCognitivos"):
-   - Selecione 1 ou 2 EIDs do catálogo (ex: "Abandono / Instabilidade", "Defectividade / Vergonha", "Privação Emocional").
-   - Justificativa: 1 frase curta explicando o gatilho da ativação.
+   - Identifique todos os EIDs do catálogo ativados pelo gatilho (ex: Abandono, Defectividade, Privação Emocional, Padrões Inflexíveis).
+   - Justificativa: elabore a explicação clínica de ativação para cada um.
 2. SE FOR NECESSIDADES BÁSICAS ("necessidade", "necessidadesIdentificadas"):
-   - Selecione 1 ou 2 necessidades violadas do catálogo (ex: "Vínculo Seguro e Conexão", "Autonomia e Competência").
-   - Justificativa: 1 frase curta explicando quem ou o que frustrou a necessidade na situação.
+   - Mapeie todas as necessidades nucleares do catálogo frustradas na situação.
+   - Justificativa: explique de que forma cada necessidade foi violada no contexto.
 3. SE FOR PENSAMENTO AUTOMÁTICO OU DISTORÇÕES ("pensamento", "distorcoesCognitivas", "crencasCentrais"):
-   - Formule 1 ou 2 pensamentos na voz do paciente com a distorção central. Conciso e direto.
+   - Formule os pensamentos na voz do paciente com suas respectivas distorções e crenças associadas.
 4. SE FOR EMOÇÃO / INTENSIDADE ("emocao", "ridEmocao"):
-   - Identifique a emoção primária central ("Ansiedade", "Tristeza", "Raiva", "Culpa", "Frustração").
-   - Estime a intensidade subjetiva (0 a 100) e justificativa fisiológica em 1 frase.
-5. SE FOR COMPORTAMENTO OU ENFRENTAMENTO ("comportamento", "ridComportamento"):
-   - Descreva a ação em 1 frase e classifique o estilo funcional (evitação, resignação ou hipercompensação).
+   - Identifique a emoção primária central, estime a intensidade subjetiva (0 a 100) e os correlatos fisiológicos somáticos.
+5. SE FOR COMPORTAMENTO OU ENFRENTAMENTO ("comportamento", "ridComportamento", "excessosComp", "deficitsHab"):
+   - Descreva as ações manifestas e justifique a função clínica (estilo de enfrentamento: evitação, resignação ou hipercompensação).
 6. SE FOR CONSEQUÊNCIAS (Curto ou Longo Prazo):
-   - Curto prazo: 1 frase direta sobre o alívio imediato (reforço negativo).
-   - Longo prazo: 1 frase direta sobre o custo interpessoal/emocional ou manutenção do ciclo.
+   - Curto prazo: justifique o alívio imediato e reforço negativo.
+   - Longo prazo: justifique a manutenção do ciclo e prejuízos cumulativos.
 
 FORMATO DE RESPOSTA (JSON estrito):
 {
-  "text": "• [Nome do Item]: [Justificativa em 1 frase curta de até 25 palavras]",
+  "text": "• [Nome do Item 1]: [Justificativa clínica]\\n• [Nome do Item 2]: [Justificativa clínica]",
   "itens": [
     {
-      "nome": "Nome do elemento (ex: Privação Emocional)",
-      "justificativa": "Frase curta e objetiva de até 25 palavras explicando o gatilho."
+      "nome": "Nome do elemento do catálogo",
+      "justificativa": "Justificativa clínica contextualizada explicando a operação ou ativação."
     }
   ],
-  "tags": ["Nome do elemento"],
+  "tags": ["Nome 1", "Nome 2"],
   "emotion": { "name": "Ansiedade", "intensity": 80, "justificativa": "Aperto torácico e inquietação motora." }
 }
 `;
@@ -1479,7 +1485,7 @@ FORMATO DE RESPOSTA (JSON estrito):
     model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
-      maxOutputTokens: 1024,
+      maxOutputTokens: 2048,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,

@@ -31,7 +31,7 @@ import {
 import { blobToBase64, splitAudioIntoValidWavChunks } from '../../../lib/audioSplitter';
 
 interface ClinicalAudioRecorderProps {
-  patient: { id?: string; name: string; age?: string };
+  patient: { id?: string; name: string; age?: string; clinicalProfile?: string };
   approaches?: string[];
   onTranscriptionComplete: (analysisData: {
     relatoCliente: string;

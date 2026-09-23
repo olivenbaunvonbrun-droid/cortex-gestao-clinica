@@ -216,20 +216,20 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
 
       if (fieldName === 'necessidade') {
         if (res.itens && res.itens.length > 0) {
-          const formatted = res.itens.slice(0, 2).map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
+          const formatted = res.itens.map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
           setFormData(prev => {
             const existing = new Set(prev.necessidade);
             formatted.forEach(t => existing.add(t));
             return { ...prev, necessidade: Array.from(existing) };
           });
-          toast.success("Necessidade identificada com síntese clínica!");
+          toast.success("Necessidades identificadas com justificativas clínicas!");
         } else if (res.tags && res.tags.length > 0) {
           setFormData(prev => {
             const existing = new Set(prev.necessidade);
-            res.tags!.slice(0, 2).forEach(t => existing.add(t));
+            res.tags!.forEach(t => existing.add(t));
             return { ...prev, necessidade: Array.from(existing) };
           });
-          toast.success("Necessidades identificadas!");
+          toast.success("Necessidades identificadas e adicionadas!");
         } else if (res.text) {
           setFormData(prev => {
             const existing = new Set(prev.necessidade);
@@ -240,20 +240,20 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         }
       } else if (fieldName === 'esquema') {
         if (res.itens && res.itens.length > 0) {
-          const formatted = res.itens.slice(0, 2).map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
+          const formatted = res.itens.map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
           setFormData(prev => {
             const existing = new Set(prev.esquema);
             formatted.forEach(t => existing.add(t));
             return { ...prev, esquema: Array.from(existing) };
           });
-          toast.success("Esquema mapeado com síntese clínica!");
+          toast.success("Esquemas mapeados com justificativas clínicas!");
         } else if (res.tags && res.tags.length > 0) {
           setFormData(prev => {
             const existing = new Set(prev.esquema);
-            res.tags!.slice(0, 2).forEach(t => existing.add(t));
+            res.tags!.forEach(t => existing.add(t));
             return { ...prev, esquema: Array.from(existing) };
           });
-          toast.success("Esquemas mapeados!");
+          toast.success("Esquemas mapeados e adicionados!");
         } else if (res.text) {
           setFormData(prev => {
             const existing = new Set(prev.esquema);
