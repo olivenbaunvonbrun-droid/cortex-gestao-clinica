@@ -64,10 +64,6 @@ export default function Patients({ onOpenProntuario }: PatientsProps) {
   const handleSendRegistrationLink = async (patient: Patient) => {
     const firstName = (patient.nome || '').trim().split(/\s+/)[0] || '';
     const cleanPhone = (patient.telefone || '').replace(/\D/g, '');
-    if (firstName.length < 2 || cleanPhone.length < 10) {
-      toast.error("O paciente precisa ter pelo menos o primeiro nome e o número de WhatsApp com DDD para envio do link.");
-      return;
-    }
 
     try {
       const items = await db.settings.toArray();
@@ -88,15 +84,22 @@ export default function Patients({ onOpenProntuario }: PatientsProps) {
 
       const baseUrl = window.location.origin + window.location.pathname;
       const link = `${baseUrl}?cadastro_paciente=${encodeURIComponent(token)}`;
-      const message = `Olá, ${firstName}! Para agilizar seu atendimento e formalizar seu prontuário em ${clinicTitle}, por favor preencha seus dados cadastrais através deste link seguro: ${link}`;
+      const greeting = firstName ? `Olá, ${firstName}!` : 'Olá!';
+      const message = `${greeting} Para agilizar seu atendimento e formalizar seu prontuário em ${clinicTitle}, por favor preencha seus dados cadastrais através deste link seguro: ${link}`;
 
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(link).catch(() => {});
       }
 
-      const waUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
-      window.open(waUrl, '_blank');
-      toast.success("Link copiado e WhatsApp aberto!");
+      if (cleanPhone.length >= 10) {
+        const waUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(waUrl, '_blank');
+        toast.success("Link copiado e WhatsApp aberto!");
+      } else {
+        const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(waUrl, '_blank');
+        toast.success("Link copiado! Selecione o contato no WhatsApp.");
+      }
     } catch (err) {
       console.error("Erro ao gerar link de auto-cadastro:", err);
       toast.error("Erro ao gerar link.");

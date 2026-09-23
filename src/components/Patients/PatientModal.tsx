@@ -93,13 +93,10 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
   const [importText, setImportText] = useState('');
   const [isCopiedLink, setIsCopiedLink] = useState(false);
 
-  // Validação reativa da condição solicitada:
-  // "onde o usuário precisará inserir pelo menos o primeiro nome e o número de Whatsapp do paciente para que a opção do envio do link esteja disponível"
+  // Controle do Link de Auto-Cadastro do Paciente
   const firstName = (formData.nome || '').trim().split(/\s+/)[0] || '';
   const cleanPhone = (formData.telefone || '').replace(/\D/g, '');
-  const hasValidFirstName = firstName.length >= 2;
   const hasValidPhone = cleanPhone.length >= 10;
-  const canSendRegistrationLink = hasValidFirstName && hasValidPhone;
 
   const generateRegistrationLink = async () => {
     let patientId = (formData as any).id || patient?.id;
@@ -114,7 +111,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
       await db.pacientes.put(draftPatient);
       setFormData(prev => ({ ...prev, id: patientId }));
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';
-      logAction(currentUser, `Iniciou pré-cadastro via WhatsApp para: ${formData.nome}`);
+      logAction(currentUser, `Iniciou pré-cadastro para: ${formData.nome || 'Novo Paciente'}`);
       const firebaseUid = auth.currentUser?.uid;
       if (firebaseUid) {
         try {
@@ -143,24 +140,27 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
   };
 
   const handleSendWhatsAppLink = async () => {
-    if (!canSendRegistrationLink) {
-      toast.error("Insira pelo menos o primeiro nome e o número de WhatsApp (com DDD) para habilitar o envio.");
-      return;
-    }
     try {
       const link = await generateRegistrationLink();
       const clinicTitle = (!settings.appTitle || settings.appTitle === "Sistema de Gestão para Psicólogos")
         ? 'nosso consultório'
         : settings.appTitle;
-      const message = `Olá, ${firstName}! Para agilizar seu atendimento e formalizar seu prontuário em ${clinicTitle}, por favor preencha seus dados cadastrais através deste link seguro: ${link}`;
+      const greeting = firstName ? `Olá, ${firstName}!` : 'Olá!';
+      const message = `${greeting} Para agilizar seu atendimento e formalizar seu prontuário em ${clinicTitle}, por favor preencha seus dados cadastrais através deste link seguro: ${link}`;
 
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(link).catch(() => {});
       }
 
-      const waUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
-      window.open(waUrl, '_blank');
-      toast.success("Link copiado e WhatsApp aberto com sucesso!");
+      if (hasValidPhone) {
+        const waUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(waUrl, '_blank');
+        toast.success("Link copiado e WhatsApp aberto para o paciente!");
+      } else {
+        const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(waUrl, '_blank');
+        toast.success("Link copiado e WhatsApp aberto! Selecione o contato para enviar.");
+      }
     } catch (err) {
       console.error("Erro ao gerar link de auto-cadastro:", err);
       toast.error("Erro ao gerar link de cadastro.");
@@ -168,19 +168,23 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
   };
 
   const handleCopyRegistrationLink = async () => {
-    if (!canSendRegistrationLink) {
-      toast.error("Insira pelo menos o primeiro nome e o WhatsApp para copiar o link.");
-      return;
-    }
     try {
       const link = await generateRegistrationLink();
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(link);
         setIsCopiedLink(true);
         setTimeout(() => setIsCopiedLink(false), 3000);
-        toast.success("Link de auto-cadastro copiado com sucesso!");
+        toast.success("Link de cadastro copiado com sucesso!");
       } else {
-        toast.success(`Link gerado: ${link}`);
+        const textArea = document.createElement("textarea");
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        setIsCopiedLink(true);
+        setTimeout(() => setIsCopiedLink(false), 3000);
+        toast.success("Link de cadastro copiado com sucesso!");
       }
     } catch (err) {
       console.error("Erro ao copiar link:", err);
@@ -805,7 +809,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
           {activeTab === 'dados' && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
               
-              {/* Barra Compacta de Auto-Cadastro pelo Paciente via WhatsApp */}
+              {/* Barra Compacta de Auto-Cadastro pelo Paciente */}
               <div className="mb-5 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-bg-sidebar/60 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
@@ -813,16 +817,16 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
                   </div>
                   <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
                     <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
-                      Auto-Cadastro via WhatsApp
+                      Auto-Cadastro do Paciente
                     </span>
                     <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
-                      Link Seguro
+                      Link Liberado
                     </span>
                     <span className="text-[10px] text-text-dim hidden md:inline truncate">
-                      {canSendRegistrationLink ? (
-                        <span>• Envie o link para <strong className="text-text-main font-semibold">{firstName}</strong> preencher no celular</span>
+                      {firstName ? (
+                        <span>• Link para <strong className="text-text-main font-semibold">{firstName}</strong> preencher no celular ou computador</span>
                       ) : (
-                        <span className="text-amber-400/90">• Digite nome e WhatsApp com DDD para liberar</span>
+                        <span>• Envie ou copie o link seguro para o paciente preencher os dados</span>
                       )}
                     </span>
                   </div>
@@ -831,30 +835,32 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
                 <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                   <button
                     type="button"
-                    disabled={!canSendRegistrationLink}
-                    onClick={handleSendWhatsAppLink}
-                    title={canSendRegistrationLink ? "Enviar link de cadastro via WhatsApp" : "Preencha primeiro nome e WhatsApp para habilitar"}
-                    className={cn(
-                      "px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm",
-                      canSendRegistrationLink
-                        ? "bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white shadow-emerald-500/20 cursor-pointer"
-                        : "bg-bg-sidebar border border-border-subtle text-text-dim/40 cursor-not-allowed opacity-50"
-                    )}
+                    onClick={handleCopyRegistrationLink}
+                    title="Copiar link de auto-cadastro para a área de transferência"
+                    className="px-3 py-1.5 bg-bg-sidebar/90 hover:bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
-                    <MessageCircle size={12} />
-                    <span>Enviar Link</span>
+                    {isCopiedLink ? (
+                      <>
+                        <Check size={12} className="text-emerald-400" />
+                        <span>Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <LinkIcon size={12} />
+                        <span>Copiar Link</span>
+                      </>
+                    )}
                   </button>
 
-                  {canSendRegistrationLink && (
-                    <button
-                      type="button"
-                      onClick={handleCopyRegistrationLink}
-                      title="Copiar link de auto-cadastro para a área de transferência"
-                      className="p-1.5 bg-bg-sidebar/90 hover:bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-emerald-400 transition-all active:scale-95 cursor-pointer"
-                    >
-                      {isCopiedLink ? <Check size={13} className="text-emerald-400" /> : <LinkIcon size={13} />}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={handleSendWhatsAppLink}
+                    title={hasValidPhone ? "Enviar link de cadastro via WhatsApp" : "Abrir WhatsApp para enviar link"}
+                    className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white shadow-emerald-500/20 cursor-pointer"
+                  >
+                    <MessageCircle size={12} />
+                    <span>WhatsApp</span>
+                  </button>
 
                   <button
                     type="button"
@@ -980,17 +986,15 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center ml-1">
                       <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest">Telefone / WhatsApp</label>
-                      {canSendRegistrationLink && (
-                        <button
-                          type="button"
-                          onClick={handleSendWhatsAppLink}
-                          className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
-                          title="Enviar link de auto-cadastro para este número via WhatsApp"
-                        >
-                          <MessageCircle size={10} />
-                          <span>Enviar link</span>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={handleSendWhatsAppLink}
+                        className="text-[9px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Enviar link de auto-cadastro via WhatsApp"
+                      >
+                        <MessageCircle size={10} />
+                        <span>Enviar link</span>
+                      </button>
                     </div>
                     <input
                       type="text"
