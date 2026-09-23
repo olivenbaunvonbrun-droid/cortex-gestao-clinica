@@ -47,17 +47,20 @@ interface ClinicalAudioRecorderProps {
     planejamento: string;
     encaminhamentos: string;
   }) => void;
+  onProgressiveUpdate?: (partialAnalysis: Record<string, string>) => void;
 }
 
 export function ClinicalAudioRecorder({
   patient,
   approaches = ['TCC 4ª Geração'],
-  onTranscriptionComplete
+  onTranscriptionComplete,
+  onProgressiveUpdate
 }: ClinicalAudioRecorderProps) {
   const [activeTab, setActiveTab] = useState<'record' | 'upload'>('record');
   const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused' | 'processing' | 'recovery'>('idle');
   const [durationSeconds, setDurationSeconds] = useState(0);
   const [completedSegmentsCount, setCompletedSegmentsCount] = useState(0);
+  const [conveyorStatus, setConveyorStatus] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [processingStep, setProcessingStep] = useState<string>('');
   const [isConfirmDiscardOpen, setIsConfirmDiscardOpen] = useState(false);
   const [isPrivacyMuted, setIsPrivacyMuted] = useState(false);
@@ -78,17 +81,20 @@ export function ClinicalAudioRecorder({
   // Upload state
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
-  // Refs for media recording
+  // Refs for media recording & esteira contínua
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const segmentBlobsRef = useRef<Blob[]>([]);
+  const backgroundTranscriptsMapRef = useRef<Map<number, string>>(new Map());
+  const backgroundQueueRef = useRef<{ index: number; blob: Blob }[]>([]);
+  const isBackgroundConveyorRunningRef = useRef<boolean>(false);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const backupIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const recordingStatusRef = useRef<'idle' | 'recording' | 'paused' | 'processing' | 'recovery'>('idle');
   const segmentDurationSecondsRef = useRef<number>(0);
   const currentMimeTypeRef = useRef<string>('audio/webm;codecs=opus');
-  const SEGMENT_ROTATE_INTERVAL_SEC = 480; // 8 minutos por bloco (~1.8 MB a 24kbps)
+  const SEGMENT_ROTATE_INTERVAL_SEC = 150; // 2.5 minutos por bloco (esteira contínua ultra-rápida)
 
   // Keep recordingStatusRef in sync
   useEffect(() => {
@@ -278,6 +284,47 @@ export function ClinicalAudioRecorder({
     mediaRecorder.start(3000);
   };
 
+  // Worker concorrente para a Esteira Contínua de Transcrição durante a consulta
+  const processBackgroundConveyorQueue = async () => {
+    if (isBackgroundConveyorRunningRef.current) return;
+    isBackgroundConveyorRunningRef.current = true;
+
+    while (backgroundQueueRef.current.length > 0) {
+      const item = backgroundQueueRef.current.shift();
+      if (!item) break;
+
+      const { index, blob } = item;
+      if (backgroundTranscriptsMapRef.current.has(index)) continue;
+
+      try {
+        const rawMime = blob.type || 'audio/webm';
+        const cleanMime = rawMime.split(';')[0].trim().toLowerCase() || 'audio/webm';
+        const base64 = await blobToBase64(blob);
+        const text = await transcribeAudioChunk(base64, cleanMime);
+        if (text && text.trim()) {
+          backgroundTranscriptsMapRef.current.set(index, text.trim());
+        }
+      } catch (err) {
+        console.warn(`[Esteira IA] Falha transitória ao transcrever capítulo ${index + 1} em background:`, err);
+      } finally {
+        setConveyorStatus({
+          completed: backgroundTranscriptsMapRef.current.size,
+          total: segmentBlobsRef.current.length
+        });
+        const currentAssembled = Array.from(backgroundTranscriptsMapRef.current.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(entry => entry[1])
+          .join('\n\n');
+        if (currentAssembled) {
+          setAccumulatedTranscript(currentAssembled);
+          await saveToVault(segmentBlobsRef.current, durationSeconds, currentAssembled);
+        }
+      }
+    }
+
+    isBackgroundConveyorRunningRef.current = false;
+  };
+
   // Rotaciona para o próximo bloco de gravação de forma ininterrupta (sem fechar o microfone)
   const rotateSegment = () => {
     if (!mediaRecorderRef.current || !audioStreamRef.current) return;
@@ -289,8 +336,17 @@ export function ClinicalAudioRecorder({
           type: oldRec.mimeType || currentMimeTypeRef.current || 'audio/webm'
         });
         if (segBlob.size > 1000) {
+          const segIndex = segmentBlobsRef.current.length;
           segmentBlobsRef.current.push(segBlob);
           setCompletedSegmentsCount(segmentBlobsRef.current.length);
+
+          // Alimenta a Esteira Contínua em segundo plano
+          backgroundQueueRef.current.push({ index: segIndex, blob: segBlob });
+          setConveyorStatus({
+            completed: backgroundTranscriptsMapRef.current.size,
+            total: segmentBlobsRef.current.length
+          });
+          processBackgroundConveyorQueue();
         }
       }
       audioChunksRef.current = [];
@@ -327,6 +383,9 @@ export function ClinicalAudioRecorder({
 
       segmentBlobsRef.current = [];
       audioChunksRef.current = [];
+      backgroundTranscriptsMapRef.current.clear();
+      backgroundQueueRef.current = [];
+      setConveyorStatus({ completed: 0, total: 0 });
       setCompletedSegmentsCount(0);
       setDurationSeconds(0);
       segmentDurationSecondsRef.current = 0;
@@ -514,67 +573,95 @@ export function ClinicalAudioRecorder({
     try {
       const total = blobs.length;
       const chunkResults: string[] = new Array(total).fill('');
-      let completedCount = 0;
+      
+      // Carrega os capítulos que a Esteira Contínua JÁ transcreveu em segundo plano durante a consulta!
+      let alreadyDoneCount = 0;
+      for (let i = 0; i < total; i++) {
+        if (backgroundTranscriptsMapRef.current.has(i)) {
+          chunkResults[i] = backgroundTranscriptsMapRef.current.get(i)!;
+          alreadyDoneCount++;
+        }
+      }
 
+      let completedCount = alreadyDoneCount;
       const progressMsg = (done: number) => total > 1
-        ? `Transcrevendo capítulos em alta velocidade (${done}/${total} concluídos)...`
+        ? `Consolidando esteira contínua (${done}/${total} capítulos prontos)...`
         : `Transcrevendo áudio clínico...`;
-      setProcessingStep(progressMsg(0));
+      setProcessingStep(progressMsg(completedCount));
 
-      // Fila concorrente controlada (máx 2 simultâneos para conciliar velocidade máxima e estabilidade de cota)
-      const CONCURRENCY_LIMIT = Math.min(2, total);
-      let nextIndex = 0;
+      // Filtra apenas os índices que ainda faltam transcrever (geralmente apenas o último bloco gravado)
+      const pendingIndices: number[] = [];
+      for (let i = 0; i < total; i++) {
+        if (!chunkResults[i]) {
+          pendingIndices.push(i);
+        }
+      }
 
-      const worker = async () => {
-        while (nextIndex < total) {
-          const currentIndex = nextIndex++;
-          const chunkBlob = blobs[currentIndex];
-          const rawMime = chunkBlob.type || 'audio/webm';
-          const cleanMime = rawMime.split(';')[0].trim().toLowerCase() || 'audio/webm';
+      if (pendingIndices.length > 0) {
+        // Fila concorrente controlada (máx 2 simultâneos para conciliar velocidade máxima e estabilidade de cota)
+        const CONCURRENCY_LIMIT = Math.min(2, pendingIndices.length);
+        let queueCursor = 0;
 
-          try {
-            const base64 = await blobToBase64(chunkBlob);
-            const partText = await transcribeAudioChunk(base64, cleanMime);
-            if (partText && partText.trim()) {
-              chunkResults[currentIndex] = partText.trim();
-            }
-          } catch (chunkErr: any) {
-            console.warn(`Aviso no capítulo ${currentIndex + 1}:`, chunkErr);
-          } finally {
-            completedCount++;
-            setProcessingStep(progressMsg(completedCount));
-            const currentCombined = [runningTranscript, ...chunkResults].filter(Boolean).join('\n\n');
-            if (currentCombined) {
-              setAccumulatedTranscript(currentCombined);
-              await saveToVault(blobs, durationSeconds, currentCombined);
+        const worker = async () => {
+          while (queueCursor < pendingIndices.length) {
+            const currentIndex = pendingIndices[queueCursor++];
+            const chunkBlob = blobs[currentIndex];
+            const rawMime = chunkBlob.type || 'audio/webm';
+            const cleanMime = rawMime.split(';')[0].trim().toLowerCase() || 'audio/webm';
+
+            try {
+              const base64 = await blobToBase64(chunkBlob);
+              const partText = await transcribeAudioChunk(base64, cleanMime);
+              if (partText && partText.trim()) {
+                chunkResults[currentIndex] = partText.trim();
+                backgroundTranscriptsMapRef.current.set(currentIndex, partText.trim());
+              }
+            } catch (chunkErr: any) {
+              console.warn(`Aviso no capítulo ${currentIndex + 1}:`, chunkErr);
+            } finally {
+              completedCount++;
+              setProcessingStep(progressMsg(completedCount));
+              const currentCombined = [runningTranscript, ...chunkResults].filter(Boolean).join('\n\n');
+              if (currentCombined) {
+                setAccumulatedTranscript(currentCombined);
+                await saveToVault(blobs, durationSeconds, currentCombined);
+              }
             }
           }
-        }
-      };
+        };
 
-      const workers = Array.from({ length: CONCURRENCY_LIMIT }, () => worker());
-      await Promise.all(workers);
+        const workers = Array.from({ length: CONCURRENCY_LIMIT }, () => worker());
+        await Promise.all(workers);
+      }
 
       const fullTranscript = [runningTranscript, ...chunkResults].filter(Boolean).join('\n\n');
       if (!fullTranscript || fullTranscript.trim().length < 10) {
         throw new Error('A inteligência artificial não identificou falas clínicas audíveis no áudio. A gravação continua protegida no cofre.');
       }
 
-      // Step 2: Análise Clínica Abrangente (TCC 4ª Geração)
-      setProcessingStep('Formulando raciocínio clínico de 4ª Geração e preenchendo os 12 campos...');
+      // Step 2: Análise Clínica Abrangente com Streaming Progressivo em Tempo Real
+      setProcessingStep('Formulando raciocínio clínico de 4ª Geração e preenchendo os campos ao vivo...');
       const clinicalAnalysis = await analyzeSessionTranscriptComprehensive(
         fullTranscript,
         patient,
-        approaches
+        approaches,
+        (partialFields) => {
+          if (onProgressiveUpdate) {
+            onProgressiveUpdate(partialFields);
+          }
+        }
       );
 
-      // Trigger callback no componente pai (que preenche o formulário e salva no prontuário!)
+      // Trigger callback final no componente pai (que garante campos preenchidos e auto-save)
       onTranscriptionComplete(clinicalAnalysis);
 
       // Sucesso confirmado: limpa o cofre de emergência e a memória RAM
       await clearVault();
       audioChunksRef.current = [];
       segmentBlobsRef.current = [];
+      backgroundTranscriptsMapRef.current.clear();
+      backgroundQueueRef.current = [];
+      setConveyorStatus({ completed: 0, total: 0 });
       setCompletedSegmentsCount(0);
       setAudioPurgedMessage(true);
       setTimeout(() => setAudioPurgedMessage(false), 9000);
@@ -898,8 +985,9 @@ export function ClinicalAudioRecorder({
                       {recordingStatus === 'recording' ? 'Gravando Sessão' : 'Pausado'}
                     </span>
                     {completedSegmentsCount > 0 && (
-                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
-                        {completedSegmentsCount} {completedSegmentsCount === 1 ? 'bloco salvo' : 'blocos salvos'}
+                      <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-400 border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
+                        <Sparkles size={11} className="text-emerald-400 animate-pulse" />
+                        Esteira IA: {conveyorStatus.completed}/{completedSegmentsCount} {completedSegmentsCount === 1 ? 'capítulo' : 'capítulos'}
                       </span>
                     )}
                   </div>

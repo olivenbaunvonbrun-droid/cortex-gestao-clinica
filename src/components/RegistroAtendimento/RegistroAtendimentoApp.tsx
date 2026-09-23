@@ -772,6 +772,21 @@ export default function RegistroAtendimentoApp({
     }
   };
 
+  const handleScribeProgressiveUpdate = (partialData: Record<string, string>) => {
+    if (partialData.relatoCliente) setRelatoCliente(partialData.relatoCliente);
+    if (partialData.motivoConsulta) setMotivoConsulta(partialData.motivoConsulta);
+    if (partialData.objetivosCliente) setObjetivosCliente(partialData.objetivosCliente);
+    if (partialData.objetivosTerapeuta) setObjetivosTerapeuta(partialData.objetivosTerapeuta);
+    if (partialData.intervencoes) setIntervencoes(partialData.intervencoes);
+    if (partialData.observacoes) setObservacoes(partialData.observacoes);
+    if (partialData.insights) setInsights(partialData.insights);
+    if (partialData.percepcaoCliente) setPercepcaoCliente(partialData.percepcaoCliente);
+    if (partialData.progresso) setProgresso(partialData.progresso);
+    if (partialData.tarefas) setTarefas(partialData.tarefas);
+    if (partialData.planejamento) setPlanejamento(partialData.planejamento);
+    if (partialData.encaminhamentos) setEncaminhamentos(partialData.encaminhamentos);
+  };
+
   const handleScribeComplete = async (analysisData: any) => {
     if (analysisData.relatoCliente) setRelatoCliente(analysisData.relatoCliente);
     if (analysisData.motivoConsulta) setMotivoConsulta(analysisData.motivoConsulta);
@@ -1153,6 +1168,7 @@ export default function RegistroAtendimentoApp({
                   patient={{ id: selectedPatientId, name: nomeCliente, age: idadeCliente }}
                   approaches={abordagensSessao.length > 0 ? abordagensSessao : ['TCC 4ª Geração']}
                   onTranscriptionComplete={handleScribeComplete}
+                  onProgressiveUpdate={handleScribeProgressiveUpdate}
                 />
 
                 {/* Dados Técnicos */}

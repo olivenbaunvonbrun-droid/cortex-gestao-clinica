@@ -32,6 +32,8 @@ export class GoogleGenAI extends OriginalGoogleGenAI {
   constructor(options: any) {
     super(options);
     const originalGenerateContent = this.models.generateContent.bind(this.models);
+    const originalGenerateContentStream = this.models.generateContentStream.bind(this.models);
+
     this.models.generateContent = async (params: any) => {
       let lastError: any = null;
       const requestedModel = params?.model || DEFAULT_CLINICAL_MODEL;
@@ -66,7 +68,54 @@ export class GoogleGenAI extends OriginalGoogleGenAI {
       }
       throw lastError || new Error("Todos os modelos candidatos do Gemini falharam.");
     };
+
+    this.models.generateContentStream = async (params: any) => {
+      let lastError: any = null;
+      const requestedModel = params?.model || DEFAULT_CLINICAL_MODEL;
+      let candidateModels: string[];
+
+      if (requestedModel && GEMINI_MODELS.includes(requestedModel)) {
+        candidateModels = [requestedModel, ...GEMINI_MODELS.filter(m => m !== requestedModel)];
+      } else {
+        candidateModels = GEMINI_MODELS;
+      }
+
+      for (const modelName of candidateModels) {
+        if (modelName === "gemini-3.5-live-translate-preview") continue;
+
+        try {
+          console.log(`[Resiliência IA Stream] Iniciando stream com Gemini (${modelName})...`);
+          return await originalGenerateContentStream({
+            ...params,
+            model: modelName
+          });
+        } catch (err: any) {
+          lastError = err;
+          const msg = err?.message || String(err);
+          const is503 = msg.includes("503") || err?.status === 503 || msg.includes("UNAVAILABLE") || msg.includes("high demand");
+          const is429 = msg.includes("429") || err?.status === 429 || msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED");
+
+          console.warn(`[Resiliência IA Stream] Modelo ${modelName} indisponível (${is503 ? '503 Sobrecarga Temporária' : is429 ? '429 Cota' : msg.slice(0, 100)}). Alternando para próximo modelo...`);
+          continue;
+        }
+      }
+      throw lastError || new Error("Todos os modelos candidatos do Gemini falharam para streaming.");
+    };
   }
+}
+
+// Extrator resiliente de campos JSON incompletos para Streaming Progressivo de UI
+export function extractPartialJsonFields(raw: string): Record<string, string> {
+  const fields: Record<string, string> = {};
+  const regex = /"(\w+)"\s*:\s*"((?:[^"\\]|\\.)*)/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(raw)) !== null) {
+    const key = match[1];
+    let val = match[2];
+    val = val.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+    fields[key] = val;
+  }
+  return fields;
 }
 
 // Use environment variable if available, otherwise fallback to DB
@@ -1116,7 +1165,8 @@ export async function transcribeAudioChunk(audioBase64: string, mimeType: string
 export async function analyzeSessionTranscriptComprehensive(
   transcript: string,
   patient: { name: string; age?: string },
-  approaches: string[] = ["TCC 4ª Geração"]
+  approaches: string[] = ["TCC 4ª Geração"],
+  onProgressiveUpdate?: (fields: Record<string, string>) => void
 ) {
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -1169,45 +1219,78 @@ IMPORTANTE DE FORMATAÇÃO:
 - Retorne um objeto JSON estrito correspondente ao schema especificado.
 `;
 
-  const response = await ai.models.generateContent({
-    model: DEFAULT_CLINICAL_MODEL,
-    contents: prompt,
-    config: {
-      maxOutputTokens: 8192,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          relatoCliente: { type: Type.STRING },
-          motivoConsulta: { type: Type.STRING },
-          objetivosCliente: { type: Type.STRING },
-          objetivosTerapeuta: { type: Type.STRING },
-          intervencoes: { type: Type.STRING },
-          observacoes: { type: Type.STRING },
-          insights: { type: Type.STRING },
-          percepcaoCliente: { type: Type.STRING },
-          progresso: { type: Type.STRING },
-          tarefas: { type: Type.STRING },
-          planejamento: { type: Type.STRING },
-          encaminhamentos: { type: Type.STRING }
-        },
-        required: [
-          "relatoCliente",
-          "motivoConsulta",
-          "objetivosCliente",
-          "objetivosTerapeuta",
-          "intervencoes",
-          "observacoes",
-          "insights",
-          "percepcaoCliente",
-          "progresso",
-          "tarefas",
-          "planejamento",
-          "encaminhamentos"
-        ]
+  const responseSchemaConfig = {
+    type: Type.OBJECT,
+    properties: {
+      relatoCliente: { type: Type.STRING },
+      motivoConsulta: { type: Type.STRING },
+      objetivosCliente: { type: Type.STRING },
+      objetivosTerapeuta: { type: Type.STRING },
+      intervencoes: { type: Type.STRING },
+      observacoes: { type: Type.STRING },
+      insights: { type: Type.STRING },
+      percepcaoCliente: { type: Type.STRING },
+      progresso: { type: Type.STRING },
+      tarefas: { type: Type.STRING },
+      planejamento: { type: Type.STRING },
+      encaminhamentos: { type: Type.STRING }
+    },
+    required: [
+      "relatoCliente",
+      "motivoConsulta",
+      "objetivosCliente",
+      "objetivosTerapeuta",
+      "intervencoes",
+      "observacoes",
+      "insights",
+      "percepcaoCliente",
+      "progresso",
+      "tarefas",
+      "planejamento",
+      "encaminhamentos"
+    ]
+  };
+
+  let rawText = "";
+
+  if (onProgressiveUpdate) {
+    try {
+      const responseStream = await ai.models.generateContentStream({
+        model: DEFAULT_CLINICAL_MODEL,
+        contents: prompt,
+        config: {
+          maxOutputTokens: 8192,
+          responseMimeType: "application/json",
+          responseSchema: responseSchemaConfig
+        }
+      });
+
+      for await (const chunk of responseStream) {
+        const textPiece = chunk.text || "";
+        if (textPiece) {
+          rawText += textPiece;
+          const partial = extractPartialJsonFields(rawText);
+          onProgressiveUpdate(partial);
+        }
       }
+    } catch (streamErr) {
+      console.warn("[Resiliência IA Stream] Streaming encontrou falha, utilizando fallback com generateContent:", streamErr);
+      rawText = "";
     }
-  });
+  }
+
+  if (!rawText) {
+    const response = await ai.models.generateContent({
+      model: DEFAULT_CLINICAL_MODEL,
+      contents: prompt,
+      config: {
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+        responseSchema: responseSchemaConfig
+      }
+    });
+    rawText = response.text || "";
+  }
 
   const defaultProgresso = "Satisfatório";
   const defaultResult = {
@@ -1225,7 +1308,6 @@ IMPORTANTE DE FORMATAÇÃO:
     encaminhamentos: "<p style='text-align: justify;'>Sem necessidade de encaminhamentos médicos ou complementares no presente momento.</p>"
   };
 
-  const rawText = response.text || "";
   let parsed: any = {};
   try {
     parsed = JSON.parse(rawText);
