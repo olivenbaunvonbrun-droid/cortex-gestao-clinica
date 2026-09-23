@@ -32,6 +32,7 @@ const TdahAsrs18App = React.lazy(() => import('./components/TdahAsrs18/TdahAsrs1
 const BibliotecaAvaliacaoApp = React.lazy(() => import('./components/BibliotecaAvaliacao/BibliotecaAvaliacaoApp'));
 const ClinicalSuggestionsApp = React.lazy(() => import('./components/BibliotecaAvaliacao/components/ClinicalSuggestionsHelper').then(m => ({ default: m.ClinicalSuggestionsApp })));
 const TeleconsultationApp = React.lazy(() => import('./components/Teleconsultation/TeleconsultationApp'));
+const HpIndividualTool = React.lazy(() => import('./components/HpTrainingTools/HpIndividualTool'));
 
 function WindowLoadingFallback() {
   return (
@@ -43,7 +44,29 @@ function WindowLoadingFallback() {
 }
 
 import { Window } from './components/ui/Window';
-import { Brain, Cloud, Users, Sparkles, ClipboardList, Layers, TrendingUp, FileSpreadsheet, Activity, BookOpen, Video, Pin, Zap, X } from 'lucide-react';
+import { 
+  Brain, 
+  Cloud, 
+  Users, 
+  Sparkles, 
+  ClipboardList, 
+  Layers, 
+  TrendingUp, 
+  FileSpreadsheet, 
+  Activity, 
+  BookOpen, 
+  Video, 
+  Pin, 
+  Zap, 
+  X,
+  Heart,
+  Award,
+  Compass,
+  ShieldAlert,
+  ShieldCheck,
+  Eye,
+  Smile
+} from 'lucide-react';
 import { cn } from './lib/utils';
 import LGPDNotice from './components/LGPDNotice';
 import { useFirebase } from './hooks/useFirebase';
@@ -156,6 +179,16 @@ export default function App() {
     'biblioteca-avaliacao': { title: 'Biblioteca de Avaliação', shortTitle: 'Testes', icon: BookOpen },
     'teleconsulta': { title: 'Teleconsulta Virtual', shortTitle: 'Vídeo', icon: Video },
     'parametros-clinicos': { title: 'Parâmetros Clínicos', shortTitle: 'Parâmetros', icon: Sparkles },
+    'hp-autoconhecimento': { title: 'HP 1: Autoconhecimento', shortTitle: 'HP 1', icon: Brain },
+    'hp-autorregulacao': { title: 'HP 2: Autorregulação', shortTitle: 'HP 2', icon: Heart },
+    'hp-raciocinio-otimista': { title: 'HP 3: Raciocínio Otimista', shortTitle: 'HP 3', icon: TrendingUp },
+    'hp-autoestima': { title: 'HP 4: Autoestima', shortTitle: 'HP 4', icon: Award },
+    'hp-resolutividade': { title: 'HP 5: Resolutividade', shortTitle: 'HP 5', icon: Compass },
+    'hp-autocontrole': { title: 'HP 6: Autocontrole', shortTitle: 'HP 6', icon: ShieldAlert },
+    'hp-sociabilidade': { title: 'HP 7: Sociabilidade', shortTitle: 'HP 7', icon: Users },
+    'hp-imunidade-social': { title: 'HP 8: Imunidade Social', shortTitle: 'HP 8', icon: ShieldCheck },
+    'hp-sensibilidade-social': { title: 'HP 9: Sensibilidade Social', shortTitle: 'HP 9', icon: Eye },
+    'hp-hedonismo': { title: 'HP 10: Hedonismo', shortTitle: 'HP 10', icon: Smile },
   };
 
   // Live clock timer
@@ -183,6 +216,16 @@ export default function App() {
       'biblioteca-avaliacao': 'Biblioteca de Avaliação',
       'teleconsulta': 'Teleconsulta Virtual',
       'parametros-clinicos': 'Parâmetros Clínicos',
+      'hp-autoconhecimento': 'HP 1: Autoconhecimento',
+      'hp-autorregulacao': 'HP 2: Autorregulação Emocional',
+      'hp-raciocinio-otimista': 'HP 3: Raciocínio Realisticamente Otimista',
+      'hp-autoestima': 'HP 4: Autoestima',
+      'hp-resolutividade': 'HP 5: Resolutividade e Enfrentamento',
+      'hp-autocontrole': 'HP 6: Autocontrole',
+      'hp-sociabilidade': 'HP 7: Sociabilidade',
+      'hp-imunidade-social': 'HP 8: Imunidade Social',
+      'hp-sensibilidade-social': 'HP 9: Sensibilidade Social',
+      'hp-hedonismo': 'HP 10: Hedonismo Responsável',
     };
 
     const nextZ = maxZIndex + 1;
@@ -664,6 +707,14 @@ export default function App() {
                   )}
                   {win.id === 'parametros-clinicos' && (
                     <ClinicalSuggestionsApp 
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id.startsWith('hp-') && (
+                    <HpIndividualTool 
+                      hpId={win.id}
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      userId={currentUser?.id}
                       onClose={() => handleCloseTool(win.id)}
                     />
                   )}

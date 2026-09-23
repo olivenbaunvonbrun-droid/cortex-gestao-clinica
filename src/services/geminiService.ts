@@ -135,17 +135,35 @@ async function getApiKey(): Promise<string> {
   throw new Error("Chave API não encontrada. Por favor, verifique as configurações.");
 }
 
-// Framework de Parâmetros Clínicos Avançados
+// Framework de Parâmetros Clínicos Avançados (TCC de 4ª Geração, Process-Based Therapy e THP)
 export const CLINICAL_FRAMEWORK_PROMPT = `
-DIRETRIZES DO FRAMEWORK DE PARÂMETROS CLÍNICOS AVANÇADOS (MÉTODO DE 4ª GERAÇÃO E TCC):
-1. ESQUEMAS COGNITIVOS: Mapear os 18 Esquemas Iniciais Desadaptativos (EIDs / Domínios de Young) e os 15 Esquemas Adaptativos (YPQ - Apego Seguro, Autonomia, Competência, Valor Pessoal, etc.).
-2. CRENÇAS NUCLEARES E INTERMEDIÁRIAS: Crenças Centrais (Incapacidade, Não-Amabilidade, Desvalor, Fracasso) vs. Crenças Funcionais; Crenças Intermediárias (Regras condicionais "Se... então...", pressupostos e atitudes) disfuncionais e adaptativas.
-3. DISTORÇÕES COGNITIVAS E VIESES: Mapear as 18 distorções de Beck (catastrofização, pensamento dicotômico, leitura de mente, comparação injusta, falácias de justiça/controle/mudança, viés confirmatório) e vieses de negatividade, rejeição ou comparação.
-4. ESTRATÉGIAS DE ENFRENTAMENTO (COPING) E MODOS: Coping disfuncional (evitação, resignação, hipercompensação) vs. Coping funcional (enfrentamento ativo, regulação emocional, flexibilidade); Modos Esquemáticos (Criança Vulnerável/Irritada/Feliz, Pai Punitivo/Exigente, Protetor Distante, Adulto Saudável).
-5. NECESSIDADES EMOCIONAIS BÁSICAS: Identificar as necessidades primárias frustradas ou atendidas (Infantis, Parentais, Conjugais ou Adultas).
-6. HABILIDADES PSICOLÓGICAS (HPs): Identificar déficits ou progressos nas 8 HPs centrais (Autoconhecimento, Autorregulação Emocional, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade/Enfrentamento, Autocontrole, Sociabilidade, Imunidade Social).
-7. PARÂMETROS CLÍNICOS AVANÇADOS: Valores pessoais, propósito existencial, nível de insight, metacognições, tolerância à incerteza/frustração e sensibilidade à rejeição/fracasso.
-8. INTERPRETAÇÃO DE ITENS INVERTIDOS/NEGATIVOS (CRÍTICO): Vários inventários contêm itens com enunciados negativos ou deficitários (ex: "fico encabulado(a) sem saber o que dizer", "evito falar em público", "concordo com pedidos abusivos"). Se o paciente responder "Nunca ou Raramente" ou pontuar muito baixo nesses itens, significa que ele NÃO apresenta a dificuldade descrita, o que indica comportamento SAUDÁVEL e assertivo. Não confunda a menção de um comportamento negativo com a presença dele se a resposta do paciente indicar baixa frequência.
+DIRETRIZES DO FRAMEWORK DE PARÂMETROS CLÍNICOS AVANÇADOS (TCC DE 4ª GERAÇÃO, TERAPIA BASEADA EM PROCESSOS - PBT E THP):
+1. TERAPIA BASEADA EM PROCESSOS (PBT - Hofmann & Hayes): Análise das redes funcionais e causais em 6 dimensões clínicas dinâmicas: Cognição, Afeto, Atenção, Self, Motivação e Comportamento Overt. Identificar processos adaptativos vs. inadaptativos e alavancas de mudança comportamental.
+2. CONTEXTUALISMO FUNCIONAL, RFT E ACT (Hexaflex):
+   - Desfusão Cognitiva vs. Fusão Cognitiva (diferenciar pensamento de fato factual).
+   - Aceitação Experiencial vs. Esquiva/Evitação Experiencial.
+   - Contato com o Momento Presente / Atenção Plena e Ancoragem Somática.
+   - Self-como-Contexto vs. Self-como-Conteúdo (apego a auto-rótulos rígidos).
+   - Valores Fundamentais Clarificados vs. Complacência social e regras impostas.
+   - Ação com Propósito / Comprometida vs. Impulsividade ou Inação.
+3. TERAPIA DO ESQUEMA AVANÇADA (Jeffrey Young):
+   - Mapear os 18 Esquemas Iniciais Desadaptativos (EIDs) e os Esquemas Adaptativos (YPQ - Apego Seguro, Autonomia, Competência, Valor Pessoal).
+   - Modos Esquemáticos ativos em sessão e na vida: Modos Criança (Vulnerável, Irritada, Impulsiva), Modos Pais Disfuncionais (Crítico/Punitivo, Exigente/Perfeccionista), Modos de Enfrentamento Desadaptativo (Protetor Desligado/Evitativo, Submisso Resignado, Hipercompensador/Grandioso) e Fortalecimento do Modo Adulto Saudável.
+   - Reparentalização limitada e confrontação empática.
+4. MODELO DAS 10 HABILIDADES PSICOLÓGICAS (THP - Poubel & Rodrigues):
+   Identificar com precisão déficits e avanços no repertório das 10 HPs:
+   1. Autoconhecimento (reconhecimento de estados internos, gatilhos, modos e valores).
+   2. Autorregulação Emocional (modulação da ativação fisiológica, tolerância ao mal-estar e desescalada).
+   3. Raciocínio Realisticamente Otimista (exame rigoroso de evidências, alternativas realistas, descatastrofização).
+   4. Autoestima (autovalorização incondicional, autocompaixão diante de falhas e desarmamento do crítico interno).
+   5. Resolutividade e Enfrentamento (definição de problemas, tomada de decisão e hierarquia de exposição ativa).
+   6. Autocontrole (manejo de impulsos, "Urge Surfing", controle de estímulos e adiamento da gratificação).
+   7. Sociabilidade (assertividade, comunicação não-violenta, início e manutenção de conexões saudáveis).
+   8. Imunidade Social (capacidade de dizer não, tolerância a críticas/rejeições e blindagem contra pressões).
+   9. Sensibilidade Social (escuta ativa, empatia genuína, validação emocional e leitura de pistas não-verbais).
+   10. Hedonismo Responsável (planejamento de reforçadores naturais, savoring/desfrute consciente e equilíbrio dever/prazer).
+5. FAP (Psicoterapia Analítica Funcional): Mapeamento de Comportamentos Clinicamente Relevantes em sessão (CRB1: problemas em sessão; CRB2: melhoras/avanços em sessão; CRB3: interpretações funcionais pelo paciente).
+6. RESOLUÇÃO CFP Nº 06/2019: Linguagem técnica formal, objetiva, preservação de falas literais de impacto entre aspas e respeito à dignidade humana e confidencialidade.
 `;
 
 export async function generateContentWithSystemInstruction(prompt: string, systemInstruction: string) {
@@ -1347,6 +1365,13 @@ IMPORTANTE DE FORMATAÇÃO:
   };
 }
 
+export interface SuggestionReferenceItem {
+  key: string;
+  value: string;
+  explanation: string;
+  question?: string;
+}
+
 export interface FieldFillingParams {
   tool: 'RID' | 'PCI';
   field: string;
@@ -1358,6 +1383,7 @@ export interface FieldFillingParams {
     diagnostico?: string;
     queixa?: string;
   };
+  availableSuggestions?: SuggestionReferenceItem[];
 }
 
 export interface ClinicalItemWithJustification {
@@ -1376,6 +1402,19 @@ export async function generateClinicalFieldFilling(params: FieldFillingParams): 
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
+  // Montar bloco de sugestões catalogadas se fornecidas
+  let suggestionsBlock = "";
+  if (params.availableSuggestions && params.availableSuggestions.length > 0) {
+    const listFormatted = params.availableSuggestions.slice(0, 30).map(s => 
+      `- ${s.key}: ${s.explanation}`
+    ).join("\n");
+    suggestionsBlock = `
+CATÁLOGO OFICIAL DE SUGESTÕES CLÍNICAS (TAXONOMIA MANDATÓRIA):
+Você DEVE escolher prioritariamente e estritamente a partir deste catálogo oficial validado para este campo:
+${listFormatted}
+`;
+  }
+
   const prompt = `
 Você é um Supervisor Clínico Sênior especialista em Terapia Cognitivo-Comportamental de 4ª Geração (Terapia Baseada em Processos - PBT, ACT, FAP, DBT) e Terapia do Esquema de Jeffrey Young.
 
@@ -1390,59 +1429,49 @@ ${params.patientContext?.name ? `PACIENTE: ${params.patientContext.name}` : ''}
 ${params.patientContext?.age ? `IDADE: ${params.patientContext.age} anos` : ''}
 ${params.patientContext?.queixa ? `QUEIXA GERAL: ${params.patientContext.queixa}` : ''}
 
-DIRETRIZES TÉCNICAS MANDATÓRIAS POR TIPO DE CAMPO:
-1. SE O CAMPO FOR DE ESQUEMAS ATIVADOS / EIDs (ex: "esquema", "esquemasCognitivos"):
-   - Identifique QUAIS Esquemas Iniciais Desadaptativos (EIDs) estão ativados (ex: "Abuso / Desconfiança", "Defectividade / Vergonha", "Abandono / Instabilidade", "Privação Emocional", "Subjugação", "Vulnerabilidade ao Dano", "Padrões Inflexíveis", etc.).
-   - Para CADA esquema identificado, elabore uma JUSTIFICATIVA CLÍNICA rica e contextualizada, explicando por que e como o gatilho da situação ativou este esquema na história do paciente.
-   - Preencha o array "itens" com cada objeto contendo "nome" (nome do esquema) e "justificativa" (explicação clínica).
-   - Formate o campo "text" em tópicos claros:
-     • [Nome do Esquema]: [Justificativa clínica contextualizada]
+${suggestionsBlock}
 
-2. SE O CAMPO FOR DE NECESSIDADES BÁSICAS (ex: "necessidade", "necessidadesIdentificadas"):
-   - Identifique QUAIS necessidades emocionais básicas nucleares foram frustradas na situação (ex: "Segurança Básica e Proteção", "Vínculo Seguro e Conexão", "Autonomia e Competência", "Limites Realistas", "Liberdade de Expressão", "Espontaneidade e Lazer").
-   - Para CADA necessidade, forneça a JUSTIFICATIVA CLÍNICA explicando como e por quem ela foi frustrada no relato.
-   - Preencha "itens" com "nome" e "justificativa".
-   - Formate "text" em tópicos claros:
-     • [Nome da Necessidade]: [Justificativa clínica da frustração]
+REGRAS MANDATÓRIAS DE CONCISÃO CIRÚRGICA E ANTI-PROLIXIDADE (EXTREMA IMPORTÂNCIA):
+1. SELEÇÃO CIRÚRGICA (MÁXIMO 1 A 2 ITENS - NO MÁXIMO 3):
+   - NUNCA selecione mais de 2 ou 3 itens. Escolha exclusivamente os 1 ou 2 itens que possuem a mais direta e inquestionável relevância funcional para a situação informada.
+2. JUSTIFICATIVA EM LINHA ÚNICA (MÁXIMO DE 20 A 25 PALAVRAS POR ITEM):
+   - A justificativa de cada item DEVE ser redigida em EXATAMENTE UMA FRASE CURTA E DIRETA (máx. 25 palavras), explicando objetivamente qual foi o gatilho na situação.
+   - É ESTRITAMENTE PROIBIDO escrever parágrafos longos, dissertações ou preâmbulos vazios como "Com base no relato apresentado...", "Podemos observar que o paciente...", etc. Vá direto ao ponto técnico.
+3. CAMPOS DE TEXTO OU LISTA (ex: pensamento, comportamento, consequências):
+   - Gere no máximo 1 a 2 tópicos objetivos (ou 1 frase direta e cristalina), sem repetir prolixamente o que o paciente já disse.
+4. PADRONIZAÇÃO DO CAMPO "text":
+   - Formate o campo "text" de modo limpo e direto:
+     • [Nome]: [Justificativa curta em 1 frase]
 
-3. SE O CAMPO FOR DE PENSAMENTO AUTOMÁTICO OU DISTORÇÕES (ex: "pensamento", "ridPensamento", "distorcoesCognitivas", "crencasCentrais", "crencasPerifericas"):
-   - Formule os pensamentos automáticos na voz do paciente com as distorções cognitivas associadas (ex: Catastrofização, Leitura Mental, Raciocínio Emocional, Pensamento Tudo-ou-Nada).
-   - Para cada um, justifique clinicamente o impacto cognitivo.
-   - Preencha "itens" e formate "text" em tópicos elegantes.
-
-4. SE O CAMPO FOR DE EMOÇÃO PREDOMINANTE / INTENSIDADE (ex: "emocao", "ridEmocao"):
-   - Identifique a emoção primária mais evidente ("Ansiedade", "Tristeza", "Raiva", "Culpa", "Vergonha", "Medo", "Frustração", "Alívio", etc.).
-   - Estime a intensidade subjetiva (0 a 100).
-   - Descreva a justificativa clínica com os correlatos somáticos e fisiológicos associados.
-   - Preencha o objeto "emotion": { "name": "...", "intensity": ..., "justificativa": "..." }.
-
-5. SE O CAMPO FOR COMPORTAMENTO OU ENFRENTAMENTO (ex: "comportamento", "ridComportamento", "excessosComp", "deficitsHab"):
-   - Descreva o comportamento observado e JUSTIFIQUE sua função clínica (estilo de enfrentamento: hipercompensação, evitação ou resignação funcional).
-   - Preencha "itens" e formate "text" em tópicos claros.
-
-6. SE O CAMPO FOR CONSEQUÊNCIAS (Curto ou Longo Prazo):
-   - Curto prazo: justifique o alívio imediato e os reforços negativos imediatos.
-   - Longo prazo: justifique a manutenção do ciclo vicioso, prejuízo interpessoal e cronificação dos esquemas.
-   - Preencha "text" e "itens".
-
-7. DEMAIS CAMPOS CLÍNICOS DO PCI (ex: "eventoQueixas", "familiaOrigem", "rotina", "diagTopo", "diagFunc", "projetoTerap", "relacionamentoTerap"):
-   - Preencha de forma técnica, profunda e estruturada, apresentando os elementos centrais acompanhados de sua justificativa clínica em português.
-
-REGRAS CRÍTICAS DE IDIOMA E FORMATAÇÃO:
-- IDIOMA: 100% em Português do Brasil impecável. NUNCA utilize palavras em inglês como "TEXT", "TAGS", "EMOTION", "INTENSITY" ou "NAME" dentro dos textos clínicos.
-- APARÊNCIA: O texto deve ser estético, fluido e profissional. NUNCA insira JSON cru ou chaves {} dentro de "text".
+DIRETRIZES TÉCNICAS ESPECÍFICAS POR TIPO DE CAMPO:
+1. SE FOR ESQUEMAS ATIVADOS / EIDs ("esquema", "esquemasCognitivos"):
+   - Selecione 1 ou 2 EIDs do catálogo (ex: "Abandono / Instabilidade", "Defectividade / Vergonha", "Privação Emocional").
+   - Justificativa: 1 frase curta explicando o gatilho da ativação.
+2. SE FOR NECESSIDADES BÁSICAS ("necessidade", "necessidadesIdentificadas"):
+   - Selecione 1 ou 2 necessidades violadas do catálogo (ex: "Vínculo Seguro e Conexão", "Autonomia e Competência").
+   - Justificativa: 1 frase curta explicando quem ou o que frustrou a necessidade na situação.
+3. SE FOR PENSAMENTO AUTOMÁTICO OU DISTORÇÕES ("pensamento", "distorcoesCognitivas", "crencasCentrais"):
+   - Formule 1 ou 2 pensamentos na voz do paciente com a distorção central. Conciso e direto.
+4. SE FOR EMOÇÃO / INTENSIDADE ("emocao", "ridEmocao"):
+   - Identifique a emoção primária central ("Ansiedade", "Tristeza", "Raiva", "Culpa", "Frustração").
+   - Estime a intensidade subjetiva (0 a 100) e justificativa fisiológica em 1 frase.
+5. SE FOR COMPORTAMENTO OU ENFRENTAMENTO ("comportamento", "ridComportamento"):
+   - Descreva a ação em 1 frase e classifique o estilo funcional (evitação, resignação ou hipercompensação).
+6. SE FOR CONSEQUÊNCIAS (Curto ou Longo Prazo):
+   - Curto prazo: 1 frase direta sobre o alívio imediato (reforço negativo).
+   - Longo prazo: 1 frase direta sobre o custo interpessoal/emocional ou manutenção do ciclo.
 
 FORMATO DE RESPOSTA (JSON estrito):
 {
-  "text": "Texto clínico formatado com marcadores • pronto para o prontuário",
+  "text": "• [Nome do Item]: [Justificativa em 1 frase curta de até 25 palavras]",
   "itens": [
     {
-      "nome": "Nome técnico do elemento (ex: Abuso / Desconfiança)",
-      "justificativa": "Explicação clínica detalhada e contextualizada do porquê foi ativado ou como opera no relato"
+      "nome": "Nome do elemento (ex: Privação Emocional)",
+      "justificativa": "Frase curta e objetiva de até 25 palavras explicando o gatilho."
     }
   ],
-  "tags": ["Nome 1", "Nome 2"],
-  "emotion": { "name": "Nome da emoção", "intensity": 80, "justificativa": "Explicação dos correlatos fisiológicos" }
+  "tags": ["Nome do elemento"],
+  "emotion": { "name": "Ansiedade", "intensity": 80, "justificativa": "Aperto torácico e inquietação motora." }
 }
 `;
 
@@ -1450,7 +1479,7 @@ FORMATO DE RESPOSTA (JSON estrito):
     model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
-      maxOutputTokens: 2048,
+      maxOutputTokens: 1024,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -1520,7 +1549,7 @@ FORMATO DE RESPOSTA (JSON estrito):
     if (textVal && typeof textVal === 'string' && !textVal.trim().startsWith('{')) {
       normalized.text = textVal.trim();
     } else if (normalized.itens && normalized.itens.length > 0) {
-      normalized.text = normalized.itens.map(it => `• ${it.nome}: ${it.justificativa}`).join('\n');
+      normalized.text = normalized.itens.map(it => it.justificativa ? `• ${it.nome}: ${it.justificativa}` : `• ${it.nome}`).join('\n');
     }
 
     return normalized;
@@ -1539,6 +1568,7 @@ export interface FieldQuestionsParams {
     name?: string;
     age?: string | number;
   };
+  availableSuggestions?: SuggestionReferenceItem[];
 }
 
 export interface QuestionItem {
@@ -1549,6 +1579,22 @@ export interface QuestionItem {
 export async function generateClinicalFieldQuestions(params: FieldQuestionsParams): Promise<QuestionItem[]> {
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
+
+  let curatedQuestionsBlock = "";
+  if (params.availableSuggestions && params.availableSuggestions.length > 0) {
+    const questionsWithText = params.availableSuggestions
+      .filter(s => s.question && s.question.trim().length > 0)
+      .slice(0, 15);
+    
+    if (questionsWithText.length > 0) {
+      const qList = questionsWithText.map(s => `- [${s.key}]: "${s.question}"`).join("\n");
+      curatedQuestionsBlock = `
+PERGUNTAS INVESTIGATIVAS CURADAS DO BANCO DE SUGESTÕES (BASE MANDATÓRIA):
+Utilize estas perguntas clínicas como alicerce fundamental para formular as perguntas da sessão:
+${qList}
+`;
+    }
+  }
 
   const prompt = `
 Você é um Supervisor Clínico Master em Terapia Cognitivo-Comportamental de 4ª Geração (Terapia Baseada em Processos, ACT, FAP, DBT e Terapia do Esquema).
@@ -1561,24 +1607,19 @@ O relato da situação ou queixa trazida pelo paciente é:
 ${params.situation}
 """
 
+${curatedQuestionsBlock}
+
 SUA TAREFA:
-Gerar de 2 a 4 perguntas clínicas evocativas, socráticas e experienciais de altíssimo nível, formuladas para o psicólogo fazer diretamente ao paciente durante a sessão.
-
-OBJETIVO DAS PERGUNTAS:
-Fazer com que o paciente reflita, acesse sua experiência somática/emocional ou cognitiva e forneça espontaneamente os elementos necessários para preencher com precisão técnica o campo "${params.fieldLabel}".
-
-DIRETRIZES DE ESTILO TCC 4ª GERAÇÃO:
-- Perguntas abertas, instigantes e empáticas (ex: "No exato momento em que isso aconteceu, se pudéssemos pausar o tempo, qual foi a sensação física mais nítida no seu corpo?").
-- Evite perguntas do tipo "sim/não".
-- Use o diálogo socrático e a decatastrofização/desfusão quando aplicável.
-- Para cada pergunta, inclua um 'clinicalObjective' explicando brevemente ao terapeuta qual processo clínico aquela pergunta visa acessar (ex: "Desfusão cognitiva", "Identificação de necessidade frustrada", "Conexão com modos esquemáticos da infância").
+Gerar de 2 a 3 perguntas clínicas socráticas, evocativas e experienciais, formuladas na voz do psicólogo para perguntar diretamente ao paciente.
+As perguntas devem ser curtas, diretas, empáticas e altamente focadas em acessar a experiência do paciente para elucidar o campo "${params.fieldLabel}".
+Evite perguntas prolixas ou teóricas complexas. O paciente deve responder com base no que sentiu, pensou ou experienciou no momento.
 
 FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
 {
   "questions": [
     {
-      "question": "Texto da pergunta socrática direcionada ao paciente...",
-      "clinicalObjective": "Objetivo técnico para o terapeuta"
+      "question": "Texto direto e empático da pergunta socrática para fazer ao paciente...",
+      "clinicalObjective": "Objetivo técnico de 4ª geração (ex: Desfusão cognitiva, Identificação de necessidade frustrada)"
     }
   ]
 }
@@ -1588,7 +1629,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
     model: DEFAULT_CLINICAL_MODEL,
     contents: prompt,
     config: {
-      maxOutputTokens: 2048,
+      maxOutputTokens: 1024,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -1625,4 +1666,57 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON estrito):
     ];
   }
 }
+
+// Supervisor / Coach IA Especialista para as 10 Ferramentas de Treino de HPs
+export interface HpCoachParams {
+  hpId: string;
+  hpName: string;
+  patientName?: string;
+  exerciseTitle: string;
+  userContext: string;
+  mode: 'feedback' | 'simulation' | 'coping_card';
+}
+
+export async function generateHpTrainingFeedback(params: HpCoachParams): Promise<string> {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Você é o Treinador Clínico Sênior e Supervisor em Treinamento de Habilidades Psicológicas (THP - Poubel & Rodrigues) e Terapia Cognitivo-Comportamental de 4ª Geração, especialista na habilidade: "${params.hpName}".
+
+DADOS DO TREINO:
+- Habilidade Psicológica: ${params.hpName} (ID: ${params.hpId})
+- Paciente: ${params.patientName || "Paciente em atendimento"}
+- Exercício / Registro: "${params.exerciseTitle}"
+- Contexto ou Relato Prático:
+"""
+${params.userContext}
+"""
+
+MODO SOLICITADO: ${
+    params.mode === 'feedback' 
+      ? 'FEEDBACK CLÍNICO CONSTRUTIVO E REFORÇO DE HABILIDADE' 
+      : params.mode === 'simulation' 
+        ? 'SIMULAÇÃO DE ROLE-PLAY / DESAFIO COMPORTAMENTAL PRÁTICO' 
+        : 'CARTÃO DE ENFRENTAMENTO RÁPIDO PARA SITUAÇÕES DE GATILHO'
+  }
+
+DIRETRIZES TÉCNICAS:
+1. Adote tom clínico profissional, empático, encorajador e baseado em evidências.
+2. Seja cirúrgico, estruturado e prático: evite introduções longas.
+3. Se for 'feedback': avalie os pontos fortes demonstrados, aponte onde o paciente pode aprofundar a HP e proponha uma reflexão metacognitiva.
+4. Se for 'simulation': proponha uma cena do cotidiano com 3 opções de resposta ou uma réplica para treino de role-play.
+5. Se for 'coping_card': entregue um cartão visual de enfrentamento com: "Gatilho Antecedente", "Respiração/Ancoragem de 10s", "Frase de Desfusão/Força" e "Micro-Ação Assertiva".
+6. Formatação: Retorne APENAS HTML clássico limpo (<p style='text-align: justify;'>, <ul>, <li>, <strong>) pronto para renderização direta, sem blocos de código markdown.
+`;
+
+  const response = await ai.models.generateContent({
+    model: DEFAULT_CLINICAL_MODEL,
+    contents: prompt,
+    config: { maxOutputTokens: 1024 }
+  });
+
+  return (response.text || "").replace(/^```html\s*/i, "").replace(/```\s*$/i, "").trim();
+}
+
 

@@ -11,6 +11,7 @@ import { cn } from '../lib/utils';
 import { storage } from '../lib/storage';
 import { encryption } from '../lib/encryption';
 import { sanitizeAnalysis } from '../lib/stringUtils';
+import { CLINICAL_SUGGESTIONS_DB } from '../../BibliotecaAvaliacao/components/ClinicalSuggestionsHelper';
 import { 
   SCHEMAS_DATA, 
   NEEDS_DATA, 
@@ -158,6 +159,39 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
     questions: []
   });
 
+  const getSuggestionsForRidField = (fieldName: string) => {
+    switch (fieldName) {
+      case 'esquema':
+        return [
+          ...(CLINICAL_SUGGESTIONS_DB.esquemas?.items || []),
+          ...(CLINICAL_SUGGESTIONS_DB.modos_esquematicos?.items || [])
+        ];
+      case 'necessidade':
+        return [
+          ...(CLINICAL_SUGGESTIONS_DB.necessidades_emocionais_frustradas?.items || []),
+          ...(CLINICAL_SUGGESTIONS_DB.necessidades_emocionais_atendidas?.items || [])
+        ];
+      case 'pensamento':
+        return [
+          ...(CLINICAL_SUGGESTIONS_DB.distorcoes?.items || []),
+          ...(CLINICAL_SUGGESTIONS_DB.pensamentos_automaticos_negativos?.items || []),
+          ...(CLINICAL_SUGGESTIONS_DB.crencas_centrais?.items || [])
+        ];
+      case 'emocao':
+        return [
+          ...(CLINICAL_SUGGESTIONS_DB.sentimentos?.items || []),
+          ...(CLINICAL_SUGGESTIONS_DB.sentimentos_funcionais?.items || [])
+        ];
+      case 'comportamento':
+        return [
+          ...(CLINICAL_SUGGESTIONS_DB.enfrentamento?.items || []),
+          ...(CLINICAL_SUGGESTIONS_DB.padroes_comportamentais_disfuncionais?.items || [])
+        ];
+      default:
+        return [];
+    }
+  };
+
   const handleFieldFill = async (fieldName: string, fieldLabel: string) => {
     const situation = formData.situacao?.trim();
     if (!situation && fieldName !== 'situacao') {
@@ -167,6 +201,7 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
 
     setFillingField(fieldName);
     try {
+      const availableSuggestions = getSuggestionsForRidField(fieldName);
       const res = await generateClinicalFieldFilling({
         tool: 'RID',
         field: fieldName,
@@ -175,25 +210,26 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         patientContext: {
           name: patientName,
           age: patientAge
-        }
+        },
+        availableSuggestions
       });
 
       if (fieldName === 'necessidade') {
         if (res.itens && res.itens.length > 0) {
-          const formatted = res.itens.map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
+          const formatted = res.itens.slice(0, 2).map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
           setFormData(prev => {
             const existing = new Set(prev.necessidade);
             formatted.forEach(t => existing.add(t));
             return { ...prev, necessidade: Array.from(existing) };
           });
-          toast.success("Necessidades identificadas com justificativa clínica!");
+          toast.success("Necessidade identificada com síntese clínica!");
         } else if (res.tags && res.tags.length > 0) {
           setFormData(prev => {
             const existing = new Set(prev.necessidade);
-            res.tags!.forEach(t => existing.add(t));
+            res.tags!.slice(0, 2).forEach(t => existing.add(t));
             return { ...prev, necessidade: Array.from(existing) };
           });
-          toast.success("Necessidades identificadas e adicionadas!");
+          toast.success("Necessidades identificadas!");
         } else if (res.text) {
           setFormData(prev => {
             const existing = new Set(prev.necessidade);
@@ -204,20 +240,20 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         }
       } else if (fieldName === 'esquema') {
         if (res.itens && res.itens.length > 0) {
-          const formatted = res.itens.map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
+          const formatted = res.itens.slice(0, 2).map(it => it.justificativa ? `${it.nome}: ${it.justificativa}` : it.nome);
           setFormData(prev => {
             const existing = new Set(prev.esquema);
             formatted.forEach(t => existing.add(t));
             return { ...prev, esquema: Array.from(existing) };
           });
-          toast.success("Esquemas mapeados com justificativa clínica!");
+          toast.success("Esquema mapeado com síntese clínica!");
         } else if (res.tags && res.tags.length > 0) {
           setFormData(prev => {
             const existing = new Set(prev.esquema);
-            res.tags!.forEach(t => existing.add(t));
+            res.tags!.slice(0, 2).forEach(t => existing.add(t));
             return { ...prev, esquema: Array.from(existing) };
           });
-          toast.success("Esquemas mapeados e adicionados!");
+          toast.success("Esquemas mapeados!");
         } else if (res.text) {
           setFormData(prev => {
             const existing = new Set(prev.esquema);
@@ -251,11 +287,12 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         // Campos de texto: pensamento, comportamento, consequenciasCurtoPrazo, consequenciasLongoPrazo
         if (res.text) {
           setFormData(prev => {
-            const current = (prev as any)[fieldName] as string;
-            const newVal = current && current.trim() ? `${current}\n\n${res.text}` : res.text!;
+            const current = ((prev as any)[fieldName] as string) || '';
+            const cleanText = res.text!.trim();
+            const newVal = current.trim() ? `${current}\n${cleanText}` : cleanText;
             return { ...prev, [fieldName]: newVal };
           });
-          toast.success(`Campo "${fieldLabel}" preenchido com sucesso!`);
+          toast.success(`Campo "${fieldLabel}" preenchido com síntese concisa!`);
         }
       }
     } catch (err: any) {
@@ -275,6 +312,7 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
 
     setAskingField(fieldName);
     try {
+      const availableSuggestions = getSuggestionsForRidField(fieldName);
       const questions = await generateClinicalFieldQuestions({
         tool: 'RID',
         field: fieldName,
@@ -283,7 +321,8 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         patientContext: {
           name: patientName,
           age: patientAge
-        }
+        },
+        availableSuggestions
       });
 
       setQuestionsModal({

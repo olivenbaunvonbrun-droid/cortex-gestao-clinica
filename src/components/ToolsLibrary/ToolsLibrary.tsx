@@ -15,7 +15,14 @@ import {
   GripVertical,
   Activity,
   Pin,
-  Zap
+  Zap,
+  Heart,
+  Award,
+  Compass,
+  ShieldAlert,
+  ShieldCheck,
+  Eye,
+  Smile
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -139,6 +146,86 @@ const DEFAULT_TOOLS: ToolItem[] = [
     icon: BookOpen,
     status: 'active',
     category: 'Avaliação Psicológica',
+  },
+  {
+    id: 'hp-autoconhecimento',
+    title: 'HP 1: Autoconhecimento',
+    description: 'Treino de metacognição, identificação de gatilhos somáticos corporais, mapeamento de valores vitais e observação de modos esquemáticos.',
+    icon: Brain,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-autorregulacao',
+    title: 'HP 2: Autorregulação Emocional',
+    description: 'Protocolo interativo 4-7-8, termômetro de ativação fisiológica, tolerância ao mal-estar e aplicação guiada do A.C.A.L.M.E.-S.E.',
+    icon: Heart,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-raciocinio-otimista',
+    title: 'HP 3: Raciocínio Realisticamente Otimista',
+    description: 'Matriz factual de evidências a favor e contra, formulação de alternativas realistas, torta de responsabilidade e descatastrofização.',
+    icon: TrendingUp,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-autoestima',
+    title: 'HP 4: Autoestima',
+    description: 'Diário de autoelogios e méritos, autocompaixão de Kristin Neff, forças de caráter e desarmamento do crítico interno punitivo.',
+    icon: Award,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-resolutividade',
+    title: 'HP 5: Resolutividade e Enfrentamento',
+    description: 'Matriz de decisão prós/contras ponderada, roteirização de micro-passos factíveis e hierarquia de exposição gradual.',
+    icon: Compass,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-autocontrole',
+    title: 'HP 6: Autocontrole',
+    description: 'Cronômetro guiado de Urge Surfing (Surfando na Onda do Impulso), gestão de estímulos ambientais e adiamento da gratificação.',
+    icon: ShieldAlert,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-sociabilidade',
+    title: 'HP 7: Sociabilidade',
+    description: 'Comunicação Não-Violenta (CNV em 4 passos), assertividade com técnica do Disco Riscado e quebra-gelo interpessoal.',
+    icon: Users,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-imunidade-social',
+    title: 'HP 8: Imunidade Social',
+    description: 'Laboratório do NÃO assertivo sem desculpas, técnica do Nevoeiro (Fogging) para críticas e blindagem de limites.',
+    icon: ShieldCheck,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-sensibilidade-social',
+    title: 'HP 9: Sensibilidade Social',
+    description: 'Laboratório de escuta ativa, paráfrase empática, decodificação de pistas não-verbais e validação emocional.',
+    icon: Eye,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
+  },
+  {
+    id: 'hp-hedonismo',
+    title: 'HP 10: Hedonismo Responsável',
+    description: 'Programador semanal de reforçadores naturais, diário de Savoring (desfrute consciente) e balanço dever versus prazer.',
+    icon: Smile,
+    status: 'active',
+    category: 'Treino de HPs (THP)',
   }
 ];
 
