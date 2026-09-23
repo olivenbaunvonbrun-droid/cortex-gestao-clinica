@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, useDragControls } from 'motion/react';
+import { motion } from 'motion/react';
 import { Minus, Square, Copy, X, PictureInPicture2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -48,10 +48,22 @@ export function Window({
     }
     return defaultHeight;
   });
-  const windowRef = useRef<HTMLDivElement>(null);
-  const boundaryRef = useRef<HTMLDivElement>(null);
-  const dragControls = useDragControls();
+  const [position, setPosition] = useState<{ x: number; y: number }>(() => {
+    if (typeof window !== 'undefined') {
+      const initialW = Math.min(defaultWidth, Math.max(500, window.innerWidth - 64));
+      const initialH = Math.min(defaultHeight, Math.max(400, window.innerHeight - 56 - 120));
+      const initialX = Math.max(20, Math.round((window.innerWidth - initialW) / 2));
+      const initialY = Math.max(140, Math.round((window.innerHeight - 56 - initialH) / 2));
+      return { x: initialX, y: initialY };
+    }
+    return { x: 100, y: 140 };
+  });
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const dragStartRef = useRef<{ mouseX: number; mouseY: number; startX: number; startY: number } | null>(null);
+
+  const windowRef = useRef<HTMLDivElement>(null);
   const [showSnapMenu, setShowSnapMenu] = useState(false);
   const snapMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -59,10 +71,18 @@ export function Window({
     const handleScreenResize = () => {
       setWidth(prev => Math.min(prev, Math.max(500, window.innerWidth - 32)));
       setHeight(prev => Math.min(prev, Math.max(400, window.innerHeight - 56 - 40)));
+      setPosition(prev => {
+        const maxX = Math.max(0, window.innerWidth - width);
+        const maxY = Math.max(0, window.innerHeight - 56 - height);
+        return {
+          x: Math.max(0, Math.min(maxX, prev.x)),
+          y: Math.max(0, Math.min(maxY, prev.y)),
+        };
+      });
     };
     window.addEventListener('resize', handleScreenResize);
     return () => window.removeEventListener('resize', handleScreenResize);
-  }, []);
+  }, [width, height]);
 
   useEffect(() => {
     if (!isMinimized) {
@@ -123,14 +143,14 @@ export function Window({
     const startHeight = height;
     const startX = e.clientX;
     const startY = e.clientY;
+    const curX = position.x;
+    const curY = position.y;
 
-    const rect = windowRef.current?.getBoundingClientRect();
-    const currentLeft = rect ? rect.left : 0;
-    const currentTop = rect ? rect.top : 0;
+    setIsResizing(true);
 
     // Boundaries: window cannot be resized outside the screen or into the 56px taskbar
-    const maxAllowedWidth = Math.max(500, window.innerWidth - currentLeft);
-    const maxAllowedHeight = Math.max(400, window.innerHeight - 56 - currentTop);
+    const maxAllowedWidth = Math.max(500, window.innerWidth - curX);
+    const maxAllowedHeight = Math.max(400, window.innerHeight - 56 - curY);
 
     const onPointerMove = (moveEvent: PointerEvent) => {
       if (direction === 'r' || direction === 'br') {
@@ -144,6 +164,7 @@ export function Window({
     };
 
     const onPointerUp = () => {
+      setIsResizing(false);
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
     };
@@ -153,16 +174,63 @@ export function Window({
   };
 
   const handleTitleBarPointerDown = (e: React.PointerEvent) => {
-    // Only drag on left click and not on header buttons
+    // Only drag on left click and not on header buttons or form controls
+    if (e.button !== 0) return;
     const target = e.target as HTMLElement;
-    if (e.button === 0 && !target.closest('button')) {
-      onFocus();
-      // If snapped, release the snap on drag start!
-      if (snapState && onSnapChange) {
-        onSnapChange(null);
-      }
-      dragControls.start(e);
+    if (target.closest('button') || target.closest('input, select, textarea')) return;
+
+    e.preventDefault();
+    onFocus();
+
+    let curX = position.x;
+    let curY = position.y;
+
+    // If snapped or maximized, release snap/maximize and bring window under cursor
+    if (isMaximized || (snapState && snapState !== 'pip')) {
+      if (snapState && onSnapChange) onSnapChange(null);
+      if (isMaximized) onMaximize();
+      curX = Math.max(0, Math.min(window.innerWidth - width, e.clientX - width / 2));
+      curY = Math.max(0, Math.min(window.innerHeight - 56 - height, e.clientY - 20));
+      setPosition({ x: curX, y: curY });
     }
+
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      startX: curX,
+      startY: curY
+    };
+
+    setIsDragging(true);
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      if (!dragStartRef.current) return;
+      const deltaX = moveEvent.clientX - dragStartRef.current.mouseX;
+      const deltaY = moveEvent.clientY - dragStartRef.current.mouseY;
+
+      const rawX = dragStartRef.current.startX + deltaX;
+      const rawY = dragStartRef.current.startY + deltaY;
+
+      // Strict boundaries:
+      // Window can NEVER be dragged outside Cortex screen area or below the 56px taskbar!
+      const maxX = Math.max(0, window.innerWidth - width);
+      const maxY = Math.max(0, window.innerHeight - 56 - height);
+
+      const clampedX = Math.max(0, Math.min(maxX, rawX));
+      const clampedY = Math.max(0, Math.min(maxY, rawY));
+
+      setPosition({ x: clampedX, y: clampedY });
+    };
+
+    const onPointerUp = () => {
+      dragStartRef.current = null;
+      setIsDragging(false);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
   };
 
   // Double click title bar to toggle maximize
@@ -178,47 +246,47 @@ export function Window({
   };
 
   // Compute layout style depending on snapState or maximize state
-  let top = '20%';
-  let left = '25%';
+  let topStyle = `${position.y}px`;
+  let leftStyle = `${position.x}px`;
   let computedWidth = `${width}px`;
   let computedHeight = `${height}px`;
 
   if (isMaximized) {
-    top = '135px';
-    left = '0px';
+    topStyle = '135px';
+    leftStyle = '0px';
     computedWidth = '100vw';
     computedHeight = 'calc(100vh - 135px - 56px)';
   } else if (snapState) {
     if (snapState === 'pip') {
-      top = 'auto';
-      left = 'auto';
+      topStyle = 'auto';
+      leftStyle = 'auto';
       computedWidth = '420px';
       computedHeight = '275px';
     } else {
-      top = '135px';
+      topStyle = '135px';
       computedHeight = 'calc(100vh - 135px - 56px)';
       if (snapState === 'left') {
-        left = '0px';
+        leftStyle = '0px';
         computedWidth = '50vw';
       } else if (snapState === 'right') {
-        left = '50vw';
+        leftStyle = '50vw';
         computedWidth = '50vw';
       } else if (snapState === 'top-left') {
-        left = '0px';
+        leftStyle = '0px';
         computedWidth = '50vw';
         computedHeight = 'calc((100vh - 135px - 56px) / 2)';
       } else if (snapState === 'top-right') {
-        left = '50vw';
+        leftStyle = '50vw';
         computedWidth = '50vw';
         computedHeight = 'calc((100vh - 135px - 56px) / 2)';
       } else if (snapState === 'bottom-left') {
-        left = '0px';
-        top = 'calc(135px + (100vh - 135px - 56px) / 2)';
+        leftStyle = '0px';
+        topStyle = 'calc(135px + (100vh - 135px - 56px) / 2)';
         computedWidth = '50vw';
         computedHeight = 'calc((100vh - 135px - 56px) / 2)';
       } else if (snapState === 'bottom-right') {
-        left = '50vw';
-        top = 'calc(135px + (100vh - 135px - 56px) / 2)';
+        leftStyle = '50vw';
+        topStyle = 'calc(135px + (100vh - 135px - 56px) / 2)';
         computedWidth = '50vw';
         computedHeight = 'calc((100vh - 135px - 56px) / 2)';
       }
@@ -226,21 +294,8 @@ export function Window({
   }
 
   return (
-    <>
-      {/* Invisible boundary element covering the entire Cortex view area above the taskbar */}
-      <div
-        ref={boundaryRef}
-        aria-hidden="true"
-        className="fixed top-0 left-0 right-0 bottom-14 pointer-events-none -z-50"
-      />
-      <motion.div
-        ref={windowRef}
-        drag={!isMaximized && snapState !== 'left' && snapState !== 'right' && snapState !== 'top-left' && snapState !== 'top-right' && snapState !== 'bottom-left' && snapState !== 'bottom-right'}
-        dragListener={false}
-        dragControls={dragControls}
-        dragMomentum={false}
-        dragElastic={0}
-        dragConstraints={boundaryRef}
+    <motion.div
+      ref={windowRef}
       onPointerDown={(e) => {
         onFocus();
         const target = e.target as HTMLElement;
@@ -256,14 +311,15 @@ export function Window({
         width: computedWidth,
         height: computedHeight,
         position: 'fixed',
-        top: snapState === 'pip' ? 'auto' : top,
-        left: snapState === 'pip' ? 'auto' : left,
+        top: snapState === 'pip' ? 'auto' : topStyle,
+        left: snapState === 'pip' ? 'auto' : leftStyle,
         right: snapState === 'pip' ? '24px' : 'auto',
         bottom: snapState === 'pip' ? '70px' : 'auto',
         outline: 'none',
+        transition: isDragging || isResizing ? 'none' : 'all 160ms cubic-bezier(0.16, 1, 0.3, 1)',
       }}
       className={cn(
-        "flex flex-col bg-bg-sidebar border border-border-subtle shadow-2xl overflow-hidden transition-all duration-150 select-none focus:outline-none",
+        "flex flex-col bg-bg-sidebar border border-border-subtle shadow-2xl overflow-hidden select-none focus:outline-none",
         isMaximized || (snapState && snapState !== 'pip') ? "rounded-none" : "rounded-3xl",
         snapState === 'pip' ? "rounded-2xl border-primary/50 shadow-2xl shadow-primary/15" : "z-[60]"
       )}
@@ -446,7 +502,7 @@ export function Window({
       </div>
 
       {/* WINDOW CONTENT */}
-      <div className="flex-grow overflow-hidden relative bg-bg-deep">
+      <div className={cn("flex-grow overflow-hidden relative bg-bg-deep", (isDragging || isResizing) && "pointer-events-none")}>
         {children}
       </div>
 
@@ -475,7 +531,6 @@ export function Window({
           </div>
         </>
       )}
-      </motion.div>
-    </>
+    </motion.div>
   );
 }

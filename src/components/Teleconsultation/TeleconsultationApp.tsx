@@ -5,16 +5,9 @@ import {
   Mic, 
   MicOff, 
   PhoneOff, 
-  Clipboard, 
-  Sparkles, 
-  FileText, 
-  CheckCircle, 
-  Brain, 
   RefreshCw, 
-  Link, 
   MessageCircle, 
   Copy, 
-  Sliders, 
   Zap, 
   ShieldCheck, 
   X, 
@@ -61,9 +54,7 @@ export default function TeleconsultationApp({
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Notes & Session state
-  const [notes, setNotes] = useState('');
-  const [observations, setObservations] = useState('');
+  // Session state
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -330,17 +321,7 @@ export default function TeleconsultationApp({
     };
   }, [scriptLoaded, selectedPatientId, jitsiServer, videoQuality]);
 
-  const handleEndAndSave = async () => {
-    if (!selectedPatientId || !patient) {
-      toast.error('Paciente não selecionado.');
-      return;
-    }
-
-    if (!notes.trim()) {
-      toast.error('Por favor, insira alguma nota clínica da sessão antes de salvar!');
-      return;
-    }
-
+  const handleEndCall = async () => {
     setIsSaving(true);
     try {
       // 1. Dispose Jitsi Call
@@ -350,69 +331,70 @@ export default function TeleconsultationApp({
       }
       setJitsiActive(false);
 
-      // 2. Prepare Prontuário Entry HTML
-      const now = new Date();
-      const formattedDate = now.toLocaleDateString('pt-BR');
-      const startTimeStr = sessionStartTime ? sessionStartTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
-      const endTimeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      
-      const recordHtml = `
-        <div class="teleconsulta-record-rendered p-6 bg-white/[0.01] border border-[#bf9b6b]/20 rounded-2xl space-y-4">
-          <div class="flex items-center justify-between border-b border-white/[0.08] pb-3 mb-3">
-            <h4 class="text-xs font-black uppercase tracking-wider text-[#bf9b6b] flex items-center gap-2">
-              <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-              Atendimento Virtual via Teleconsulta
-            </h4>
-            <span class="text-[9px] font-mono opacity-50">${formattedDate} | ${startTimeStr} - ${endTimeStr}</span>
+      // 2. If patient selected, record session in prontuário
+      if (selectedPatientId && patient) {
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString('pt-BR');
+        const startTimeStr = sessionStartTime ? sessionStartTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+        const endTimeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        
+        const recordHtml = `
+          <div class="teleconsulta-record-rendered p-6 bg-white/[0.01] border border-[#bf9b6b]/20 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-white/[0.08] pb-3 mb-3">
+              <h4 class="text-xs font-black uppercase tracking-wider text-[#bf9b6b] flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                Atendimento Virtual via Teleconsulta
+              </h4>
+              <span class="text-[9px] font-mono opacity-50">${formattedDate} | ${startTimeStr ? `${startTimeStr} - ` : ''}${endTimeStr}</span>
+            </div>
+            <div class="text-xs leading-relaxed space-y-3">
+              <p class="mb-1 text-[11px] text-text-main/90">Sessão de teleatendimento virtual realizada com ${patient.nome}. Conexão encerrada com sucesso.</p>
+            </div>
           </div>
-          <div class="text-xs leading-relaxed space-y-3">
-            <p class="mb-1 text-[11px] text-text-main/90 whitespace-pre-wrap"><strong>Notas Clínicas da Sessão:</strong><br/>${notes}</p>
-            ${observations.trim() ? `<p class="mb-1 text-[11px] text-text-main/90 whitespace-pre-wrap"><strong>Observações / Deveres de Casa:</strong><br/>${observations}</p>` : ''}
-          </div>
-        </div>
-      `;
+        `;
 
-      // 3. Save to Dexie db.prontuarios
-      const prontuario = await db.prontuarios.get(selectedPatientId);
-      const newEntry = {
-        timestamp: Date.now(),
-        data: formattedDate,
-        textoHtml: recordHtml,
-        tipo: 'evolucao' as any,
-        metadata: {
-          type: 'teleconsulta',
-          notes,
-          observations,
-          startTime: sessionStartTime?.toISOString(),
-          endTime: now.toISOString()
-        }
-      };
-
-      if (prontuario) {
-        const updatedEntradas = [newEntry, ...prontuario.entradas];
-        await db.prontuarios.update(selectedPatientId, { entradas: updatedEntradas });
-      } else {
-        const newRecord = {
-          pacienteId: selectedPatientId,
-          entradas: [newEntry],
-          anamneseData: {}
+        const prontuario = await db.prontuarios.get(selectedPatientId);
+        const newEntry = {
+          timestamp: Date.now(),
+          data: formattedDate,
+          textoHtml: recordHtml,
+          tipo: 'evolucao' as any,
+          metadata: {
+            type: 'teleconsulta',
+            startTime: sessionStartTime?.toISOString(),
+            endTime: now.toISOString()
+          }
         };
-        await db.prontuarios.add(newRecord);
-      }
 
-      // 4. Sync immediately to Cloud
-      if (userId) {
-        const updatedRecord = await db.prontuarios.get(selectedPatientId);
-        if (updatedRecord) {
-          await syncService.saveToCloud(userId, 'prontuarios', updatedRecord);
+        if (prontuario) {
+          const updatedEntradas = [newEntry, ...prontuario.entradas];
+          await db.prontuarios.update(selectedPatientId, { entradas: updatedEntradas });
+        } else {
+          const newRecord = {
+            pacienteId: selectedPatientId,
+            entradas: [newEntry],
+            anamneseData: {}
+          };
+          await db.prontuarios.add(newRecord);
         }
+
+        if (userId) {
+          const updatedRecord = await db.prontuarios.get(selectedPatientId);
+          if (updatedRecord) {
+            await syncService.saveToCloud(userId, 'prontuarios', updatedRecord);
+          }
+        }
+
+        toast.success('Atendimento encerrado e registrado no prontuário!');
+      } else {
+        toast.success('Teleatendimento encerrado!');
       }
 
-      toast.success('Atendimento encerrado e evolução registrada no prontuário!');
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error('Erro ao salvar prontuário.');
+      toast.error('Erro ao registrar no prontuário.');
+      onClose();
     } finally {
       setIsSaving(false);
     }
@@ -481,7 +463,7 @@ export default function TeleconsultationApp({
 
             {/* End Call Button */}
             <button
-              onClick={handleEndAndSave}
+              onClick={handleEndCall}
               className="p-1.5 rounded-lg border bg-red-600 hover:bg-red-500 text-white border-red-700 transition-all cursor-pointer"
               title="Encerrar teleconsulta"
             >
@@ -565,7 +547,7 @@ export default function TeleconsultationApp({
             )}
 
             <button
-              onClick={handleEndAndSave}
+              onClick={handleEndCall}
               disabled={isSaving}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-red-900/10 cursor-pointer"
             >
@@ -574,7 +556,7 @@ export default function TeleconsultationApp({
               ) : (
                 <PhoneOff size={12} />
               )}
-              Encerrar e Evoluir
+              Encerrar Chamada
             </button>
           </div>
         </header>
@@ -589,11 +571,8 @@ export default function TeleconsultationApp({
           </div>
         ) : (
           <div className="flex-grow flex h-full w-full overflow-hidden">
-            {/* Video Panel */}
-            <div className={cn(
-              "h-full bg-bg-sidebar relative flex flex-col items-center justify-center shrink-0 transition-all",
-              isPip ? "w-full" : "w-[65%] border-r border-border-subtle"
-            )}>
+            {/* Video Panel Full Width */}
+            <div className="w-full h-full bg-bg-sidebar relative flex flex-col items-center justify-center shrink-0">
               <div ref={jitsiContainerRef} className="w-full h-full" />
               {!jitsiActive && patient && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-deep/70 backdrop-blur-sm">
@@ -602,60 +581,9 @@ export default function TeleconsultationApp({
                 </div>
               )}
             </div>
-
-            {/* Split Screen Notes Panel (Col 4/12 equivalent) - Oculto em modo PiP */}
-            {!isPip && (
-              <div className="flex-1 h-full flex flex-col bg-bg-card overflow-hidden">
-                <div className="p-4 border-b border-border-subtle bg-bg-sidebar/40 flex items-center justify-between shrink-0">
-                  <h3 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Clipboard size={12} className="text-primary" /> Anotações Rápidas de Sessão
-                  </h3>
-                </div>
-
-              <div className="flex-grow p-6 overflow-y-auto space-y-6 scroller-hide select-text">
-                {/* Evolution Notes */}
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-text-main flex items-center justify-between">
-                    <span>Evolução Clínica / Notas da Sessão</span>
-                    <span className="text-[8px] opacity-40 font-mono tracking-normal text-right font-normal">campo obrigatório para salvar</span>
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Digite aqui os relatos do paciente, reações observadas, pensamentos disfuncionais identificados ou o progresso geral..."
-                    className="w-full min-h-[180px] bg-bg-sidebar border border-border-subtle text-text-main text-xs font-semibold rounded-2xl px-4 py-3 outline-none focus:border-primary transition-all leading-relaxed resize-none"
-                  />
-                </div>
-
-                {/* Homework / Directives */}
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-text-main">
-                    Deveres de Casa / Observações Futuras
-                  </label>
-                  <textarea
-                    value={observations}
-                    onChange={(e) => setObservations(e.target.value)}
-                    placeholder="Exercícios de THP recomendados, combinados para a próxima sessão, ou alertas para supervisão..."
-                    className="w-full min-h-[100px] bg-bg-sidebar border border-border-subtle text-text-main text-xs font-semibold rounded-2xl px-4 py-3 outline-none focus:border-primary transition-all leading-relaxed resize-none"
-                  />
-                </div>
-
-                {/* Guidance note */}
-                <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex gap-3 select-none">
-                  <Sparkles size={16} className="text-primary shrink-0" />
-                  <div>
-                    <h5 className="text-[9px] font-black text-primary uppercase tracking-wider mb-0.5">Evolução Automática</h5>
-                    <p className="text-[9px] text-text-dim/80 leading-normal font-semibold">
-                      Ao clicar em "Encerrar e Evoluir" no cabeçalho, as notas digitadas serão salvas automaticamente na linha do tempo do paciente como uma evolução clínica.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </main>
+          </div>
+        )}
+      </main>
 
       {/* MODAL DE OTIMIZAÇÕES DE CONEXÃO & VÍDEO (ANTI-LAG) */}
       {isSettingsOpen && (
