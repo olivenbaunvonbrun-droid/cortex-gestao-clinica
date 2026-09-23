@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useDragControls } from 'motion/react';
-import { Minus, Square, Copy, X } from 'lucide-react';
+import { Minus, Square, Copy, X, PictureInPicture2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+
+export type WindowSnapState = 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'pip' | null;
 
 interface WindowProps {
   title: string;
   isMinimized: boolean;
   isMaximized: boolean;
-  snapState?: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null;
-  onSnapChange?: (snap: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null) => void;
+  snapState?: WindowSnapState;
+  onSnapChange?: (snap: WindowSnapState) => void;
   zIndex: number;
   onClose: () => void;
   onMinimize: () => void;
@@ -159,39 +161,46 @@ export function Window({
     computedWidth = '100vw';
     computedHeight = 'calc(100vh - 135px - 56px)';
   } else if (snapState) {
-    top = '135px';
-    computedHeight = 'calc(100vh - 135px - 56px)';
-    if (snapState === 'left') {
-      left = '0px';
-      computedWidth = '50vw';
-    } else if (snapState === 'right') {
-      left = '50vw';
-      computedWidth = '50vw';
-    } else if (snapState === 'top-left') {
-      left = '0px';
-      computedWidth = '50vw';
-      computedHeight = 'calc((100vh - 135px - 56px) / 2)';
-    } else if (snapState === 'top-right') {
-      left = '50vw';
-      computedWidth = '50vw';
-      computedHeight = 'calc((100vh - 135px - 56px) / 2)';
-    } else if (snapState === 'bottom-left') {
-      left = '0px';
-      top = 'calc(135px + (100vh - 135px - 56px) / 2)';
-      computedWidth = '50vw';
-      computedHeight = 'calc((100vh - 135px - 56px) / 2)';
-    } else if (snapState === 'bottom-right') {
-      left = '50vw';
-      top = 'calc(135px + (100vh - 135px - 56px) / 2)';
-      computedWidth = '50vw';
-      computedHeight = 'calc((100vh - 135px - 56px) / 2)';
+    if (snapState === 'pip') {
+      top = 'auto';
+      left = 'auto';
+      computedWidth = '420px';
+      computedHeight = '275px';
+    } else {
+      top = '135px';
+      computedHeight = 'calc(100vh - 135px - 56px)';
+      if (snapState === 'left') {
+        left = '0px';
+        computedWidth = '50vw';
+      } else if (snapState === 'right') {
+        left = '50vw';
+        computedWidth = '50vw';
+      } else if (snapState === 'top-left') {
+        left = '0px';
+        computedWidth = '50vw';
+        computedHeight = 'calc((100vh - 135px - 56px) / 2)';
+      } else if (snapState === 'top-right') {
+        left = '50vw';
+        computedWidth = '50vw';
+        computedHeight = 'calc((100vh - 135px - 56px) / 2)';
+      } else if (snapState === 'bottom-left') {
+        left = '0px';
+        top = 'calc(135px + (100vh - 135px - 56px) / 2)';
+        computedWidth = '50vw';
+        computedHeight = 'calc((100vh - 135px - 56px) / 2)';
+      } else if (snapState === 'bottom-right') {
+        left = '50vw';
+        top = 'calc(135px + (100vh - 135px - 56px) / 2)';
+        computedWidth = '50vw';
+        computedHeight = 'calc((100vh - 135px - 56px) / 2)';
+      }
     }
   }
 
   return (
     <motion.div
       ref={windowRef}
-      drag={!isMaximized && !snapState}
+      drag={!isMaximized && snapState !== 'left' && snapState !== 'right' && snapState !== 'top-left' && snapState !== 'top-right' && snapState !== 'bottom-left' && snapState !== 'bottom-right'}
       dragListener={false}
       dragControls={dragControls}
       dragMomentum={false}
@@ -207,19 +216,21 @@ export function Window({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       style={{
-        zIndex,
+        zIndex: snapState === 'pip' ? 99999 : zIndex,
         display: isMinimized ? 'none' : 'flex',
         width: computedWidth,
         height: computedHeight,
         position: 'fixed',
-        top,
-        left,
+        top: snapState === 'pip' ? 'auto' : top,
+        left: snapState === 'pip' ? 'auto' : left,
+        right: snapState === 'pip' ? '24px' : 'auto',
+        bottom: snapState === 'pip' ? '70px' : 'auto',
         outline: 'none',
       }}
       className={cn(
         "flex flex-col bg-bg-sidebar border border-border-subtle shadow-2xl overflow-hidden transition-all duration-150 select-none focus:outline-none",
-        isMaximized || snapState ? "rounded-none" : "rounded-3xl",
-        "z-[60]"
+        isMaximized || (snapState && snapState !== 'pip') ? "rounded-none" : "rounded-3xl",
+        snapState === 'pip' ? "rounded-2xl border-primary/50 shadow-2xl shadow-primary/15" : "z-[60]"
       )}
     >
       {/* WINDOW TITLE BAR */}
@@ -235,10 +246,34 @@ export function Window({
           <span className="text-xs font-black uppercase tracking-wider text-text-main">
             {title}
           </span>
+          {snapState === 'pip' && (
+            <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
+              PiP Ativo
+            </span>
+          )}
         </div>
 
         {/* WINDOW CONTROLS */}
         <div className="flex items-center gap-1">
+          {/* PiP Button */}
+          {onSnapChange && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSnapChange(snapState === 'pip' ? null : 'pip');
+              }}
+              className={cn(
+                "p-1.5 rounded-lg transition-colors border cursor-pointer",
+                snapState === 'pip'
+                  ? "bg-primary text-bg-deep border-primary font-bold shadow-sm"
+                  : "hover:bg-white/5 text-text-dim hover:text-text-main border-transparent hover:border-border-subtle"
+              )}
+              title={snapState === 'pip' ? "Restaurar janela completa" : "Modo Picture-in-Picture (Flutuante)"}
+            >
+              <PictureInPicture2 size={14} />
+            </button>
+          )}
+
           {/* Minimize */}
           <button
             onClick={(e) => {
@@ -335,6 +370,21 @@ export function Window({
                     <div className="absolute right-0 bottom-0 w-1/2 h-1/2 bg-primary/20 group-hover:bg-primary/35 transition-colors border-l border-t border-border-subtle" />
                   </button>
                 </div>
+
+                {/* Picture-in-Picture button */}
+                <button
+                  onClick={() => { if (onSnapChange) onSnapChange(snapState === 'pip' ? null : 'pip'); setShowSnapMenu(false); }}
+                  className={cn(
+                    "py-1.5 px-2 border rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-[9px] font-black uppercase tracking-widest",
+                    snapState === 'pip'
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border-subtle hover:border-primary/45 bg-bg-card text-text-dim hover:text-primary"
+                  )}
+                  title="Destacar em janela flutuante no canto da tela"
+                >
+                  <PictureInPicture2 size={12} />
+                  Picture-in-Picture
+                </button>
                 
                 <button
                   onClick={() => { if (onSnapChange) onSnapChange(null); onMaximize(); setShowSnapMenu(false); }}

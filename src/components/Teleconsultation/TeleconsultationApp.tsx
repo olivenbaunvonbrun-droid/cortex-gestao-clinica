@@ -1,5 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Video, PhoneOff, Clipboard, Sparkles, FileText, CheckCircle, Brain, RefreshCw, Link, MessageCircle, Copy, Sliders, Zap, ShieldCheck, X, Activity, Server } from 'lucide-react';
+import { 
+  Video, 
+  VideoOff, 
+  Mic, 
+  MicOff, 
+  PhoneOff, 
+  Clipboard, 
+  Sparkles, 
+  FileText, 
+  CheckCircle, 
+  Brain, 
+  RefreshCw, 
+  Link, 
+  MessageCircle, 
+  Copy, 
+  Sliders, 
+  Zap, 
+  ShieldCheck, 
+  X, 
+  Activity, 
+  Server, 
+  PictureInPicture2, 
+  Maximize2 
+} from 'lucide-react';
 import { db, type Patient } from '../../lib/db';
 import { syncService } from '../../lib/syncService';
 import { toast, Toaster } from 'react-hot-toast';
@@ -9,14 +32,24 @@ interface TeleconsultationAppProps {
   activePatientId?: string | null;
   userId?: string;
   onClose: () => void;
+  isPip?: boolean;
+  onTogglePip?: (enable: boolean) => void;
 }
 
-export default function TeleconsultationApp({ activePatientId, userId, onClose }: TeleconsultationAppProps) {
+export default function TeleconsultationApp({ 
+  activePatientId, 
+  userId, 
+  onClose,
+  isPip = false,
+  onTogglePip 
+}: TeleconsultationAppProps) {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [jitsiActive, setJitsiActive] = useState(false);
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
   
   // Anti-Lag & Network Optimization States
   const [jitsiServer, setJitsiServer] = useState<string>(() => {
@@ -217,6 +250,7 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
           analytics: { disabled: true },
           doNotStoreRoom: true,
           disableAudioLevels: false,
+          pip: { enabled: true },
           videoQuality: {
             persist: true,
             defaultResolution: resNumber
@@ -225,7 +259,7 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
         interfaceConfigOverwrite: {
           TOOLBAR_BUTTONS: [
             'microphone', 'camera', 'desktop', 'chat', 'settings',
-            'videoquality', 'tileview', 'fullscreen'
+            'videoquality', 'tileview', 'fullscreen', 'pip'
           ],
           SHOW_JITSI_WATERMARK: false,
           SHOW_BRAND_WATERMARK: false,
@@ -249,6 +283,20 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
         api.addEventListener('videoConferenceLeft', () => {
           toast.success('Você saiu da videoconferência.');
         });
+        api.addEventListener('audioMuteStatusChanged', (e: any) => {
+          setIsAudioMuted(Boolean(e.muted));
+        });
+        api.addEventListener('videoMuteStatusChanged', (e: any) => {
+          setIsVideoMuted(Boolean(e.muted));
+        });
+
+        // Garantir permissões de Picture-in-Picture no iframe
+        setTimeout(() => {
+          const iframe = jitsiContainerRef.current?.querySelector('iframe');
+          if (iframe) {
+            iframe.setAttribute('allow', 'camera; microphone; display-capture; autoplay; clipboard-write; picture-in-picture');
+          }
+        }, 300);
       } catch (err) {
         console.error('Failed to init Jitsi:', err);
         toast.error('Erro ao conectar ao servidor Jitsi.');
@@ -355,89 +403,169 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
     }
   };
 
+  const handleToggleAudio = () => {
+    jitsiApiRef.current?.executeCommand('toggleAudio');
+  };
+
+  const handleToggleVideo = () => {
+    jitsiApiRef.current?.executeCommand('toggleVideo');
+  };
+
   return (
     <div className="w-full h-full flex flex-col bg-bg-deep select-none relative overflow-hidden">
       {/* HEADER ACTIONS */}
-      <header className="h-14 bg-bg-card border-b border-border-subtle px-6 flex items-center justify-between shrink-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary h-8 w-8 rounded-lg flex items-center justify-center text-bg-deep font-black shadow-inner">
-            <Video size={16} />
-          </div>
-          <h1 className="text-sm font-bold tracking-tight text-text-main flex items-center gap-2">
-            Sala de 
-            <span className="text-primary font-black">Teleconsulta</span>
-          </h1>
-        </div>
-
-        {/* Selected Patient Selector */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-bg-sidebar/40 border border-border-subtle rounded-xl px-4 py-1.5 text-xs text-text-main">
-            <span className="text-text-dim uppercase tracking-wider font-semibold">Paciente:</span>
-            <select
-              value={selectedPatientId}
-              onChange={(e) => setSelectedPatientId(e.target.value)}
-              className="bg-transparent text-text-main font-bold border-none outline-none cursor-pointer max-w-[180px] truncate"
-            >
-              <option value="" disabled>-- Selecionar Paciente --</option>
-              {patients.map(p => (
-                <option key={`tele-pat-${p.id}`} value={p.id} className="bg-bg-card text-text-main">
-                  {p.nome}
-                </option>
-              ))}
-            </select>
+      {isPip ? (
+        <header className="h-10 bg-bg-card border-b border-border-subtle px-3 flex items-center justify-between shrink-0 z-50">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0 shadow-sm shadow-emerald-500/50" />
+            <span className="text-xs font-bold text-text-main truncate max-w-[130px]">
+              {patient?.nome || 'Teleconsulta'}
+            </span>
+            <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-emerald-400 font-bold shrink-0">
+              {videoQuality}
+            </span>
           </div>
 
-          {selectedPatientId && patient && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border",
-                  videoQuality === '480p'
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-sm"
-                    : "bg-bg-sidebar border-border-subtle hover:border-primary/40 text-text-dim hover:text-primary"
-                )}
-                title="Configurar Resolução e Servidor Anti-Lag"
-              >
-                <Zap size={11} className={videoQuality === '480p' ? "text-emerald-400" : "text-primary"} />
-                <span>{videoQuality} • Anti-Lag</span>
-              </button>
-
-              <button
-                onClick={handleCopyLink}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sidebar border border-border-subtle hover:border-primary/40 text-text-dim hover:text-primary rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
-                title="Copiar Link Otimizado da Teleconsulta"
-              >
-                <Copy size={11} />
-                Copiar Link
-              </button>
-              {patient.telefone && (
-                <button
-                  onClick={handleSendLinkWA}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 hover:bg-green-500 hover:text-white text-green-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
-                  title="Enviar Link por WhatsApp para o Paciente"
-                >
-                  <MessageCircle size={11} />
-                  Enviar WA
-                </button>
+          <div className="flex items-center gap-1.5">
+            {/* Mic Toggle */}
+            <button
+              onClick={handleToggleAudio}
+              className={cn(
+                "p-1.5 rounded-lg border transition-all cursor-pointer",
+                isAudioMuted 
+                  ? "bg-rose-500/20 text-rose-400 border-rose-500/40 font-bold" 
+                  : "bg-bg-sidebar hover:bg-white/10 text-text-dim hover:text-text-main border-border-subtle"
               )}
-            </div>
-          )}
+              title={isAudioMuted ? "Desmutar microfone" : "Mutar microfone"}
+            >
+              {isAudioMuted ? <MicOff size={13} /> : <Mic size={13} />}
+            </button>
 
-          <button
-            onClick={handleEndAndSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-red-900/10 cursor-pointer"
-          >
-            {isSaving ? (
-              <RefreshCw size={12} className="animate-spin" />
-            ) : (
-              <PhoneOff size={12} />
+            {/* Video Toggle */}
+            <button
+              onClick={handleToggleVideo}
+              className={cn(
+                "p-1.5 rounded-lg border transition-all cursor-pointer",
+                isVideoMuted 
+                  ? "bg-rose-500/20 text-rose-400 border-rose-500/40 font-bold" 
+                  : "bg-bg-sidebar hover:bg-white/10 text-text-dim hover:text-text-main border-border-subtle"
+              )}
+              title={isVideoMuted ? "Ligar câmera" : "Desligar câmera"}
+            >
+              {isVideoMuted ? <VideoOff size={13} /> : <Video size={13} />}
+            </button>
+
+            {/* Expand / Restore Button */}
+            <button
+              onClick={() => onTogglePip?.(false)}
+              className="p-1.5 rounded-lg border bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 transition-all cursor-pointer"
+              title="Expandir para tela completa da teleconsulta"
+            >
+              <Maximize2 size={13} />
+            </button>
+
+            {/* End Call Button */}
+            <button
+              onClick={handleEndAndSave}
+              className="p-1.5 rounded-lg border bg-red-600 hover:bg-red-500 text-white border-red-700 transition-all cursor-pointer"
+              title="Encerrar teleconsulta"
+            >
+              <PhoneOff size={13} />
+            </button>
+          </div>
+        </header>
+      ) : (
+        <header className="h-14 bg-bg-card border-b border-border-subtle px-6 flex items-center justify-between shrink-0 z-50">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary h-8 w-8 rounded-lg flex items-center justify-center text-bg-deep font-black shadow-inner">
+              <Video size={16} />
+            </div>
+            <h1 className="text-sm font-bold tracking-tight text-text-main flex items-center gap-2">
+              Sala de 
+              <span className="text-primary font-black">Teleconsulta</span>
+            </h1>
+          </div>
+
+          {/* Selected Patient Selector */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-bg-sidebar/40 border border-border-subtle rounded-xl px-4 py-1.5 text-xs text-text-main">
+              <span className="text-text-dim uppercase tracking-wider font-semibold">Paciente:</span>
+              <select
+                value={selectedPatientId}
+                onChange={(e) => setSelectedPatientId(e.target.value)}
+                className="bg-transparent text-text-main font-bold border-none outline-none cursor-pointer max-w-[180px] truncate"
+              >
+                <option value="" disabled>-- Selecionar Paciente --</option>
+                {patients.map(p => (
+                  <option key={`tele-pat-${p.id}`} value={p.id} className="bg-bg-card text-text-main">
+                    {p.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedPatientId && patient && (
+              <div className="flex items-center gap-2">
+                {/* Picture-in-Picture Button */}
+                <button
+                  onClick={() => onTogglePip?.(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sidebar border border-border-subtle hover:border-primary/40 text-text-dim hover:text-primary rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-sm"
+                  title="Destacar chamada em modo Picture-in-Picture (Janela Flutuante)"
+                >
+                  <PictureInPicture2 size={12} className="text-primary" />
+                  <span>Picture-in-Picture</span>
+                </button>
+
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border",
+                    videoQuality === '480p'
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-sm"
+                      : "bg-bg-sidebar border-border-subtle hover:border-primary/40 text-text-dim hover:text-primary"
+                  )}
+                  title="Configurar Resolução e Servidor Anti-Lag"
+                >
+                  <Zap size={11} className={videoQuality === '480p' ? "text-emerald-400" : "text-primary"} />
+                  <span>{videoQuality} • Anti-Lag</span>
+                </button>
+
+                <button
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sidebar border border-border-subtle hover:border-primary/40 text-text-dim hover:text-primary rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                  title="Copiar Link Otimizado da Teleconsulta"
+                >
+                  <Copy size={11} />
+                  Copiar Link
+                </button>
+                {patient.telefone && (
+                  <button
+                    onClick={handleSendLinkWA}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/20 hover:bg-green-500 hover:text-white text-green-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                    title="Enviar Link por WhatsApp para o Paciente"
+                  >
+                    <MessageCircle size={11} />
+                    Enviar WA
+                  </button>
+                )}
+              </div>
             )}
-            Encerrar e Evoluir
-          </button>
-        </div>
-      </header>
+
+            <button
+              onClick={handleEndAndSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-red-900/10 cursor-pointer"
+            >
+              {isSaving ? (
+                <RefreshCw size={12} className="animate-spin" />
+              ) : (
+                <PhoneOff size={12} />
+              )}
+              Encerrar e Evoluir
+            </button>
+          </div>
+        </header>
+      )}
 
       {/* WORKSPACE AREA */}
       <main className="flex-1 flex overflow-hidden w-full h-full relative">
@@ -448,8 +576,11 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
           </div>
         ) : (
           <div className="flex-grow flex h-full w-full overflow-hidden">
-            {/* Split Screen Video Panel (Col 8/12 equivalent) */}
-            <div className="w-[65%] h-full bg-bg-sidebar border-r border-border-subtle relative flex flex-col items-center justify-center shrink-0">
+            {/* Video Panel */}
+            <div className={cn(
+              "h-full bg-bg-sidebar relative flex flex-col items-center justify-center shrink-0 transition-all",
+              isPip ? "w-full" : "w-[65%] border-r border-border-subtle"
+            )}>
               <div ref={jitsiContainerRef} className="w-full h-full" />
               {!jitsiActive && patient && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-deep/70 backdrop-blur-sm">
@@ -459,13 +590,14 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
               )}
             </div>
 
-            {/* Split Screen Notes Panel (Col 4/12 equivalent) */}
-            <div className="flex-1 h-full flex flex-col bg-bg-card overflow-hidden">
-              <div className="p-4 border-b border-border-subtle bg-bg-sidebar/40 flex items-center justify-between shrink-0">
-                <h3 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Clipboard size={12} className="text-primary" /> Anotações Rápidas de Sessão
-                </h3>
-              </div>
+            {/* Split Screen Notes Panel (Col 4/12 equivalent) - Oculto em modo PiP */}
+            {!isPip && (
+              <div className="flex-1 h-full flex flex-col bg-bg-card overflow-hidden">
+                <div className="p-4 border-b border-border-subtle bg-bg-sidebar/40 flex items-center justify-between shrink-0">
+                  <h3 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Clipboard size={12} className="text-primary" /> Anotações Rápidas de Sessão
+                  </h3>
+                </div>
 
               <div className="flex-grow p-6 overflow-y-auto space-y-6 scroller-hide select-text">
                 {/* Evolution Notes */}
@@ -507,9 +639,10 @@ export default function TeleconsultationApp({ activePatientId, userId, onClose }
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+        </div>
+      )}
+    </main>
 
       {/* MODAL DE OTIMIZAÇÕES DE CONEXÃO & VÍDEO (ANTI-LAG) */}
       {isSettingsOpen && (

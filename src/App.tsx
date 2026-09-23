@@ -277,9 +277,19 @@ export default function App() {
     }
   };
 
-  const handleSnapWindow = (toolId: string, snap: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null) => {
+  const handleSnapWindow = (toolId: string, snap: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'pip' | null) => {
+    const nextZ = maxZIndex + 10;
+    setMaxZIndex(nextZ);
     setOpenWindows(prev => prev.map(w => 
-      w.id === toolId ? { ...w, snapState: snap, isMaximized: snap === null ? w.isMaximized : false } : w
+      w.id === toolId 
+        ? { 
+            ...w, 
+            snapState: snap, 
+            isMaximized: snap === null ? w.isMaximized : false,
+            isMinimized: false,
+            zIndex: snap === 'pip' ? 99999 : nextZ
+          } 
+        : w
     ));
   };
 
@@ -631,6 +641,8 @@ export default function App() {
                       activePatientId={win.patientId || selectedPatientId || undefined} 
                       userId={currentUser?.id}
                       onClose={() => handleCloseTool(win.id)}
+                      isPip={win.snapState === 'pip'}
+                      onTogglePip={(enable) => handleSnapWindow(win.id, enable ? 'pip' : null)}
                     />
                   )}
                   {win.id === 'parametros-clinicos' && (
