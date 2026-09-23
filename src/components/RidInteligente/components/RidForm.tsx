@@ -26,6 +26,7 @@ import { generateClinicalReportHTML } from '../lib/exportUtils';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface RidFormProps {
+  key?: any;
   onSave: (entry: RidEntry) => void;
   onCancel?: () => void;
   initialData?: RidEntry;
