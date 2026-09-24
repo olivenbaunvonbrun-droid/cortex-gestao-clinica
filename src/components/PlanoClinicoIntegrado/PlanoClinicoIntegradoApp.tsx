@@ -39,8 +39,8 @@ import { ResultView } from './components/ResultView';
 import { HistoryView } from './components/HistoryView';
 
 export interface PciFieldContextType {
-  onFillField: (label: string, currentValue: string | undefined, onChange: (v: string) => void) => void;
-  onAskField: (label: string) => void;
+  onFillField: (label: string, currentValue: string | undefined, onChange: (v: string) => void, fieldSuggestions?: any[]) => void;
+  onAskField: (label: string, fieldSuggestions?: any[]) => void;
   fillingLabel: string | null;
   askingLabel: string | null;
 }
@@ -188,7 +188,12 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
     ];
   };
 
-  const handleContextFill = async (label: string, currentValue: string | undefined, onChange: (v: string) => void) => {
+  const handleContextFill = async (
+    label: string, 
+    currentValue: string | undefined, 
+    onChange: (v: string) => void,
+    fieldSuggestions?: any[]
+  ) => {
     const situation = formState.eventoQueixas?.trim() || formState.ridSituacao?.trim();
     if (!situation && !label.toLowerCase().includes('queixa') && !label.toLowerCase().includes('situação')) {
       toast.error("Preencha primeiro 'Evento Precipitador & Queixas' (Seção 02) ou 'Situação (Contexto)' para que a IA possa analisar e sugerir o preenchimento.", { duration: 4500 });
@@ -197,7 +202,10 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
 
     setFillingLabel(label);
     try {
-      const availableSuggestions = getSuggestionsForPciField(label);
+      const availableSuggestions = (fieldSuggestions && fieldSuggestions.length > 0)
+        ? fieldSuggestions
+        : getSuggestionsForPciField(label);
+
       const res = await generateClinicalFieldFilling({
         tool: 'PCI',
         field: label,
@@ -211,24 +219,38 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
         availableSuggestions
       });
 
-      let textVal = '';
-      if (res.itens && res.itens.length > 0) {
-        textVal = res.itens.map(it => `• ${it.nome}: ${it.justificativa}`).join('\n');
-      } else if (res.text && !res.text.trim().startsWith('{')) {
-        textVal = res.text.trim();
-      } else if (res.tags && res.tags.length > 0) {
-        textVal = res.tags.join('; ');
-      } else if (res.emotion?.name) {
-        textVal = `${res.emotion.name} (${res.emotion.intensity}%)` + (res.emotion.justificativa ? ` - ${res.emotion.justificativa}` : '');
-      }
+      // Extrai apenas os nomes das sugestões do catálogo selecionadas pela IA, sem justificativas e sem limites
+      const selected = (res.selectedSuggestions && res.selectedSuggestions.length > 0)
+        ? res.selectedSuggestions
+        : (res.tags && res.tags.length > 0)
+          ? res.tags
+          : (res.itens && res.itens.length > 0)
+            ? res.itens.map(it => it.nome)
+            : [];
 
-      if (textVal) {
-        const isCurrentJson = currentValue && (currentValue.trim().startsWith('{') || currentValue.includes('"TEXT"'));
-        const newVal = (currentValue && currentValue.trim() && !isCurrentJson) 
-          ? `${currentValue}\n\n${textVal}` 
-          : textVal;
+      // Higienização para garantir apenas o nome puro, sem justificativas ou descrições anexadas
+      const cleanItems = selected
+        .map(item => (typeof item === 'string' ? item.split(':')[0].replace(/^[•\s*-]+/, '').trim() : (item.name || item.title || '').trim()))
+        .filter(Boolean);
+
+      if (cleanItems.length > 0) {
+        const currentParts = (currentValue || '')
+          .split(';')
+          .map(v => v.trim())
+          .filter(Boolean);
+
+        const existingSet = new Set(currentParts);
+        cleanItems.forEach(it => existingSet.add(it));
+        const newVal = Array.from(existingSet).join('; ');
         onChange(newVal);
-        toast.success(`Campo "${label}" preenchido com sugestões justificadas!`);
+        toast.success(`Campo "${label}" preenchido com as sugestões selecionadas!`);
+      } else if (res.text && !res.text.trim().startsWith('{')) {
+        const cleanText = res.text.replace(/^[•\s*-]+/, '').trim();
+        const newVal = (currentValue && currentValue.trim()) ? `${currentValue}; ${cleanText}` : cleanText;
+        onChange(newVal);
+        toast.success(`Campo "${label}" preenchido!`);
+      } else {
+        toast("Nenhuma sugestão do catálogo correspondeu ao contexto.");
       }
     } catch (err: any) {
       console.error("Erro ao preencher campo do PCI via IA:", err);
@@ -238,7 +260,7 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
     }
   };
 
-  const handleContextAsk = async (label: string) => {
+  const handleContextAsk = async (label: string, fieldSuggestions?: any[]) => {
     const situation = formState.eventoQueixas?.trim() || formState.ridSituacao?.trim();
     if (!situation && !label.toLowerCase().includes('queixa') && !label.toLowerCase().includes('situação')) {
       toast.error("Preencha primeiro 'Evento Precipitador & Queixas' (Seção 02) ou 'Situação (Contexto)' para que a IA formule perguntas socráticas direcionadas.", { duration: 4500 });
@@ -247,7 +269,10 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
 
     setAskingLabel(label);
     try {
-      const availableSuggestions = getSuggestionsForPciField(label);
+      const availableSuggestions = (fieldSuggestions && fieldSuggestions.length > 0)
+        ? fieldSuggestions
+        : getSuggestionsForPciField(label);
+
       const questions = await generateClinicalFieldQuestions({
         tool: 'PCI',
         field: label,
@@ -1626,6 +1651,10 @@ function SuggestionTextArea({
 
   const isFilling = pciActions?.fillingLabel === label;
   const isAsking = pciActions?.askingLabel === label;
+
+  const fieldSuggestions = isGrouped && groups 
+    ? groups.flatMap(g => g.items) 
+    : (suggestions || []);
   
   const handleSelect = (s: any) => {
     const name = typeof s === 'string' ? s : s.name;
@@ -1651,7 +1680,7 @@ function SuggestionTextArea({
             <>
               <button
                 type="button"
-                onClick={() => pciActions.onAskField(label)}
+                onClick={() => pciActions.onAskField(label, fieldSuggestions)}
                 disabled={isAsking}
                 className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-text-dim hover:text-text-main hover:bg-white/5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
                 title="Sugerir perguntas socráticas para investigar este campo em sessão"
@@ -1662,10 +1691,10 @@ function SuggestionTextArea({
               <div className="w-px h-3 bg-border-subtle/60 mx-0.5" />
               <button
                 type="button"
-                onClick={() => pciActions.onFillField(label, value, onChange)}
+                onClick={() => pciActions.onFillField(label, value, onChange, fieldSuggestions)}
                 disabled={isFilling}
                 className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider text-primary hover:text-primary-hover hover:bg-primary/10 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
-                title="Preencher campo com IA a partir da queixa ou situação"
+                title="Preencher campo com sugestões do catálogo via IA"
               >
                 {isFilling ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={11} />}
                 <span>Preencher</span>

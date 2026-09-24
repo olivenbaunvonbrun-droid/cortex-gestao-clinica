@@ -1643,24 +1643,22 @@ export async function generateClinicalFieldFilling(params: FieldFillingParams): 
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
-  // Montar bloco de sugestões catalogadas se fornecidas
+  // Montar catálogo completo de sugestões do menu suspenso ("sugestões/sugerir")
   let suggestionsBlock = "";
   if (params.availableSuggestions && params.availableSuggestions.length > 0) {
-    const listFormatted = params.availableSuggestions.slice(0, 30).map(s => 
-      `- ${s.key}: ${s.explanation}`
+    const listFormatted = params.availableSuggestions.map(s => 
+      `- "${s.key}"${s.explanation ? ` [Contexto: ${s.explanation}]` : ''}`
     ).join("\n");
     suggestionsBlock = `
-CATÁLOGO OFICIAL DE SUGESTÕES CLÍNICAS (TAXONOMIA MANDATÓRIA):
-Você DEVE escolher prioritariamente e estritamente a partir deste catálogo oficial validado para este campo:
+CATÁLOGO OFICIAL DE SUGESTÕES DO DROP-DOWN ("SUGESTÕES/SUGERIR"):
+Você DEVE selecionar os itens EXCLUSIVAMENTE a partir deste catálogo oficial:
 ${listFormatted}
 `;
   }
 
   const prompt = `
-Você é um Supervisor Clínico Sênior especialista em Terapia Cognitivo-Comportamental de 4ª Geração (Terapia Baseada em Processos - PBT, ACT, FAP, DBT) e Terapia do Esquema de Jeffrey Young.
-
-SUA MISSÃO:
-Preencher o campo clínico "${params.fieldLabel}" (identificador técnico: "${params.field}") para a ferramenta ${params.tool}, baseando-se estritamente na situação clínica ou relato a seguir:
+Você é um Especialista em Terapia Cognitivo-Comportamental e Terapia do Esquema.
+Sua missão é analisar o relato/situação clínica e SELECIONAR QUAIS SUGESTÕES do drop-down ("sugestões/sugerir") correspondem ao caso para o preenchimento do campo "${params.fieldLabel}" (identificador: "${params.field}") na ferramenta ${params.tool}.
 
 SITUAÇÃO / RELATO CLÍNICO:
 """
@@ -1672,49 +1670,22 @@ ${params.patientContext?.queixa ? `QUEIXA GERAL: ${params.patientContext.queixa}
 
 ${suggestionsBlock}
 
-DIRETRIZES DE PREENCHIMENTO BASEADO EM SUGESTÕES E JUSTIFICATIVAS CLÍNICAS (RID E PCI):
-1. SELEÇÃO BASEADA NAS SUGESTÕES (SEM RESTRIÇÃO ARTIFICIAL DE 2 ITENS):
-   - Avalie profundamente a situação clínica e selecione os itens pertinentes do catálogo de sugestões que realmente se aplicam ao relato do paciente (não restrinja a 1 ou 2 itens; inclua todos os esquemas, necessidades violadas, distorções ou padrões comportamentais identificados).
-2. CONCISÃO E OBJETIVIDADE MANDATÓRIA (ANTI-PROLIXIDADE E SEM SUPERINFERÊNCIAS):
-   - Para campos de seleção em cards/tags ("necessidade", "esquema"):
-     • CADA item selecionado DEVE ser retornado no array "itens" com seu "nome" canônico e uma "justificativa" sucinta e objetiva (1 frase direta de no máximo 15 a 20 palavras), fundamentando estritamente o gatilho factual relatado.
-     • NÃO elabore formulações de caso longas ou inferências especulativas excessivas dentro dos cards do RID (a análise aprofundada é de responsabilidade do relatório clínico).
-     • NUNCA retorne múltiplos itens aglomerados em um único texto, nem chaves literais "{}" ou termos como "TEXT" ou "text".
-   - Evite preâmbulos vazios como "Com base no relato...", indo direto ao fato disparador.
-3. CAMPOS DE TEXTO E FORMULAÇÃO (ex: pensamento, comportamento, consequências):
-   - Descreva com rigor funcional e fidelidade semiológica, sem omissões de processos clínicos relevantes.
-4. PADRONIZAÇÃO DO CAMPO "text":
-   - Formate o campo "text" em tópicos elegantes e limpos prontos para prontuário:
-     • [Nome do Item]: [Justificativa clínica sucinta]
+REGRAS OBRIGATÓRIAS DE PREENCHIMENTO (RID E PCI):
+1. SELEÇÃO EXCLUSIVA DO DROP-DOWN ("SUGESTÕES/SUGERIR"):
+   - Insira APENAS as sugestões que já existem na lista oficial do drop-down fornecida acima.
+   - NUNCA crie novos nomes, nem modifique a grafia dos termos. Retorne o nome exato da sugestão.
+2. SEM JUSTIFICATIVAS:
+   - NÃO inclua justificativas, nem explicações, nem dois-pontos (:), nem comentários adicionais.
+   - Retorne estritamente os nomes das sugestões selecionadas, exatamente como se o usuário tivesse clicado em cada uma delas no menu suspenso.
+3. SEM LIMITE DE ITENS:
+   - NÃO se restrinja a 1 ou 2 itens. Se houver 3, 4, 5 ou mais opções do drop-down que se aplicam ao conteúdo do relato, selecione TODAS elas.
+4. CONFORME O CONTEÚDO DO RELATO:
+   - Baseie sua seleção estritamente nas evidências e conteúdos descritos na situação / relato.
 
-DIRETRIZES TÉCNICAS ESPECÍFICAS POR TIPO DE CAMPO:
-1. SE FOR ESQUEMAS ATIVADOS / EIDs ("esquema", "esquemasCognitivos"):
-   - Identifique todos os EIDs do catálogo ativados pelo gatilho (ex: Abandono, Defectividade, Privação Emocional, Padrões Inflexíveis).
-   - Justificativa: elabore a explicação clínica sucinta de ativação para cada um (15-20 palavras).
-2. SE FOR NECESSIDADES BÁSICAS ("necessidade", "necessidadesIdentificadas"):
-   - Mapeie todas as necessidades nucleares do catálogo frustradas na situação.
-   - Justificativa: explique objetivamente como cada necessidade foi violada no contexto (15-20 palavras).
-3. SE FOR PENSAMENTO AUTOMÁTICO OU DISTORÇÕES ("pensamento", "distorcoesCognitivas", "crencasCentrais"):
-   - Formule os pensamentos na voz do paciente com suas respectivas distorções e crenças associadas.
-4. SE FOR EMOÇÃO / INTENSIDADE ("emocao", "ridEmocao"):
-   - Identifique a emoção primária central, estime a intensidade subjetiva (0 a 100) e os correlatos fisiológicos somáticos.
-5. SE FOR COMPORTAMENTO OU ENFRENTAMENTO ("comportamento", "ridComportamento", "excessosComp", "deficitsHab"):
-   - Descreva as ações manifestas e justifique a função clínica (estilo de enfrentamento: evitação, resignação ou hipercompensação).
-6. SE FOR CONSEQUÊNCIAS (Curto ou Longo Prazo):
-   - Curto prazo: justifique o alívio imediato e reforço negativo.
-   - Longo prazo: justifique a manutenção do ciclo e prejuízos cumulativos.
-
-FORMATO DE RESPOSTA (JSON estrito):
+FORMATO OBRIGATÓRIO DE RESPOSTA (JSON estrito):
 {
-  "text": "• [Nome do Item 1]: [Justificativa clínica]\\n• [Nome do Item 2]: [Justificativa clínica]",
-  "itens": [
-    {
-      "nome": "Nome do elemento do catálogo",
-      "justificativa": "Justificativa clínica concisa e direta (15 a 20 palavras)."
-    }
-  ],
-  "tags": ["Nome 1", "Nome 2"],
-  "emotion": { "name": "Ansiedade", "intensity": 80, "justificativa": "Aperto torácico e inquietação motora." }
+  "selectedSuggestions": ["Nome Exato da Sugestão 1", "Nome Exato da Sugestão 2", ...],
+  "emotion": { "name": "Nome da Emoção da Lista", "intensity": 75 }
 }
 `;
 
@@ -1727,17 +1698,9 @@ FORMATO DE RESPOSTA (JSON estrito):
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          text: { type: Type.STRING },
-          itens: {
+          selectedSuggestions: {
             type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                nome: { type: Type.STRING },
-                justificativa: { type: Type.STRING }
-              },
-              required: ["nome", "justificativa"]
-            }
+            items: { type: Type.STRING }
           },
           tags: {
             type: Type.ARRAY,
@@ -1747,11 +1710,12 @@ FORMATO DE RESPOSTA (JSON estrito):
             type: Type.OBJECT,
             properties: {
               name: { type: Type.STRING },
-              intensity: { type: Type.INTEGER },
-              justificativa: { type: Type.STRING }
+              intensity: { type: Type.INTEGER }
             }
-          }
-        }
+          },
+          text: { type: Type.STRING }
+        },
+        required: ["selectedSuggestions"]
       }
     }
   });
@@ -1762,72 +1726,56 @@ FORMATO DE RESPOSTA (JSON estrito):
     const parsed = JSON.parse(clean);
 
     const normalized: FieldFillingResult = {};
+    const suggestionsArray: string[] = [];
 
-    const textVal = parsed.text || parsed.TEXT || parsed.Texto || parsed.texto;
-    const tagsVal = parsed.tags || parsed.TAGS || parsed.Tags;
-    const itensVal = parsed.itens || parsed.ITENS || parsed.items || parsed.ITEMS;
-    const emotionVal = parsed.emotion || parsed.EMOTION || parsed.emocao || parsed.EMOCAO;
-
-    if (Array.isArray(itensVal) && itensVal.length > 0) {
-      normalized.itens = itensVal.map((it: any) => {
-        let n = (it.nome || it.NOME || it.name || it.NAME || it.title || it.item || String(it)).trim();
-        let j = (it.justificativa || it.JUSTIFICATIVA || it.explanation || it.EXPLANATION || it.descricao || it.desc || '').trim();
-        // Limpar artefatos JSON residuais
-        n = n.replace(/^[{"'\s*]+/, '').replace(/["'}\s*]+$/, '');
-        j = j.replace(/^[{"'\s*]+/, '').replace(/["'}\s*]+$/, '');
-        return { nome: n, justificativa: j };
-      }).filter(it => Boolean(it.nome));
-    }
-
-    // Se itens não veio estruturado mas textVal contém múltiplos itens, fazer parse
-    if ((!normalized.itens || normalized.itens.length === 0) && textVal && typeof textVal === 'string') {
-      const splitItems: { nome: string; justificativa: string }[] = [];
-      const lines = textVal.split(/\r?\n|(?<=\n|^)\s*[-*•]\s+/g);
-      for (const line of lines) {
-        const cleanL = line.replace(/^[-*•\d.)\s]+/, '').replace(/^[{"'\s]+/, '').replace(/[}"'\s]+$/, '').trim();
-        const sep = cleanL.indexOf(':');
+    const rawSuggestions = parsed.selectedSuggestions || parsed.sugestoes || parsed.tags || parsed.TAGS || parsed.itens || parsed.items;
+    if (Array.isArray(rawSuggestions)) {
+      for (const item of rawSuggestions) {
+        let name = typeof item === 'string' ? item : (item.nome || item.name || item.item || String(item));
+        name = name.replace(/^[{"'\s*•-]+/, '').replace(/["'}\s*]+$/, '').trim();
+        const sep = name.indexOf(':');
         if (sep > 0) {
-          const n = cleanL.substring(0, sep).replace(/[*_#]/g, '').trim();
-          const j = cleanL.substring(sep + 1).replace(/[*_#]/g, '').trim();
-          if (n && !/^(?:TEXT|ITENS|TAGS)$/i.test(n)) {
-            splitItems.push({ nome: n, justificativa: j });
-          }
+          name = name.substring(0, sep).trim();
+        }
+        if (name && !/^(?:TEXT|ITENS|TAGS)$/i.test(name)) {
+          suggestionsArray.push(name);
         }
       }
-      if (splitItems.length > 0) {
-        normalized.itens = splitItems;
-      }
     }
 
-    if (Array.isArray(tagsVal) && tagsVal.length > 0) {
-      normalized.tags = tagsVal.map(t => String(t).replace(/^[{"'\s*]+/, '').replace(/["'}\s*]+$/, '').trim()).filter(Boolean);
-    } else if (normalized.itens && normalized.itens.length > 0) {
-      normalized.tags = normalized.itens.map(it => it.nome);
-    }
+    normalized.selectedSuggestions = suggestionsArray;
+    normalized.tags = suggestionsArray;
+    normalized.itens = suggestionsArray.map(n => ({ nome: n, justificativa: '' }));
+    normalized.text = suggestionsArray.join('; ');
 
+    const emotionVal = parsed.emotion || parsed.EMOTION || parsed.emocao || parsed.EMOCAO;
     if (emotionVal && typeof emotionVal === 'object') {
       normalized.emotion = {
         name: emotionVal.name || emotionVal.NAME || emotionVal.nome || emotionVal.NOME || '',
         intensity: Number(emotionVal.intensity || emotionVal.INTENSITY || emotionVal.intensidade || 50),
-        justificativa: emotionVal.justificativa || emotionVal.explanation || ''
+        justificativa: ''
       };
-    }
-
-    if (textVal && typeof textVal === 'string' && !textVal.trim().startsWith('{')) {
-      normalized.text = textVal.trim();
-    } else if (normalized.itens && normalized.itens.length > 0) {
-      normalized.text = normalized.itens.map(it => it.justificativa ? `• ${it.nome}: ${it.justificativa}` : `• ${it.nome}`).join('\n');
+    } else if (suggestionsArray.length > 0 && params.field.toLowerCase().includes('emoc')) {
+      normalized.emotion = {
+        name: suggestionsArray[0],
+        intensity: 60,
+        justificativa: ''
+      };
     }
 
     return normalized;
   } catch (e) {
     console.error("Erro ao analisar resposta de generateClinicalFieldFilling:", e);
-    const cleaned = raw.replace(/^\{?\s*"?(?:text|TEXT)"?\s*:\s*"?/i, '')
+    const cleaned = raw.replace(/^\{?\s*"?(?:text|TEXT|selectedSuggestions)"?\s*:\s*"?/i, '')
                        .replace(/"?\s*\}?$/i, '')
                        .replace(/\\n/g, '\n')
                        .replace(/\\"/g, '"')
                        .trim();
-    return { text: cleaned };
+    return { 
+      selectedSuggestions: cleaned ? [cleaned] : [],
+      tags: cleaned ? [cleaned] : [],
+      text: cleaned 
+    };
   }
 }
 

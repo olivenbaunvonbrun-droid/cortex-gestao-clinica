@@ -225,34 +225,28 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
     questions: []
   });
 
-  const getSuggestionsForRidField = (fieldName: string) => {
+  const getSuggestionsForRidField = (fieldName: string): any[] => {
     switch (fieldName) {
-      case 'esquema':
-        return [
-          ...(CLINICAL_SUGGESTIONS_DB.esquemas?.items || []),
-          ...(CLINICAL_SUGGESTIONS_DB.modos_esquematicos?.items || [])
-        ];
+      case 'situacao':
+        return SITUATION_SUGGESTIONS;
       case 'necessidade':
-        return [
-          ...(CLINICAL_SUGGESTIONS_DB.necessidades_emocionais_frustradas?.items || []),
-          ...(CLINICAL_SUGGESTIONS_DB.necessidades_emocionais_atendidas?.items || [])
-        ];
+        return NEEDS_DATA.flatMap(c => 
+          ((c as any).items || c.needs || []).map((n: any) => typeof n === 'string' ? n : n.name)
+        );
+      case 'esquema':
+        return SCHEMAS_DATA.flatMap(d => d.schemas).map(s => s.name);
       case 'pensamento':
-        return [
-          ...(CLINICAL_SUGGESTIONS_DB.distorcoes?.items || []),
-          ...(CLINICAL_SUGGESTIONS_DB.pensamentos_automaticos_negativos?.items || []),
-          ...(CLINICAL_SUGGESTIONS_DB.crencas_centrais?.items || [])
-        ];
+        return COGNITIVE_DISTORTIONS.map(d => d.name);
       case 'emocao':
-        return [
-          ...(CLINICAL_SUGGESTIONS_DB.sentimentos?.items || []),
-          ...(CLINICAL_SUGGESTIONS_DB.sentimentos_funcionais?.items || [])
-        ];
+        return BASIC_EMOTIONS.map(e => e.name);
       case 'comportamento':
-        return [
-          ...(CLINICAL_SUGGESTIONS_DB.enfrentamento?.items || []),
-          ...(CLINICAL_SUGGESTIONS_DB.padroes_comportamentais_disfuncionais?.items || [])
-        ];
+        return Array.isArray(BEHAVIOR_SUGGESTIONS) 
+          ? BEHAVIOR_SUGGESTIONS 
+          : [...(BEHAVIOR_SUGGESTIONS.maladaptive || []), ...(BEHAVIOR_SUGGESTIONS.adaptive || [])];
+      case 'consequenciasCurtoPrazo':
+        return CONSEQUENCE_SUGGESTIONS.shortTerm;
+      case 'consequenciasLongoPrazo':
+        return CONSEQUENCE_SUGGESTIONS.longTerm;
       default:
         return [];
     }
@@ -280,62 +274,73 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
         availableSuggestions
       });
 
-      if (fieldName === 'necessidade' || fieldName === 'esquema') {
-        const rawItems: string[] = [];
-        if (res.itens && res.itens.length > 0) {
-          res.itens.forEach(it => {
-            const n = it.nome?.trim();
-            const j = it.justificativa?.trim();
-            if (n) rawItems.push(j ? `${n}: ${j}` : n);
-          });
-        } else if (res.tags && res.tags.length > 0) {
-          res.tags.forEach(t => rawItems.push(t));
-        } else if (res.text) {
-          rawItems.push(res.text);
-        }
+      // Extrai apenas as sugestões do catálogo selecionadas pela IA, sem justificativas e sem limites
+      const selected = (res.selectedSuggestions && res.selectedSuggestions.length > 0)
+        ? res.selectedSuggestions
+        : (res.tags && res.tags.length > 0)
+          ? res.tags
+          : (res.itens && res.itens.length > 0)
+            ? res.itens.map(it => it.nome)
+            : [];
 
-        const cleanedTags = splitAndCleanClinicalTags(rawItems);
-        setFormData(prev => {
-          const currentList = (prev[fieldName] as string[]) || [];
-          const existing = new Set(currentList);
-          cleanedTags.forEach(t => existing.add(t));
-          return { ...prev, [fieldName]: Array.from(existing) };
-        });
-        toast.success(fieldName === 'necessidade' 
-          ? "Necessidades identificadas e adicionadas!" 
-          : "Esquemas mapeados e adicionados!"
-        );
+      // Higienização para garantir que não haja texto de justificativa anexado (ex: "Nome: justificativa" vira "Nome")
+      const cleanItems = selected
+        .map(item => (typeof item === 'string' ? item.split(':')[0].replace(/^[•\s*-]+/, '').trim() : (item.name || item.title || '').trim()))
+        .filter(Boolean);
+
+      if (fieldName === 'necessidade' || fieldName === 'esquema') {
+        const itemsToInsert = cleanItems.length > 0 
+          ? cleanItems 
+          : (res.text ? splitAndCleanClinicalTags(res.text).map(t => t.split(':')[0].trim()) : []);
+
+        if (itemsToInsert.length > 0) {
+          setFormData(prev => {
+            const currentList = (prev[fieldName] as string[]) || [];
+            const existing = new Set(currentList);
+            itemsToInsert.forEach(t => existing.add(t));
+            return { ...prev, [fieldName]: Array.from(existing) };
+          });
+          toast.success(fieldName === 'necessidade' 
+            ? "Necessidades do catálogo inseridas com sucesso!" 
+            : "Esquemas do catálogo inseridos com sucesso!"
+          );
+        } else {
+          toast("Nenhum item do catálogo correspondeu diretamente ao relato.");
+        }
       } else if (fieldName === 'emocao') {
-        if (res.emotion && res.emotion.name) {
+        const emoName = cleanItems.length > 0 ? cleanItems[0] : (res.emotion?.name || res.text || '');
+        if (emoName) {
           setFormData(prev => ({
             ...prev,
             emocao: {
-              name: res.emotion!.name,
-              intensity: res.emotion!.intensity ?? prev.emocao.intensity
+              name: emoName,
+              intensity: res.emotion?.intensity ?? prev.emocao.intensity
             }
           }));
-          toast.success(`Emoção identificada: ${res.emotion.name} (${res.emotion.intensity}%)`);
-        } else if (res.text) {
-          toast.success(`Análise emocional: ${res.text}`);
+          toast.success(`Emoção identificada: ${emoName}`);
         }
-      } else if (fieldName === 'situacao') {
-        if (res.text) {
-          setFormData(prev => ({
-            ...prev,
-            situacao: prev.situacao && prev.situacao.trim() ? `${prev.situacao}\n\n${res.text}` : res.text!
-          }));
-          toast.success("Situação formulada com sucesso!");
+      } else if (fieldName === 'pensamento') {
+        const itemsToInsert = cleanItems.length > 0 ? cleanItems : (res.text ? [res.text.trim()] : []);
+        if (itemsToInsert.length > 0) {
+          setFormData(prev => {
+            const current = prev.pensamento?.trim() || '';
+            const newText = itemsToInsert.map(d => `[Distorção: ${d}]`).join('\n');
+            const newVal = current ? `${current}\n${newText}` : newText;
+            return { ...prev, pensamento: newVal };
+          });
+          toast.success("Distorções cognitivas inseridas!");
         }
       } else {
-        // Campos de texto: pensamento, comportamento, consequenciasCurtoPrazo, consequenciasLongoPrazo
-        if (res.text) {
+        // situacao, comportamento, consequenciasCurtoPrazo, consequenciasLongoPrazo
+        const itemsToInsert = cleanItems.length > 0 ? cleanItems : (res.text ? [res.text.trim()] : []);
+        if (itemsToInsert.length > 0) {
           setFormData(prev => {
             const current = ((prev as any)[fieldName] as string) || '';
-            const cleanText = res.text!.trim();
-            const newVal = current.trim() ? `${current}\n${cleanText}` : cleanText;
+            const newText = itemsToInsert.join('\n');
+            const newVal = current.trim() ? `${current}\n${newText}` : newText;
             return { ...prev, [fieldName]: newVal };
           });
-          toast.success(`Campo "${fieldLabel}" preenchido com síntese concisa!`);
+          toast.success(`Campo "${fieldLabel}" preenchido com as sugestões!`);
         }
       }
     } catch (err: any) {
@@ -1428,7 +1433,7 @@ Planejamento: ${cleanHtml(f.planejamento)}
                     initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                     className="absolute z-10 bottom-full left-0 right-0 mb-2 bg-bg-card border border-border-subtle shadow-2xl rounded-2xl p-2 max-h-48 overflow-y-auto grid grid-cols-1 gap-1"
                   >
-                    {BEHAVIOR_SUGGESTIONS.map(b => (
+                    {((Array.isArray(BEHAVIOR_SUGGESTIONS) ? BEHAVIOR_SUGGESTIONS : [...(BEHAVIOR_SUGGESTIONS.maladaptive || []), ...(BEHAVIOR_SUGGESTIONS.adaptive || [])]) as string[]).map(b => (
                       <button 
                         key={b}
                         onClick={() => handleSelectSuggestion('comportamento', b)}
