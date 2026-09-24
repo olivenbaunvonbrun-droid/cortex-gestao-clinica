@@ -30,7 +30,8 @@ import { MultiSelect } from './components/MultiSelect';
 import { AttendanceRecord, PatientData } from './types';
 import { 
   generateContentWithSystemInstruction, 
-  transcribeAudioFile 
+  transcribeAudioFile,
+  analyzeSessionTranscriptComprehensive 
 } from '../../services/geminiService';
 import { ClinicalAudioRecorder } from './components/ClinicalAudioRecorder';
 
@@ -860,6 +861,50 @@ export default function RegistroAtendimentoApp({
     }
   };
 
+  const handleReanalyzeWithComprehensiveAi = async () => {
+    const relatoSecText = relatoCliente ? relatoCliente.replace(/<[^>]*>/g, " ").trim() : "";
+    if (!relatoSecText || relatoSecText.length < 20) {
+      toast.error("Insira ou cole o relato/transcrição da sessão antes de analisar com o Modelo RID.");
+      return;
+    }
+
+    if (!window.confirm("Esta operação retificará a diarização (Psi: vs P:) e preencherá todos os 12 campos clínicos com a máxima profundidade técnica da TCC de 4ª Geração (Padrão RID). Deseja iniciar?")) {
+      return;
+    }
+
+    setIsAutoFillingAll(true);
+    const toastId = toast.loading("Formulando análise clínica de 4ª Geração (Modelo RID)...");
+
+    try {
+      const comprehensiveAnalysis = await analyzeSessionTranscriptComprehensive(
+        relatoCliente,
+        {
+          name: nomeCliente || "Paciente",
+          age: idadeCliente,
+          gender: sexoCliente,
+          clinicalProfile: patientClinicalBackground
+        },
+        abordagensSessao.length > 0 ? abordagensSessao : ['TCC 4ª Geração'],
+        (partialFields) => {
+          handleScribeProgressiveUpdate(partialFields);
+        },
+        {
+          name: psicologo,
+          gender: "Masculino",
+          crp: crp
+        }
+      );
+
+      await handleScribeComplete(comprehensiveAnalysis);
+      toast.success("✅ Relatório clínico aprofundado concluído com sucesso (Padrão RID)!", { id: toastId, duration: 5000 });
+    } catch (err: any) {
+      console.error("Erro na reanálise clínica com Modelo RID:", err);
+      toast.error("Falha ao analisar: " + (err.message || "Erro desconhecido"), { id: toastId });
+    } finally {
+      setIsAutoFillingAll(false);
+    }
+  };
+
   const handleAutoFillAllFields = async () => {
     const relatoSecText = relatoCliente ? relatoCliente.replace(/<[^>]*>/g, " ").trim() : "";
     if (!relatoSecText) {
@@ -1310,7 +1355,18 @@ export default function RegistroAtendimentoApp({
               <form onSubmit={(e) => e.preventDefault()} className="space-y-6 select-text pb-20">
                 {/* Módulo Escriba Clínico de IA (Noa Health / Voa Notes) */}
                 <ClinicalAudioRecorder 
-                  patient={{ id: selectedPatientId, name: nomeCliente, age: idadeCliente, clinicalProfile: patientClinicalBackground }}
+                  patient={{ 
+                    id: selectedPatientId, 
+                    name: nomeCliente, 
+                    age: idadeCliente, 
+                    gender: sexoCliente,
+                    clinicalProfile: patientClinicalBackground 
+                  }}
+                  therapist={{
+                    name: psicologo,
+                    gender: "Masculino",
+                    crp: crp
+                  }}
                   approaches={abordagensSessao.length > 0 ? abordagensSessao : ['TCC 4ª Geração']}
                   onTranscriptionComplete={handleScribeComplete}
                   onProgressiveUpdate={handleScribeProgressiveUpdate}
@@ -1554,6 +1610,17 @@ export default function RegistroAtendimentoApp({
                           >
                             <Sparkles size={10} />
                             <span>Formatar Relato</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleReanalyzeWithComprehensiveAi}
+                            disabled={isAutoFillingAll || isTranscribingAudio}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/30 shadow-sm cursor-pointer transition-all disabled:opacity-50"
+                            title="Retifica a diarização (Psi: vs P:) e preenche todos os campos com profundidade e rigor da TCC de 4ª Geração (Modelo de Relatório RID)"
+                          >
+                            <Brain size={11} className="text-emerald-400" />
+                            <span>Analisar com IA (Modelo RID)</span>
                           </button>
 
                           <button

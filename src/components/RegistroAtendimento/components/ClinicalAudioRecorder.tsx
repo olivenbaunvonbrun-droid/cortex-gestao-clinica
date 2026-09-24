@@ -26,12 +26,15 @@ import { toast } from 'react-hot-toast';
 import { db } from '../../../lib/db';
 import { 
   transcribeAudioChunk, 
-  analyzeSessionTranscriptComprehensive 
+  analyzeSessionTranscriptComprehensive,
+  rectifyTranscriptDiarization,
+  SpeakerContext 
 } from '../../../services/geminiService';
 import { blobToBase64, splitAudioIntoValidWavChunks } from '../../../lib/audioSplitter';
 
 interface ClinicalAudioRecorderProps {
-  patient: { id?: string; name: string; age?: string; clinicalProfile?: string };
+  patient: { id?: string; name: string; age?: string; clinicalProfile?: string; gender?: string };
+  therapist?: { name?: string; gender?: string; crp?: string };
   approaches?: string[];
   onTranscriptionComplete: (analysisData: {
     relatoCliente: string;
@@ -52,6 +55,7 @@ interface ClinicalAudioRecorderProps {
 
 export function ClinicalAudioRecorder({
   patient,
+  therapist,
   approaches = ['TCC 4ª Geração'],
   onTranscriptionComplete,
   onProgressiveUpdate
@@ -300,7 +304,13 @@ export function ClinicalAudioRecorder({
         const rawMime = blob.type || 'audio/webm';
         const cleanMime = rawMime.split(';')[0].trim().toLowerCase() || 'audio/webm';
         const base64 = await blobToBase64(blob);
-        const text = await transcribeAudioChunk(base64, cleanMime);
+        const speakerCtx: SpeakerContext = {
+          therapistName: therapist?.name || "Psicólogo Bruno de Oliveira Lima",
+          therapistGender: therapist?.gender || "Masculino",
+          patientName: patient.name || "Paciente Alana de Anselmo Garcia",
+          patientGender: patient.gender || "Feminino"
+        };
+        const text = await transcribeAudioChunk(base64, cleanMime, speakerCtx);
         if (text && text.trim()) {
           backgroundTranscriptsMapRef.current.set(index, text.trim());
         }
@@ -611,7 +621,13 @@ export function ClinicalAudioRecorder({
 
             try {
               const base64 = await blobToBase64(chunkBlob);
-              const partText = await transcribeAudioChunk(base64, cleanMime);
+              const speakerCtx: SpeakerContext = {
+                therapistName: therapist?.name || "Psicólogo Bruno de Oliveira Lima",
+                therapistGender: therapist?.gender || "Masculino",
+                patientName: patient.name || "Paciente Alana de Anselmo Garcia",
+                patientGender: patient.gender || "Feminino"
+              };
+              const partText = await transcribeAudioChunk(base64, cleanMime, speakerCtx);
               if (partText && partText.trim()) {
                 chunkResults[currentIndex] = partText.trim();
                 backgroundTranscriptsMapRef.current.set(currentIndex, partText.trim());
@@ -639,8 +655,8 @@ export function ClinicalAudioRecorder({
         throw new Error('A inteligência artificial não identificou falas clínicas audíveis no áudio. A gravação continua protegida no cofre.');
       }
 
-      // Step 2: Análise Clínica Abrangente com Streaming Progressivo em Tempo Real
-      setProcessingStep('Formulando raciocínio clínico de 4ª Geração e preenchendo os campos ao vivo...');
+      // Step 2: Análise Clínica Abrangente (Modelo RID - 5 Pilares) com Streaming Progressivo
+      setProcessingStep('Formulando raciocínio clínico de 4ª Geração (Padrão RID) e preenchendo os campos ao vivo...');
       const clinicalAnalysis = await analyzeSessionTranscriptComprehensive(
         fullTranscript,
         patient,
@@ -649,7 +665,8 @@ export function ClinicalAudioRecorder({
           if (onProgressiveUpdate) {
             onProgressiveUpdate(partialFields);
           }
-        }
+        },
+        therapist
       );
 
       // Trigger callback final no componente pai (que garante campos preenchidos e auto-save)
