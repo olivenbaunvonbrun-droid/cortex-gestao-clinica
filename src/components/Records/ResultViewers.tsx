@@ -813,3 +813,125 @@ export function TdahResultViewer({ assessment }: TdahResultViewerProps) {
   );
 }
 
+// ==========================================
+// 6. TDAH ECOSYSTEM RESULT VIEWER
+// ==========================================
+export function TdahEcosystemResultViewer({ assessment }: { assessment?: any }) {
+  if (!assessment) {
+    return (
+      <div className="p-8 text-center bg-bg-card border border-border-subtle rounded-3xl">
+        <p className="text-xs font-black uppercase text-text-dim tracking-widest">Nenhum dado do Ecossistema TDAH disponível.</p>
+      </div>
+    );
+  }
+
+  const asrs = assessment.asrsData;
+  const etdah = assessment.etdahData;
+  const epf = assessment.epfData;
+  const bdefs = assessment.bdefsData;
+  const anamnese = assessment.anamneseData;
+  const heterorrelato = assessment.heterorrelatoData;
+  const laudo = assessment.laudoData;
+
+  return (
+    <div className="space-y-6">
+      {/* Header Summary */}
+      <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm">
+            TDAH
+          </div>
+          <div>
+            <span className="text-[9px] font-black uppercase tracking-widest text-amber-300">Avaliação Multidimensional</span>
+            <h3 className="text-sm font-black uppercase tracking-wider text-text-main">
+              Ecossistema de Avaliação de TDAH em Adultos
+            </h3>
+          </div>
+        </div>
+
+        <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          {assessment.updatedAt ? new Date(assessment.updatedAt).toLocaleDateString('pt-BR') : 'Data não informada'}
+        </span>
+      </div>
+
+      {/* Grid of 4 Instrument Pillars */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* ASRS-18 */}
+        <div className="p-3.5 rounded-xl bg-bg-card border border-border-subtle space-y-1">
+          <span className="text-[9px] font-black uppercase text-text-dim block">1. Triagem (ASRS-18)</span>
+          <div className="text-xs font-bold text-text-main">
+            {asrs ? `${asrs.partASignificant}/6 Desat. • ${asrs.partBSignificant}/12 Hiper.` : 'Pendente'}
+          </div>
+          <span className="text-[9px] text-amber-400 font-semibold block">
+            {asrs ? (asrs.thresholdMetA ? 'Triagem Positiva (Investigar)' : 'Triagem Negativa') : '-'}
+          </span>
+        </div>
+
+        {/* ETDAH-AD */}
+        <div className="p-3.5 rounded-xl bg-bg-card border border-border-subtle space-y-1">
+          <span className="text-[9px] font-black uppercase text-text-dim block">2. Sintomas (ETDAH-AD)</span>
+          <div className="text-xs font-bold text-text-main">
+            {etdah ? `${etdah.totalScore}/${etdah.maxTotalScore} pts` : 'Pendente'}
+          </div>
+          <span className="text-[9px] text-amber-400 font-semibold block">
+            {etdah?.overallClassification || '-'}
+          </span>
+        </div>
+
+        {/* EPF-TDAH */}
+        <div className="p-3.5 rounded-xl bg-bg-card border border-border-subtle space-y-1">
+          <span className="text-[9px] font-black uppercase text-text-dim block">3. Prejuízo (EPF-TDAH)</span>
+          <div className="text-xs font-bold text-text-main">
+            {epf ? `${epf.affectedDomainsCount} contextos afetados` : 'Pendente'}
+          </div>
+          <span className="text-[9px] text-amber-400 font-semibold block">
+            {epf ? `Nível ${epf.overallLevel} (${epf.meetsDsmMultipleContexts ? '≥2 contextos' : '<2 contextos'})` : '-'}
+          </span>
+        </div>
+
+        {/* BDEFS */}
+        <div className="p-3.5 rounded-xl bg-bg-card border border-border-subtle space-y-1">
+          <span className="text-[9px] font-black uppercase text-text-dim block">4. Executivo (BDEFS)</span>
+          <div className="text-xs font-bold text-text-main">
+            {bdefs ? `Índice FE: ${bdefs.adhdEfIndexScore} pts` : 'Pendente'}
+          </div>
+          <span className="text-[9px] text-amber-400 font-semibold block">
+            {bdefs?.adhdEfIndexRisk || '-'}
+          </span>
+        </div>
+      </div>
+
+      {/* Trajetória da Infância & Heterorrelato */}
+      {(anamnese || heterorrelato) && (
+        <div className="p-4 rounded-xl bg-bg-card border border-border-subtle space-y-2 text-xs">
+          <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+            Resgate Retrospectivo & Heterorrelato
+          </h4>
+          {anamnese?.marcosDesenvolvimento?.desempenhoAcademicoInfancia && (
+            <p className="text-text-main/80">
+              <strong>Histórico Escolar Infantil:</strong> {anamnese.marcosDesenvolvimento.desempenhoAcademicoInfancia}
+            </p>
+          )}
+          {heterorrelato && (
+            <p className="text-text-main/80">
+              <strong>Heterorrelato ({heterorrelato.grauParentesco}):</strong> {heterorrelato.concordanciaGeralComAutorrelato} ({heterorrelato.percepcaoDesatencao || 'Sintomas observados'})
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Laudo Síntese */}
+      {laudo?.aiAssistedSynthesis && (
+        <div className="p-5 rounded-2xl bg-bg-card border border-border-subtle space-y-3">
+          <h4 className="text-xs font-black uppercase tracking-wider text-amber-400 border-b border-border-subtle pb-2">
+            Laudo Clínico e Conclusão Diagnóstica (CFP 06/2019)
+          </h4>
+          <div className="text-xs text-text-main/85 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto pr-1">
+            {laudo.aiAssistedSynthesis}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

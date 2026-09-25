@@ -44,6 +44,38 @@ interface ToolsLibraryProps {
 
 const DEFAULT_TOOLS: ToolItem[] = [
   {
+    id: 'tdah-ecosystem',
+    title: 'Ecossistema TDAH Adulto',
+    description: 'Diretório e protocolo clínico completo de avaliação diagnóstica de TDAH em adultos: Triagem (ASRS-18), Anamnese Retrospectiva (<12 anos), ETDAH-AD (69 itens), Prejuízos Funcionais (EPF-TDAH), Disfunções Executivas (BDEFS), Heterorrelato, Matriz Diferencial e Laudo Integrativo CFP.',
+    icon: Brain,
+    status: 'active',
+    category: 'Áreas Especializadas de Avaliação',
+  },
+  {
+    id: 'etdah-ad',
+    title: 'ETDAH-AD (Benczik)',
+    description: 'Escala de Transtorno do Déficit de Atenção/Hiperatividade em Adultos (69 itens) avaliando os 5 fatores normatizados para a população brasileira (Vetor Editora).',
+    icon: Activity,
+    status: 'active',
+    category: 'Avaliação Psicológica',
+  },
+  {
+    id: 'epf-tdah',
+    title: 'EPF-TDAH (Prejuízos)',
+    description: 'Escala de Prejuízos Funcionais do TDAH em 9 domínios (estudos, trabalho, afetivo, doméstico, financeiro, trânsito, etc.) para verificação do critério DSM-5 de múltiplos contextos.',
+    icon: Layers,
+    status: 'active',
+    category: 'Avaliação Psicológica',
+  },
+  {
+    id: 'bdefs-barkley',
+    title: 'BDEFS (Barkley)',
+    description: 'Escala de Avaliação de Disfunção Executiva de Barkley (89 itens) com cálculo automatizado do Índice FE-TDAH (11 itens-chave) e escores por seção.',
+    icon: Sparkles,
+    status: 'active',
+    category: 'Avaliação Psicológica',
+  },
+  {
     id: 'psidiagnostic-pro',
     title: 'Psidiagnostic Pro',
     description: 'Elaboração de laudos e pareceres psicodiagnósticos baseados no prontuário do paciente (evoluções, anamnese) e/ou arquivos de exames externos.',
@@ -240,14 +272,17 @@ export default function ToolsLibrary({ onOpenTool, openWindows, pinnedTools = []
     if (saved) {
       try {
         const parsedIds = JSON.parse(saved) as string[];
-        // Map saved IDs back to DEFAULT_TOOLS list, preserving defaults for missing ones
         const mapped = parsedIds
           .map(id => DEFAULT_TOOLS.find(t => t.id === id))
           .filter((t): t is ToolItem => !!t);
         
-        // Add any new tools that aren't in the saved list yet
+        // Priority tools that should be highlighted at the front if missing from previous saved order
+        const priorityTools = ['tdah-ecosystem', 'etdah-ad', 'epf-tdah', 'bdefs-barkley'];
         const missing = DEFAULT_TOOLS.filter(t => !parsedIds.includes(t.id));
-        setOrderedTools([...mapped, ...missing]);
+        const priorityMissing = missing.filter(t => priorityTools.includes(t.id));
+        const otherMissing = missing.filter(t => !priorityTools.includes(t.id));
+
+        setOrderedTools([...priorityMissing, ...mapped, ...otherMissing]);
       } catch (e) {
         setOrderedTools(DEFAULT_TOOLS);
       }
@@ -309,14 +344,22 @@ export default function ToolsLibrary({ onOpenTool, openWindows, pinnedTools = []
     }
   };
 
+  const [libraryTab, setLibraryTab] = useState<'all' | 'disorders'>('all');
+
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">
-      {/* Header & Search Bar */}
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-16">
+      {/* Header, Tab Switcher & Search Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-display font-bold text-text-main tracking-tight">Biblioteca de Ferramentas</h2>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">CORTEX TOOLS</span>
+            <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-black uppercase tracking-wider">
+              Áreas Especializadas Ativas
+            </span>
+          </div>
+          <h2 className="text-3xl font-display font-bold text-text-main tracking-tight">Biblioteca de Ferramentas & Diretórios</h2>
           <p className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] mt-1.5 flex items-center gap-2">
-            <span className="w-4 h-[1px] bg-primary/40" /> Utilitários clínicos organizados para sessões
+            <span className="w-4 h-[1px] bg-primary/40" /> Utilitários clínicos e ecossistemas especializados de avaliação
           </p>
         </div>
 
@@ -327,20 +370,257 @@ export default function ToolsLibrary({ onOpenTool, openWindows, pinnedTools = []
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Pesquisar ferramenta..."
+            placeholder="Pesquisar ferramentas ou escalas..."
             className="w-full h-11 bg-bg-card/60 backdrop-blur border border-border-subtle hover:border-border-subtle/80 focus:border-primary/50 text-text-main text-xs font-bold rounded-2xl pl-11 pr-4 outline-none transition-all placeholder:text-text-dim/60 shadow-inner"
           />
         </div>
       </div>
 
-      {categories.length === 0 ? (
-        <div className="text-center py-20 bg-bg-card/30 rounded-[2.5rem] border border-border-subtle border-dashed">
-          <Search size={32} className="mx-auto text-text-dim mb-4 opacity-50" />
-          <h4 className="text-sm font-bold text-text-main">Nenhuma ferramenta encontrada</h4>
-          <p className="text-xs text-text-dim mt-2">Experimente buscar por outros termos ou categorias.</p>
+      {/* Directory Tab Switcher */}
+      <div className="flex items-center gap-2 border-b border-border-subtle pb-3">
+        <button
+          onClick={() => setLibraryTab('all')}
+          className={cn(
+            "flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer",
+            libraryTab === 'all'
+              ? "bg-primary text-bg-deep shadow-md font-black"
+              : "bg-white/[0.02] text-text-dim hover:text-text-main hover:bg-white/[0.05] border border-white/[0.06]"
+          )}
+        >
+          <Layers size={14} />
+          Todas as Ferramentas ({DEFAULT_TOOLS.length})
+        </button>
+
+        <button
+          onClick={() => setLibraryTab('disorders')}
+          className={cn(
+            "flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border",
+            libraryTab === 'disorders'
+              ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black"
+              : "bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
+          )}
+        >
+          <Brain size={14} />
+          Áreas Especializadas de Transtornos
+          <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-400 text-slate-950">
+            NOVO: TDAH
+          </span>
+        </button>
+      </div>
+
+      {/* HERO BANNER: Ecossistema de Avaliação de TDAH em Adultos (Sempre visível ou no topo) */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-r from-amber-500/15 via-bg-card to-indigo-500/10 border border-amber-500/30 p-6 sm:p-8 shadow-xl">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-3 max-w-3xl">
+            <div className="flex items-center gap-2.5">
+              <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500 text-slate-950 shadow-sm">
+                Diretório Especializado
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Brain size={13} /> TDAH em Adultos • Protocolo CFP / SATEPSI / DSM-5-TR
+              </span>
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-display font-black text-text-main tracking-tight uppercase">
+              Ecossistema de Avaliação Especializada: TDAH em Adultos
+            </h3>
+
+            <p className="text-xs text-text-dim leading-relaxed">
+              Diretório clínico completo estruturado na ordem do processo avaliativo: 
+              <strong> 1. Triagem (ASRS-18)</strong> • 
+              <strong> 2. Anamnese Retrospectiva (&lt;12 anos)</strong> • 
+              <strong> 3. ETDAH-AD (69 itens)</strong> • 
+              <strong> 4. Prejuízos Funcionais (EPF-TDAH)</strong> • 
+              <strong> 5. Funções Executivas (BDEFS)</strong> • 
+              <strong> 6. Heterorrelato</strong> • 
+              <strong> 7. Diagnósticos Diferenciais</strong> • 
+              <strong> 8. Laudo Psicológico Integrativo (CFP nº 06/2019)</strong>.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] font-mono text-text-dim">
+              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">8 Etapas Clínicas</span>
+              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">3 Escalas Normatizadas</span>
+              <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">Integrado ao Prontuário</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 w-full lg:w-auto">
+            <button
+              onClick={() => onOpenTool('tdah-ecosystem')}
+              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-2xl transition-all shadow-lg shadow-amber-500/15 active:scale-95 cursor-pointer"
+            >
+              <ExternalLink size={14} /> Abrir Ecossistema TDAH
+            </button>
+            <button
+              onClick={() => setLibraryTab(libraryTab === 'disorders' ? 'all' : 'disorders')}
+              className="flex items-center justify-center gap-2 px-4 py-3.5 bg-white/5 hover:bg-white/10 text-text-main text-xs font-bold uppercase tracking-wider rounded-2xl border border-white/10 transition-all cursor-pointer"
+            >
+              {libraryTab === 'disorders' ? 'Ver Ferramentas Gerais' : 'Explorar Área de TDAH'}
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="space-y-12">
+      </div>
+
+      {/* DISORDERS DIRECTORY VIEW */}
+      {libraryTab === 'disorders' && (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-text-main flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 bg-amber-400 rounded-full" />
+              Diretório de Avaliação de TDAH em Adultos: Ferramentas da Bateria
+            </h3>
+            <p className="text-xs text-text-dim">
+              Acesse os instrumentos e etapas individualmente ou através do fluxo central do ecossistema:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                id: 'tdah-asrs18',
+                step: 'Etapa 1',
+                title: 'ASRS-18 (OMS)',
+                type: 'Triagem / Screening',
+                desc: 'Rastreio inicial sintomatológico dos últimos 6 meses com cálculo de Parte A e Parte B.',
+                badge: 'Triagem Inicial',
+                color: 'amber'
+              },
+              {
+                id: 'tdah-ecosystem',
+                step: 'Etapa 2',
+                title: 'Anamnese Retrospectiva',
+                type: 'Investigação Clínica',
+                desc: 'Resgate de marcos motores, boletins escolares, queixas de professores e histórico familiar antes dos 12 anos.',
+                badge: 'DSM-5 Critério B',
+                color: 'blue'
+              },
+              {
+                id: 'etdah-ad',
+                step: 'Etapa 3',
+                title: 'ETDAH-AD (Benczik)',
+                type: 'Escala Psicométrica',
+                desc: '69 itens avaliando Desatenção, Impulsividade, Aspectos Emocionais, Autorregulação e Hiperatividade.',
+                badge: 'Vetor Editora',
+                color: 'emerald'
+              },
+              {
+                id: 'epf-tdah',
+                step: 'Etapa 4',
+                title: 'EPF-TDAH',
+                type: 'Prejuízos Funcionais',
+                desc: '58 itens em 9 domínios da vida (acadêmico, trabalho, afetivo, doméstico, financeiro, trânsito).',
+                badge: 'DSM-5 Critério C',
+                color: 'purple'
+              },
+              {
+                id: 'bdefs-barkley',
+                step: 'Etapa 5',
+                title: 'BDEFS (Barkley)',
+                type: 'Funções Executivas',
+                desc: '89 itens e cálculo do Índice FE-TDAH de Barkley (11 itens-chave) no cotidiano.',
+                badge: 'Hogrefe',
+                color: 'sky'
+              },
+              {
+                id: 'tdah-ecosystem',
+                step: 'Etapa 6',
+                title: 'Heterorrelato com Terceiros',
+                type: 'Validação Externa',
+                desc: 'Entrevista estruturada com cônjuge, pais ou irmãos para triangulação diagnóstica.',
+                badge: 'Triangulação',
+                color: 'indigo'
+              },
+              {
+                id: 'tdah-ecosystem',
+                step: 'Etapa 7',
+                title: 'Matriz Diferencial & Temporal',
+                type: 'Diferenciais & Comorbidades',
+                desc: 'Mapeamento de TAG, Depressão, Burnout, Transtornos do Sono e análise de flutuação.',
+                badge: 'DSM-5 Critério E',
+                color: 'rose'
+              },
+              {
+                id: 'tdah-ecosystem',
+                step: 'Etapa 8',
+                title: 'Laudo Psicológico Integrativo',
+                type: 'Síntese & Parecer',
+                desc: 'Redação assistida por IA conforme Resolução CFP nº 06/2019 e encaminhamentos médicos.',
+                badge: 'CFP 06/2019',
+                color: 'amber'
+              }
+            ].map(item => (
+              <div 
+                key={`${item.id}-${item.step}`}
+                onClick={() => onOpenTool(item.id)}
+                className="bg-bg-card border border-border-subtle hover:border-amber-400/50 rounded-2xl p-5 flex flex-col justify-between transition-all hover:scale-[1.02] cursor-pointer group shadow-sm"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      {item.step}
+                    </span>
+                    <span className="text-[8px] font-black uppercase text-text-dim bg-white/5 px-2 py-0.5 rounded">
+                      {item.badge}
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs font-black uppercase tracking-wider text-text-main group-hover:text-amber-400 transition-colors">
+                    {item.title}
+                  </h4>
+                  <span className="text-[9px] font-bold text-text-dim block mb-2">{item.type}</span>
+
+                  <p className="text-[11px] text-text-dim leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-border-subtle mt-4 flex items-center justify-between">
+                  <span className="text-[9px] font-black uppercase text-amber-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    Acessar Ferramenta <ChevronRight size={11} />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Próximos Transtornos do Ecossistema */}
+          <div className="pt-6 border-t border-border-subtle">
+            <h4 className="text-xs font-black uppercase tracking-widest text-text-dim mb-3">
+              Próximas Áreas Especializadas em Expansão
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-4 rounded-xl bg-bg-card/40 border border-dashed border-border-subtle opacity-60">
+                <span className="text-[8px] font-black uppercase text-amber-400">Em Desenvolvimento</span>
+                <h5 className="text-xs font-bold text-text-main mt-0.5">TEA em Adultos (Espectro Autista)</h5>
+                <p className="text-[10px] text-text-dim mt-1">AQ-50, RAADS-R, CAT-Q (Camuflagem social) e perfil sensorial.</p>
+              </div>
+              <div className="p-4 rounded-xl bg-bg-card/40 border border-dashed border-border-subtle opacity-60">
+                <span className="text-[8px] font-black uppercase text-amber-400">Em Desenvolvimento</span>
+                <h5 className="text-xs font-bold text-text-main mt-0.5">Transtorno Bipolar & Ciclotimia</h5>
+                <p className="text-[10px] text-text-dim mt-1">MDQ, BSDS e rastreio de episódios afetivos ao longo do desenvolvimento.</p>
+              </div>
+              <div className="p-4 rounded-xl bg-bg-card/40 border border-dashed border-border-subtle opacity-60">
+                <span className="text-[8px] font-black uppercase text-amber-400">Em Desenvolvimento</span>
+                <h5 className="text-xs font-bold text-text-main mt-0.5">TOC & Espectro Obsessivo</h5>
+                <p className="text-[10px] text-text-dim mt-1">Y-BOCS e inventário de neutralizações e rituais cognitivos.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ALL TOOLS VIEW */}
+      {libraryTab === 'all' && (
+        <>
+          {categories.length === 0 ? (
+            <div className="text-center py-20 bg-bg-card/30 rounded-[2.5rem] border border-border-subtle border-dashed">
+              <Search size={32} className="mx-auto text-text-dim mb-4 opacity-50" />
+              <h4 className="text-sm font-bold text-text-main">Nenhuma ferramenta encontrada</h4>
+              <p className="text-xs text-text-dim mt-2">Experimente buscar por outros termos ou categorias.</p>
+            </div>
+          ) : (
+            <div className="space-y-12">
           {categories.map((category) => {
             const categoryTools = filteredTools.filter(t => t.category === category);
             // Unique ID for DOM lookup
@@ -515,7 +795,9 @@ export default function ToolsLibrary({ onOpenTool, openWindows, pinnedTools = []
               </div>
             );
           })}
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

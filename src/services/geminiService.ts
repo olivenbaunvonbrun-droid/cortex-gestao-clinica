@@ -637,6 +637,78 @@ Instruções importantes:
   return response.text || "Erro ao gerar laudo da Escala de TDAH (ASRS-18).";
 }
 
+export async function analyzeTdahEcosystemAssessment(
+  patient: { name: string; age: string; education?: string; profession?: string },
+  ecosystemSummary: {
+    asrsSummary: string;
+    anamneseRetrospectiva: string;
+    etdahSummary: string;
+    epfSummary: string;
+    bdefsSummary: string;
+    heterorrelatoSummary: string;
+    diferenciaisSummary: string;
+    dsm5ComplianceSummary: string;
+  }
+) {
+  const apiKey = await getApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+Tarefa: Elaborar um Laudo Psicológico Clínico Completo e Integrativo de Avaliação Especializada de TDAH em Adultos, rigorosamente estruturado conforme a Resolução CFP nº 06/2019 do Conselho Federal de Psicologia e as diretrizes diagnósticas do DSM-5-TR e NICE Guidelines.
+
+${CLINICAL_FRAMEWORK_PROMPT}
+
+DADOS DO AVALIANDO:
+- Nome: ${patient.name}
+- Idade: ${patient.age}
+- Escolaridade: ${patient.education || 'Não informada'}
+- Ocupação/Profissão: ${patient.profession || 'Não informada'}
+
+EVIDÊNCIAS COLETADAS NO ECOSSISTEMA AVALIATIVO MULTIDIMENSIONAL:
+1. Triagem Inicial (ASRS-18):
+${ecosystemSummary.asrsSummary}
+
+2. Anamnese Clínica e Trajetória Retrospectiva da Infância (<12 anos):
+${ecosystemSummary.anamneseRetrospectiva}
+
+3. Investigação Psicométrica dos Sintomas (ETDAH-AD):
+${ecosystemSummary.etdahSummary}
+
+4. Mensuração do Impacto e Prejuízos Funcionais em 9 Contextos (EPF-TDAH):
+${ecosystemSummary.epfSummary}
+
+5. Avaliação Dimensional de Funções Executivas e Índice de Barkley (BDEFS):
+${ecosystemSummary.bdefsSummary}
+
+6. Heterorrelato e Validação Externa por Observador Próximo:
+${ecosystemSummary.heterorrelatoSummary}
+
+7. Matriz de Diagnósticos Diferenciais e Análise Temporal:
+${ecosystemSummary.diferenciaisSummary}
+
+8. Atendimento aos Critérios Diagnósticos DSM-5-TR:
+${ecosystemSummary.dsm5ComplianceSummary}
+
+DIRETRIZES TÉCNICAS MANDATÓRIAS:
+- Utilize a estrutura canônica da Resolução CFP nº 06/2019:
+  I. IDENTIFICAÇÃO
+  II. DESCRIÇÃO DA DEMANDA
+  III. PROCEDIMENTO (mencionar detalhadamente cada um dos instrumentos administrados e a entrevista retrospectiva)
+  IV. ANÁLISE DOS RESULTADOS (integrar dados quantitativos e qualitativos, demonstrando coerência ecológica, prejuízos funcionais em múltiplos contextos e a trajetória desde a infância)
+  V. CONCLUSÃO DIAGNÓSTICA (definir com clareza a hipótese diagnóstica conforme CID-11 / DSM-5-TR: F90.0, F90.2 ou descarte fundamentado, apontando comorbidades se houver)
+  VI. ENCAMINHAMENTOS E RECOMENDAÇÕES (encaminhamento médico para psiquiatria/neurologia para conduta compartilhada, plano de psicoterapia TCC e adaptações ambientais).
+- Enfatize que o diagnóstico do TDAH em adultos é estritamente clínico e multidisciplinar.
+- Não deixe lacunas genéricas. Integre os dados reais fornecidos.
+`;
+
+  const response = await ai.models.generateContent({
+    model: DEFAULT_CLINICAL_MODEL,
+    contents: prompt,
+  });
+
+  return response.text || "Erro ao gerar síntese do Ecossistema de Avaliação TDAH.";
+}
+
 
 export async function analyzeLinhaVidaAssessment(
   patient: { name: string; age: string },

@@ -33,6 +33,7 @@ const BibliotecaAvaliacaoApp = React.lazy(() => import('./components/BibliotecaA
 const ClinicalSuggestionsApp = React.lazy(() => import('./components/BibliotecaAvaliacao/components/ClinicalSuggestionsHelper').then(m => ({ default: m.ClinicalSuggestionsApp })));
 const TeleconsultationApp = React.lazy(() => import('./components/Teleconsultation/TeleconsultationApp'));
 const HpIndividualTool = React.lazy(() => import('./components/HpTrainingTools/HpIndividualTool'));
+const TdahEcosystemApp = React.lazy(() => import('./components/TdahEcosystem/TdahEcosystemApp'));
 
 function WindowLoadingFallback() {
   return (
@@ -213,6 +214,10 @@ export default function App() {
       'dfc-assistido': 'DFC Assistido',
       'thp-training': 'Treinamento THP',
       'tdah-asrs18': 'TDAH ASRS-18',
+      'tdah-ecosystem': 'Ecossistema TDAH Adulto',
+      'etdah-ad': 'ETDAH-AD (Benczik)',
+      'epf-tdah': 'EPF-TDAH (Prejuízos)',
+      'bdefs-barkley': 'BDEFS (Barkley)',
       'biblioteca-avaliacao': 'Biblioteca de Avaliação',
       'teleconsulta': 'Teleconsulta Virtual',
       'parametros-clinicos': 'Parâmetros Clínicos',
@@ -258,6 +263,10 @@ export default function App() {
   };
 
   const handleOpenSection = (sectionId: string) => {
+    if (sectionId === 'tdah-ecosystem') {
+      handleOpenTool('tdah-ecosystem');
+      return;
+    }
     setActiveSection(sectionId);
 
     const titleMap: Record<string, string> = {
@@ -685,6 +694,46 @@ export default function App() {
                       activePatientId={win.patientId || selectedPatientId || undefined} 
                       lockPatient={false} 
                       userId={currentUser?.id}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'tdah-ecosystem' && (
+                    <TdahEcosystemApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      initialStage="overview"
+                      openTool={handleOpenTool}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'etdah-ad' && (
+                    <TdahEcosystemApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      initialStage="etdah"
+                      openTool={handleOpenTool}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'epf-tdah' && (
+                    <TdahEcosystemApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      initialStage="epf"
+                      openTool={handleOpenTool}
+                      onClose={() => handleCloseTool(win.id)}
+                    />
+                  )}
+                  {win.id === 'bdefs-barkley' && (
+                    <TdahEcosystemApp 
+                      activePatientId={win.patientId || selectedPatientId || undefined} 
+                      lockPatient={false} 
+                      userId={currentUser?.id}
+                      initialStage="bdefs"
+                      openTool={handleOpenTool}
                       onClose={() => handleCloseTool(win.id)}
                     />
                   )}

@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { renderMarkdown } from '../BibliotecaAvaliacao/utils/markdown';
 import { SCHEMA_DETAILS, YSQ_QUESTIONS } from '../YsqSmartAi/types';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { IhsResultViewer, YsqResultViewer, RidResultViewer, ThpResultViewer, TdahResultViewer } from './ResultViewers';
+import { IhsResultViewer, YsqResultViewer, RidResultViewer, ThpResultViewer, TdahResultViewer, TdahEcosystemResultViewer } from './ResultViewers';
 
 interface RecordsProps {
   preSelectedPatientId?: string | null;
@@ -106,6 +106,9 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
       } else if (e.tipo === 'tdah' || e.metadata?.type === 'tdah') {
         type = 'tdah';
         title = 'Escala de TDAH em Adultos (ASRS-18)';
+      } else if (e.tipo === 'tdah-ecosystem' || e.metadata?.type === 'tdah-ecosystem') {
+        type = 'tdah-ecosystem';
+        title = 'Ecossistema de Avaliação: TDAH em Adultos';
       } else if (e.tipo === 'psicometrik' || e.metadata?.type === 'psicometrik') {
         type = 'psicometrik';
         const toolTitle = e.metadata?.psicometrikData?.toolTitle || 'Avaliação Psicometrik';
@@ -185,18 +188,20 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                   event.type === 'ysq' ? "bg-purple-500/20 text-purple-400 border-purple-500/30" :
                   event.type === 'thp' ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
                   event.type === 'tdah' ? "bg-amber-500/20 text-amber-400 border-amber-500/30" :
+                  event.type === 'tdah-ecosystem' ? "bg-gradient-to-br from-amber-500/30 to-amber-600/20 text-amber-300 border-amber-400/40 shadow-amber-500/10" :
                   event.type === 'psicometrik' ? "bg-[#00A3FF]/20 text-[#00A3FF] border-[#00A3FF]/30" :
                   "bg-blue-500/20 text-blue-500 border-blue-500/30"
                 )}>
                   {event.type === 'evolution' ? <Clock size={12} /> :
                    event.type === 'appointment' ? <CalendarIcon size={12} /> :
                    event.type === 'tdah' ? <Zap size={12} className="text-amber-400" /> :
+                   event.type === 'tdah-ecosystem' ? <Brain size={12} className="text-amber-300 animate-pulse" /> :
                    <File size={12} />}
                 </div>
 
                 <div 
                   onClick={() => {
-                    if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah'].includes(event.type)) {
+                    if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah', 'tdah-ecosystem'].includes(event.type)) {
                       setSelectedEvent(event);
                       setEditEventContent(event.content || '');
                       setIsEditingEvent(false);
@@ -219,6 +224,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                           event.type === 'ysq' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
                           event.type === 'thp' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
                           event.type === 'tdah' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                          event.type === 'tdah-ecosystem' ? "bg-amber-500/20 text-amber-300 border-amber-500/40 font-black" :
                           event.type === 'psicometrik' ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/20" :
                           "bg-blue-500/10 text-blue-500 border-blue-500/30",
                           event.isAlert && "bg-red-500 text-white border-red-400"
@@ -229,7 +235,8 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                            event.type === 'ihs' ? 'IHS' :
                            event.type === 'ysq' ? 'YSQ' :
                            event.type === 'thp' ? 'THP' :
-                           event.type === 'tdah' ? 'TDAH' :
+                           event.type === 'tdah' ? 'TDAH ASRS' :
+                           event.type === 'tdah-ecosystem' ? 'Ecossistema TDAH' :
                            event.type === 'psicometrik' ? 'PsicoMetrik' : 'Arquivo'}
                         </span>
                         <h5 className={cn(
@@ -250,7 +257,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah'].includes(event.type) && (
+                      {['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah', 'tdah-ecosystem'].includes(event.type) && (
                         <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
                           <button 
                             onClick={(e) => {
@@ -1505,12 +1512,20 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                                 Usar THP
                               </button>
                               <button
+                                onClick={() => openTool('tdah-ecosystem', selectedPatient?.id)}
+                                className="flex items-center gap-2 py-1.5 px-3.5 bg-gradient-to-r from-amber-500/20 to-amber-500/10 border border-amber-500/35 hover:bg-amber-500 hover:text-slate-950 text-[9px] font-black uppercase tracking-widest text-amber-300 rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+                                title="Abrir Ecossistema de Avaliação Especializada de TDAH em Adultos"
+                              >
+                                <Brain size={11} className="text-amber-400" />
+                                Ecossistema TDAH
+                              </button>
+                              <button
                                 onClick={() => openTool('tdah-asrs18', selectedPatient?.id)}
                                 className="flex items-center gap-2 py-1.5 px-3.5 bg-amber-500/10 border border-amber-500/25 hover:bg-amber-500 hover:text-slate-950 text-[9px] font-black uppercase tracking-widest text-amber-400 rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
                                 title="Abrir Escala TDAH (ASRS-18) na tela"
                               >
                                 <Zap size={11} />
-                                Usar TDAH
+                                Usar TDAH (ASRS)
                               </button>
                             </div>
                           )}
@@ -2216,6 +2231,10 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
 
                     {selectedEvent.type === 'tdah' && (
                       <TdahResultViewer assessment={selectedEvent.rawEntry?.metadata?.tdahData} />
+                    )}
+
+                    {selectedEvent.type === 'tdah-ecosystem' && (
+                      <TdahEcosystemResultViewer assessment={selectedEvent.rawEntry?.metadata?.ecosystemData} />
                     )}
                   </div>
                   <div className="w-full">
