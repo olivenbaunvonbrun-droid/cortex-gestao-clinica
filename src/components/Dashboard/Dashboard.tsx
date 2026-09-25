@@ -376,35 +376,6 @@ export default function Dashboard({ onSectionChange, openTool }: DashboardProps 
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
-      {/* SPOTLIGHT: ECOSSISTEMA ESPECIALIZADO TDAH EM ADULTOS */}
-      {openTool && (
-        <div className="bg-gradient-to-r from-amber-500/15 via-bg-card to-indigo-500/10 border border-amber-500/30 rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 space-y-2 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-amber-500 text-slate-950 shadow-sm">
-                Área Especializada
-              </span>
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                <Brain size={13} /> Avaliação Estruturada CFP / DSM-5-TR
-              </span>
-            </div>
-            <h3 className="text-lg sm:text-xl font-display font-black text-text-main tracking-tight uppercase">
-              Ecossistema de Avaliação de TDAH em Adultos
-            </h3>
-            <p className="text-xs text-text-dim leading-relaxed">
-              Protocolo completo com 8 etapas: Triagem (ASRS-18), Anamnese Retrospectiva (&lt;12 anos), ETDAH-AD (69 itens), Prejuízos Funcionais (EPF-TDAH), Funções Executivas (BDEFS Barkley), Heterorrelato, Diagnósticos Diferenciais e Laudo Integrativo com IA.
-            </p>
-          </div>
-          <button
-            onClick={() => openTool('tdah-ecosystem')}
-            className="relative z-10 px-5 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer transition-all hover:scale-[1.02] shrink-0"
-          >
-            <Sparkles size={16} /> Acessar Ecossistema TDAH
-          </button>
-        </div>
-      )}
-
       {/* Confirmações Pendentes (24h) */}
       {pending24hAppointments.length > 0 && (
         <div className="bg-bg-card/70 backdrop-blur-md border border-border-subtle rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">

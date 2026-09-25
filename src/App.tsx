@@ -263,10 +263,6 @@ export default function App() {
   };
 
   const handleOpenSection = (sectionId: string) => {
-    if (sectionId === 'tdah-ecosystem') {
-      handleOpenTool('tdah-ecosystem');
-      return;
-    }
     setActiveSection(sectionId);
 
     const titleMap: Record<string, string> = {

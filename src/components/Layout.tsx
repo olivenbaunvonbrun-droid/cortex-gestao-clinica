@@ -192,7 +192,6 @@ export default function Layout({
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
     { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
     { id: 'ferramentas', label: 'Ferramentas', icon: Brain },
-    { id: 'tdah-ecosystem', label: 'TDAH Adulto', icon: Sparkles, isEcosystem: true },
     { id: 'settings', label: 'Configurações', icon: Palette },
   ];
 
@@ -424,26 +423,19 @@ export default function Layout({
                 onClick={() => onSectionChange(item.id)}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-1 sm:px-3 py-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all relative min-w-0 text-center cursor-pointer",
-                  (item as any).isEcosystem
-                    ? "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-b-2 border-amber-500 shadow-inner"
-                    : activeSection === item.id
+                  activeSection === item.id
                     ? "text-primary bg-bg-card"
                     : "text-text-dim hover:text-text-main hover:bg-white/[0.02]"
                 )}
               >
-                <Icon size={14} className={cn("shrink-0", (item as any).isEcosystem && "text-amber-400 animate-pulse")} />
+                <Icon size={14} className="shrink-0" />
                 <span className="truncate">{item.label}</span>
-                {(item as any).isEcosystem && (
-                  <span className="ml-1 hidden md:inline px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-amber-400 text-slate-950 shrink-0">
-                    NOVO
-                  </span>
-                )}
                 {item.id === 'pacientes' && item.badge && (
                   <span className="ml-1 flex items-center justify-center w-3.5 h-3.5 bg-amber-500 text-bg-deep text-[7px] font-black rounded-full animate-pulse border border-amber-400 shrink-0">
                     {item.badge}
                   </span>
                 )}
-                {activeSection === item.id && !(item as any).isEcosystem && (
+                {activeSection === item.id && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_8px_rgba(56,189,248,0.5)]" />
                 )}
               </button>
