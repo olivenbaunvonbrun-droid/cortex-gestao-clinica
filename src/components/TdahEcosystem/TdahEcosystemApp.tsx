@@ -27,9 +27,16 @@ import {
   ChevronRight,
   ShieldCheck,
   CheckCircle2,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { calculateTdahAssessment } from '../TdahAsrs18/lib/scoring';
+import { calculateEtdahScoring, calculateEpfScoring, calculateBdefsScoring } from './lib/scoring';
+import { ETDAH_QUESTIONS } from './data/etdahData';
+import { EPF_QUESTIONS } from './data/epfData';
+import { BDEFS_QUESTIONS, BARKLEY_ADHD_EF_INDEX_ITEMS } from './data/bdefsData';
+import { DIFFERENTIAL_CONDITIONS } from './data/differentialData';
 
 // Helper components
 import TdahStageStepper, { STAGES_CONFIG } from './components/TdahStageStepper';
@@ -296,6 +303,205 @@ export default function TdahEcosystemApp({
     }
   };
 
+  const handleSimulateAll = () => {
+    // 1. ASRS-18
+    const asrsAnswers: Record<number, number> = {
+      1: 3, 2: 4, 3: 3, 4: 2, 5: 3, 6: 4,
+      7: 3, 8: 2, 9: 3, 10: 4, 11: 3, 12: 2,
+      13: 3, 14: 4, 15: 3, 16: 2, 17: 3, 18: 4
+    };
+    const asrsScoring = calculateTdahAssessment(asrsAnswers);
+    const asrsData: AsrsData = {
+      answers: asrsAnswers,
+      partAScore: asrsScoring.partA.rawScore,
+      partBScore: asrsScoring.partB.rawScore,
+      partASignificant: asrsScoring.partA.significantSymptoms,
+      partBSignificant: asrsScoring.partB.significantSymptoms,
+      thresholdMetA: asrsScoring.partA.thresholdMet,
+      classification: asrsScoring.classification,
+      completedAt: new Date().toISOString()
+    };
+
+    // 2. Anamnese Retrospectiva (<12 anos)
+    const anamneseData: AnamneseData = {
+      queixaPrincipal: 'Dificuldade crônica de sustentação do foco atencional, desorganização no trabalho e esquecimentos frequentes de prazos e compromissos.',
+      impactoVidaDiaria: 'Acúmulo de tarefas atrasadas, sobrecarga mental contínua, atritos conjugais por esquecer afazeres domésticos e sensação de esgotamento ao final do dia.',
+      marcosDesenvolvimento: {
+        idadeAndar: '12 meses',
+        idadeFalar: '16 meses',
+        idadeLer: '6 anos',
+        desempenhoAcademicoInfancia: 'Notas muito oscilantes: excelente em matérias de alto interesse (história, ciências) e muito baixas em disciplinas com esforço repetitivo ou memorização árida.',
+        comportamentoEscola: 'Professores relatavam que "vivia no mundo da lua", levantava frequentemente para apontar lápis ou beber água, perdia casacos e esquecia lições.',
+        problemasComportamentoInfanciaAdolescencia: 'Na adolescência a hiperatividade motora transformou-se em inquietação mental interna constante, balançar de pernas e impulsividade verbal.',
+        repetenciaOuAdvertencias: 'Não repetiu de ano, mas recebeu constantes advertências por conversar nas aulas e distrair colegas.',
+        esforcoCompensatorioOuApoioFamiliar: 'A mãe estudava diariamente com ele para garantir a entrega das tarefas; estudava apenas na véspera sob intensa adrenalina de prazo.'
+      },
+      historiaFamiliar: {
+        temHistoricoFamiliar: true,
+        parentesAfetados: 'Pai e irmão mais novo',
+        detalhes: 'Pai apresenta perfil nítido de desatenção, perde chaves/óculos com frequência e tem histórico de desorganização financeira crônica.'
+      },
+      historicoMedicoPsiquiatrico: {
+        problemasMedicosInfancia: 'Desenvolvimento físico sem intercorrências; sem crises convulsivas ou TCE.',
+        diagnosticosAnteriores: 'Diagnóstico prévio de Transtorno de Ansiedade Generalizada com resposta apenas parcial a ISRS.',
+        usoMedicacaoPsicotropica: 'Sertralina 50mg/dia',
+        tempoMedicacao: 'Uso contínuo há 8 meses',
+        historicoSono: 'Dificuldade para iniciar o sono devido a pensamentos acelerados; sono agitado, acorda com sensação de cansaço.',
+        historicoSubstancias: 'Consumo elevado de cafeína (5 a 6 xícaras de café/dia) como estratégia compensatória para manter o estado de alerta.'
+      },
+      sintomasNuclearesAtuais: {
+        focoEsforcoMental: 'Evitação ativa de tarefas burocráticas ou com esforço mental prolongado; distrai-se com qualquer estímulo do ambiente.',
+        organizacaoTarefas: 'Inicia múltiplos projetos simultâneos e tem enorme dificuldade em concluí-los; mesa de trabalho e ambiente digital caóticos.',
+        seguirInstrucoes: 'Pula etapas de manuais e e-mails longos, lendo apenas trechos rápidos e cometendo erros de procedimento.',
+        lembrarDetalhes: 'Esquece compromissos rotineiros, datas de aniversários, prazos de contas e onde guardou pertences essenciais.',
+        procrastinacao: 'Severa: empurra decisões e tarefas complexas até o limite do prazo final, gerando picos intensos de estresse.',
+        interrupcaoFala: 'Interrompe a fala de colegas por impaciência e costuma completar a frase dos outros.',
+        inquietudeAgitacao: 'Necessidade constante de manipular objetos durante reuniões (caneta, mexer nas mãos, tamborilar dedos, balançar pernas).'
+      },
+      tratamentosAnteriores: {
+        fezTratamentoTdah: false,
+        qualTratamentoETempo: 'Nunca realizou avaliação neuropsicológica específica ou uso de psicoestimulantes.',
+        houveMelhora: 'N/A'
+      },
+      expectativasTratamento: 'Obter clareza diagnóstica, desculpabilizar seu histórico de vida, estruturar rotinas funcionais e avaliar intervenção farmacológica e psicoterapêutica com médico psiquiatra.',
+      completedAt: new Date().toISOString()
+    };
+
+    // 3. ETDAH-AD (69 itens)
+    const etdahAnswers: Record<number, number> = {};
+    ETDAH_QUESTIONS.forEach(q => {
+      if (q.isInverted) {
+        etdahAnswers[q.id] = 0;
+      } else if (q.factor === 1 || q.factor === 4) {
+        etdahAnswers[q.id] = 4;
+      } else {
+        etdahAnswers[q.id] = 3;
+      }
+    });
+    const etdahData = calculateEtdahScoring(etdahAnswers);
+
+    // 4. EPF-TDAH (58 itens)
+    const epfAnswers: Record<number, number> = {};
+    EPF_QUESTIONS.forEach(q => {
+      if ([1, 2, 4, 6].includes(q.domainId)) {
+        epfAnswers[q.id] = 3;
+      } else {
+        epfAnswers[q.id] = 1;
+      }
+    });
+    const epfData = calculateEpfScoring(epfAnswers);
+
+    // 5. BDEFS (89 itens)
+    const bdefsAnswers: Record<number, number> = {};
+    BDEFS_QUESTIONS.forEach(q => {
+      if (BARKLEY_ADHD_EF_INDEX_ITEMS.includes(q.id) || [1, 2, 4].includes(q.sectionId)) {
+        bdefsAnswers[q.id] = 3;
+      } else {
+        bdefsAnswers[q.id] = 2;
+      }
+    });
+    const bdefsData = calculateBdefsScoring(bdefsAnswers);
+
+    // 6. Heterorrelato
+    const heterorrelatoData: HeterorrelatoData = {
+      respondenteNome: 'Mariana Costa Ferreira',
+      grauParentesco: 'Cônjuge/Parceiro(a)',
+      tempoConvivio: '7 anos de casamento (convivência diária contínua)',
+      conviveuNaInfancia: false,
+      observacoesInfancia: 'A sogra relatou que na infância ele não parava quieto na cadeira, perdia agasalhos escolares com frequência e necessitava de supervisão constante para lições.',
+      percepcaoDesatencao: 'Frequentemente parece não escutar quando conversamos diretamente; esquece tarefas combinadas minutos após o combinado; perde chaves, celular e carteira diariamente.',
+      percepcaoHiperatividadeImpulsividade: 'Interrompe a fala dos outros por impaciência; tem extrema dificuldade em esperar filas e balança as pernas ou tamborila dedos o tempo todo.',
+      percepcaoDisfuncaoExecutiva: 'Planeja rotinas mas não consegue cumpri-las; subestima gravemente o tempo necessário para deslocamentos ou tarefas domésticas; deixa armários abertos e projetos inacabados.',
+      impactoRelacionamentoRotina: 'Gera sobrecarga e sensação de que a parceira precisa atuar como "gerente/mãe" da rotina doméstica, sendo fonte crônica de desgastes e atritos no casamento.',
+      concordanciaGeralComAutorrelato: 'Alta Convergência',
+      notasClinicasConfronto: 'Os relatos da cônjuge corroboram plenamente o autorrelato do paciente no ASRS e ETDAH-AD, descartando hipótese de distorção ou superestimação e confirmando o critério DSM-5 de prejuízo em múltiplos contextos.',
+      completedAt: new Date().toISOString()
+    };
+
+    // 7. Diferenciais
+    const diffItems = DIFFERENTIAL_CONDITIONS.reduce((acc, curr) => ({
+      ...acc,
+      [curr.id]: { ...curr }
+    }), {} as any);
+    if (diffItems['tag']) {
+      diffItems['tag'].status = 'comorbidity';
+      diffItems['tag'].notes = 'Ansiedade secundária à sobrecarga e medo de cometer falhas atencionais no trabalho.';
+    }
+    if (diffItems['depressao']) {
+      diffItems['depressao'].status = 'ruled_out';
+      diffItems['depressao'].notes = 'Sem anedonia global primária ou lentificação afetiva.';
+    }
+    if (diffItems['burnout']) {
+      diffItems['burnout'].status = 'comorbidity';
+      diffItems['burnout'].notes = 'Sobrecarga decorrente de esforço compensatório crônico.';
+    }
+    if (diffItems['sono']) {
+      diffItems['sono'].status = 'ruled_out';
+      diffItems['sono'].notes = 'Atraso de fase do sono habitual sem apneia ou narcolepsia.';
+    }
+    if (diffItems['bipolar']) {
+      diffItems['bipolar'].status = 'ruled_out';
+      diffItems['bipolar'].notes = 'Ausência de episódios maníacos ou hipomaníacos circunscritos independentes.';
+    }
+    if (diffItems['tea']) {
+      diffItems['tea'].status = 'ruled_out';
+      diffItems['tea'].notes = 'Reciprocidade socioemocional preservada; sem padrões rígidos de movimentos repetitivos.';
+    }
+    if (diffItems['substancias']) {
+      diffItems['substancias'].status = 'ruled_out';
+      diffItems['substancias'].notes = 'Apenas uso moderado de cafeína; sem histórico de abuso ou dependência de substâncias.';
+    }
+
+    const diferenciaisData: DiferenciaisData = {
+      items: diffItems,
+      padraoTemporal: {
+        inicioInfanciaConfirmado: true,
+        flutuacaoConformeInteresse: true,
+        independenteDeFaseHumor: true,
+        impactoEmMultiplosContextos: true
+      },
+      condicoesFisicasInvestigadas: 'Exames laboratoriais gerais (função tireoidiana TSH/T4L, ferritina, hemograma completo e vitamina B12) normais.',
+      conclusaoDiferencial: 'Os sintomas atencionais e desexecutivos são crônicos, iniciaram-se de forma nítida na infância (<12 anos) e manifestam-se transversalmente em múltiplos contextos. Há presença de comorbidade secundária com Transtorno de Ansiedade decorrente dos prejuízos acumulados pelo TDAH.',
+      completedAt: new Date().toISOString()
+    };
+
+    // 8. Laudo
+    const pName = assessment.patientInfo.name || 'Pedro Henrique Albuquerque';
+    const laudoData: LaudoTdahIntegrativo = {
+      conclusaoFinal: 'Critérios Plenamente Atendidos para TDAH Tipo Combinado (F90.2) com comorbidade de Ansiedade Secundária',
+      encaminhamentos: '1. Avaliação Psiquiátrica para farmacoterapia; 2. Psicoterapia TCC com Treino de Habilidades Psicológicas (THP); 3. Estruturação ergonômica ambiental.',
+      completedAt: new Date().toISOString()
+    };
+
+    const simulatedAssessment: TdahEcosystemAssessment = {
+      ...assessment,
+      asrsData,
+      anamneseData,
+      etdahData,
+      epfData,
+      bdefsData,
+      heterorrelatoData,
+      diferenciaisData,
+      laudoData,
+      stageStatuses: {
+        overview: 'completed',
+        asrs18: 'completed',
+        anamnese: 'completed',
+        etdah: 'completed',
+        epf: 'completed',
+        bdefs: 'completed',
+        heterorrelato: 'completed',
+        diferenciais: 'completed',
+        laudo: 'completed'
+      },
+      updatedAt: new Date().toISOString()
+    };
+
+    setAssessment(simulatedAssessment);
+    tdahEcosystemDbWrapper.saveDraftLocally(simulatedAssessment);
+    toast.success('Ecossistema simulado com sucesso em todas as 8 etapas!');
+  };
+
   const handlePrintLaudo = () => {
     exportTdahEcosystemToHtml(assessment, settings.professionalLogo, settings.professionalSignature);
   };
@@ -319,8 +525,17 @@ export default function TdahEcosystemApp({
           </div>
         </div>
 
-        {/* Patient Selection Dropdown */}
+        {/* Patient Selection Dropdown & Actions */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleSimulateAll}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+            title="Preencher todo o ecossistema com dados clínicos simulados para teste"
+          >
+            <Zap size={12} />
+            <span className="hidden md:inline">Simular Ecossistema</span>
+          </button>
+
           <div className="flex items-center gap-2 bg-bg-deep border border-border-subtle rounded-2xl px-3 py-1.5 focus-within:border-amber-400 transition-colors">
             <Users size={14} className="text-amber-400" />
             <select

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DiferenciaisData, DifferentialItem } from '../types';
 import { DIFFERENTIAL_CONDITIONS } from '../data/differentialData';
-import { ShieldAlert, CheckCircle2, ArrowRight, AlertTriangle, Clock, Activity, Sparkles } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, ArrowRight, AlertTriangle, Clock, Activity, Sparkles, Zap } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
 interface StageDifferentialViewProps {
@@ -83,6 +83,60 @@ export default function StageDifferentialView({
     });
   };
 
+  const handleSimulate = () => {
+    const updatedItems = { ...data.items };
+    // TAG
+    if (updatedItems['tag']) {
+      updatedItems['tag'].status = 'comorbidity';
+      updatedItems['tag'].notes = 'Ansiedade de desempenho secundária ao medo crônico de cometer erros atencionais no trabalho.';
+    }
+    // Depressão
+    if (updatedItems['depressao']) {
+      updatedItems['depressao'].status = 'ruled_out';
+      updatedItems['depressao'].notes = 'Sem anedonia global, lentificação psicomotora ou episódios depressivos primários.';
+    }
+    // Burnout
+    if (updatedItems['burnout']) {
+      updatedItems['burnout'].status = 'comorbidity';
+      updatedItems['burnout'].notes = 'Esgotamento decorrente do esforço compensatório contínuo para manter produtividade.';
+    }
+    // Sono
+    if (updatedItems['sono']) {
+      updatedItems['sono'].status = 'ruled_out';
+      updatedItems['sono'].notes = 'Atraso de fase do sono habitual sem apneia do sono ou parassonias explicativas.';
+    }
+    // Bipolar
+    if (updatedItems['bipolar']) {
+      updatedItems['bipolar'].status = 'ruled_out';
+      updatedItems['bipolar'].notes = 'Ausência de episódios maníacos ou hipomaníacos circunscritos independentes.';
+    }
+    // TEA
+    if (updatedItems['tea']) {
+      updatedItems['tea'].status = 'ruled_out';
+      updatedItems['tea'].notes = 'Reciprocidade socioemocional preservada; sem padrões rígidos de movimentos repetitivos.';
+    }
+    // Substâncias
+    if (updatedItems['substancias']) {
+      updatedItems['substancias'].status = 'ruled_out';
+      updatedItems['substancias'].notes = 'Apenas uso moderado de cafeína; sem histórico de abuso ou dependência de substâncias.';
+    }
+
+    const simulated: DiferenciaisData = {
+      items: updatedItems,
+      padraoTemporal: {
+        inicioInfanciaConfirmado: true,
+        flutuacaoConformeInteresse: true,
+        independenteDeFaseHumor: true,
+        impactoEmMultiplosContextos: true
+      },
+      condicoesFisicasInvestigadas: 'Exames laboratoriais gerais (função tireoidiana TSH/T4L, ferritina, hemograma completo e vitamina B12) apresentaram resultados dentro dos limites de normalidade, descartando etiologias metabólicas ou endócrinas para a queixa atencional.',
+      conclusaoDiferencial: 'Os sintomas atencionais e desexecutivos são crônicos, iniciaram-se de forma nítida na infância (<12 anos) e manifestam-se transversalmente em múltiplos contextos. Descartou-se que sejam secundários a transtorno de humor ou distúrbios primários do sono. Há presença de comorbidade secundária com Transtorno de Ansiedade decorrente dos prejuízos acumulados pelo TDAH.',
+      completedAt: new Date().toISOString()
+    };
+    setData(simulated);
+    onUpdateDiferenciais(simulated);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Cabeçalho */}
@@ -104,6 +158,16 @@ export default function StageDifferentialView({
             Superamos a oposição simplista ('oscila = humor; linear = TDAH'), pois o TDAH <strong>varia conforme interesse, novidade e estrutura ambiental</strong>.
             Construa a linha do tempo e investigue se as dificuldades atencionais persistem fora de episódios afetivos.
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleSimulate}
+            className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[9px] font-black uppercase tracking-widest text-amber-400 transition-all cursor-pointer shadow-sm"
+            title="Preencher com dados simulados para teste"
+          >
+            <Zap size={11} /> Simular
+          </button>
         </div>
       </div>
 

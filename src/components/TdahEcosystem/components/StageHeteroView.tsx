@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HeterorrelatoData } from '../types';
-import { Users, CheckCircle2, ArrowRight, Info, Sparkles } from 'lucide-react';
+import { Users, CheckCircle2, ArrowRight, Info, Sparkles, Zap } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
 interface StageHeteroViewProps {
@@ -40,6 +40,25 @@ export default function StageHeteroView({
     onUpdateHeterorrelato(updated);
   };
 
+  const handleSimulate = () => {
+    const simulated: HeterorrelatoData = {
+      respondenteNome: 'Mariana Costa Ferreira',
+      grauParentesco: 'Cônjuge/Parceiro(a)',
+      tempoConvivio: '7 anos de casamento (convivência diária contínua)',
+      conviveuNaInfancia: false,
+      observacoesInfancia: 'A sogra relatou que na infância ele não parava quieto na cadeira, perdia agasalhos escolares com frequência e necessitava de supervisão constante para lições.',
+      percepcaoDesatencao: 'Frequentemente parece não escutar quando conversamos diretamente; esquece tarefas combinadas minutos após o combinado; perde chaves, celular e carteira diariamente.',
+      percepcaoHiperatividadeImpulsividade: 'Interrompe a fala dos outros por impaciência; tem extrema dificuldade em esperar filas e balança as pernas ou tamborila dedos o tempo todo.',
+      percepcaoDisfuncaoExecutiva: 'Planeja rotinas mas não consegue cumpri-las; subestima gravemente o tempo necessário para deslocamentos ou tarefas domésticas; deixa armários abertos e projetos inacabados.',
+      impactoRelacionamentoRotina: 'Gera sobrecarga e sensação de que a parceira precisa atuar como "gerente/mãe" da rotina doméstica, sendo fonte crônica de desgastes e atritos no casamento.',
+      concordanciaGeralComAutorrelato: 'Alta Convergência',
+      notasClinicasConfronto: 'Os relatos da cônjuge corroboram plenamente o autorrelato do paciente no ASRS e ETDAH-AD, descartando hipótese de distorção ou superestimação e confirmando o critério DSM-5 de prejuízo em múltiplos contextos.',
+      completedAt: new Date().toISOString()
+    };
+    setFormData(simulated);
+    onUpdateHeterorrelato(simulated);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Cabeçalho */}
@@ -61,6 +80,16 @@ export default function StageHeteroView({
             O heterorrelato com um observador próximo (cônjuge, pais ou irmãos) triangula a percepção cotidiana e a trajetória infantil. 
             <strong> Nota:</strong> Não funciona como uma votação de confirmação, mas como perspectiva clínica complementar.
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleSimulate}
+            className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[9px] font-black uppercase tracking-widest text-amber-400 transition-all cursor-pointer shadow-sm"
+            title="Preencher com dados simulados para teste"
+          >
+            <Zap size={11} /> Simular
+          </button>
         </div>
       </div>
 

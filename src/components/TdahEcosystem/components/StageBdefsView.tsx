@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BdefsData } from '../types';
 import { BDEFS_QUESTIONS, BDEFS_SECTIONS, BDEFS_SCALE_OPTIONS, BARKLEY_ADHD_EF_INDEX_ITEMS } from '../data/bdefsData';
 import { calculateBdefsScoring } from '../lib/scoring';
-import { Layers, CheckCircle2, ArrowRight, Sparkles, AlertCircle, Bookmark } from 'lucide-react';
+import { Layers, CheckCircle2, ArrowRight, Sparkles, AlertCircle, Bookmark, Zap } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
 interface StageBdefsViewProps {
@@ -75,9 +75,10 @@ export default function StageBdefsView({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleSimulateFill}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-text-dim hover:text-text-main text-[10px] font-bold uppercase tracking-wider border border-white/10 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[9px] font-black uppercase tracking-widest text-amber-400 transition-all cursor-pointer shadow-sm"
+            title="Preencher com dados simulados para teste"
           >
-            <Sparkles size={12} className="text-amber-400" /> Preencher Exemplo
+            <Zap size={11} /> Simular
           </button>
         </div>
       </div>

@@ -13,7 +13,8 @@ import {
   AlertCircle, 
   RotateCcw,
   Check,
-  Send
+  Send,
+  Zap
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { toast } from 'react-hot-toast';
@@ -175,6 +176,80 @@ VI. ENCAMINHAMENTOS E RECOMENDAÇÕES
     }
   };
 
+  const handleSimulate = () => {
+    const simulatedText = `LAUDO PSICOLÓGICO CLÍNICO
+(Elaborado em conformidade estrita com a Resolução CFP nº 06/2019)
+
+I. IDENTIFICAÇÃO
+Nome do Avaliando: ${p.name || 'Pedro Henrique Albuquerque'}
+Data de Nascimento: ${p.age ? `Aprox. ${new Date().getFullYear() - parseInt(p.age)}` : '14/05/1992'} (Idade: ${p.age || '32 anos'})
+Escolaridade: ${p.education || 'Ensino Superior Completo'}
+Profissão: ${p.profession || 'Engenheiro de Software'}
+Finalidade da Avaliação: Avaliação neuropsicológica e psicológica clínica para investigação diagnóstica de Transtorno do Déficit de Atenção/Hiperatividade (TDAH) em adultos, diagnóstico diferencial e subsídio para intervenção terapêutica e médica.
+Psicólogo(a) Responsável: ${p.psychologistName || 'Psicólogo Clínico'} — CRP: ${p.crp || '06/150409'}
+
+II. DESCRIÇÃO DA DEMANDA
+O avaliando procurou espontaneamente o serviço psicológico apresentando queixas consistentes e crônicas de sustentação do foco atencional, esquecimentos frequentes de compromissos profissionais e pessoais, lentidão e dispersão em tarefas que exigem esforço mental prolongado, procrastinação severa e intensa desorganização na gestão da rotina. Relata que, apesar de elevado potencial intelectual e competência técnica, vivencia sobrecarga crônica ("sensação de nadar contra a correnteza"), cansaço extremo ao final do dia e atritos no relacionamento conjugal em virtude de esquecimentos rotineiros.
+
+III. PROCEDIMENTOS E INSTRUMENTOS UTILIZADOS
+A avaliação foi conduzida sob abordagem multimétodo, estruturada nas seguintes etapas clínicas:
+1. Entrevistas Clínicas e Anamnese Retrospectiva da Infância (< 12 anos): Levantamento da história do desenvolvimento, boletins escolares, queixas de professores e histórico familiar.
+2. ASRS-18 (Adult ADHD Self-Report Scale - OMS / SATEPSI): Instrumento de triagem sintomatológica para rastreio de sintomas atuais.
+3. ETDAH-AD (Escala de Transtorno do Déficit de Atenção/Hiperatividade em Adultos - Benczik / Vetor Editora): 69 itens avaliando os 5 fatores normatizados para o Brasil.
+4. EPF-TDAH (Escala de Prejuízos Funcionais): 58 itens avaliando a extensão e severidade dos prejuízos em 9 domínios da vida adulta (Critério C do DSM-5-TR).
+5. BDEFS (Barkley Deficits in Executive Functioning Scale - Hogrefe): 89 itens para mensuração de disfunção executiva na rotina e cálculo do Índice FE-TDAH de Barkley.
+6. Heterorrelato Estruturado com Terceiros: Entrevista com cônjuge para validação externa, triangulação e redução de vieses de autorrelato.
+7. Entrevista Diagnóstica Estruturada para Diagnósticos Diferenciais (DSM-5-TR): Mapeamento de TAG, Transtornos do Humor, Burnout e Cronobiologia.
+
+IV. ANÁLISE DOS RESULTADOS
+1. Rastreio Inicial (ASRS-18):
+O avaliando atingiu pontuação indicativa de alta probabilidade na Parte A (5 de 6 sintomas acima do limiar clínico) e escore elevado na Parte B, delimitando necessidade de investigação confirmatória.
+
+2. Histórico Longitudinal e Anamnese (< 12 anos):
+Identificou-se nítido padrão de desatenção e inquietação antes dos 12 anos. Relatos escolares confirmam que o avaliando "vivia no mundo da lua", levantava-se com frequência na sala de aula e esquecia materiais. O histórico de esforço compensatório familiar intenso (mãe estudando diariamente junto) mascarou reprovações, permitindo bom desempenho acadêmico às custas de sofrimento psíquico. Histórico genético positivo em primeiro grau (pai e irmão com perfil de desatenção crônica).
+
+3. Investigação Psicométrica (ETDAH-AD):
+O perfil psicométrico revelou escores elevados e estatisticamente significativos nos Fatores 1 (Desatenção - Nível Superior, Percentil 95) e 4 (Autorregulação da Atenção e Motivação - Nível Superior, Percentil 92). Os Fatores 2 (Impulsividade) e 5 (Hiperatividade) apresentaram-se no nível Médio-Superior.
+
+4. Impacto Funcional e Múltiplos Contextos (EPF-TDAH):
+Evidenciou-se prejuízo clinicamente significativo em 4 domínios: Acadêmico/Profissional (Percentil 88), Doméstico (Percentil 85), Gestão Financeira (Percentil 80) e Relacionamentos Afetivos (Percentil 76), preenchendo o Critério C do DSM-5-TR.
+
+5. Disfunção Executiva no Cotidiano (BDEFS Barkley):
+O Índice FE-TDAH de Barkley (11 itens nucleares) totalizou 34 pontos (Nível Muito Elevado / Percentil 96). As maiores dificuldades concentram-se no Gerenciamento do Tempo, Memória de Trabalho Operacional e Autorregulação da Motivação.
+
+6. Heterorrelato:
+A cônjuge confirmou os esquecimentos diários, a dispersão atencional em diálogos e a sobrecarga na gestão doméstica, demonstrando alta convergência com o autorrelato.
+
+7. Diagnósticos Diferenciais:
+Descartou-se Transtorno Bipolar, TEA e uso de substâncias. Os sintomas ansiosos identificados caracterizam-se como comorbidade secundária à sobrecarga e frustrações acumuladas pelos déficits executivos do TDAH, não como etiologia primária.
+
+V. CONCLUSÃO DIAGNÓSTICA
+A síntese clínica e psicométrica preenche plenamente os critérios diagnósticos do DSM-5-TR e da CID-11 para:
+- Transtorno do Déficit de Atenção/Hiperatividade em Adultos (TDAH) — Apresentação Combinada (F90.2 / 6A05.2).
+- Comorbidade Secundária: Transtorno de Ansiedade Generalizada (F41.1) reativo à desregulação executiva.
+
+VI. ENCAMINHAMENTOS E RECOMENDAÇÕES
+1. Encaminhamento Médico Psiquiátrico: Sugere-se avaliação clínica para considerar o suporte farmacológico de primeira linha (psicoestimulantes/inibidores de recaptação de noradrenalina) visando otimizar a neurotransmissão dopaminérgica e noradrenérgica.
+2. Psicoterapia Cognitivo-Comportamental / Treinamento de Habilidades Psicológicas (THP): Foco no treino deliberado de Autocontrole (HP 6), Resolutividade de Enfrentamento (HP 5) e Imunidade Social (HP 8), auxiliando na estruturação de contingências ambientais externas e descatastrofização.
+3. Modificações Ambientais e Tecnológicas: Implementação de alarmes externos, listas visuais kanban, técnica de blocos curtos de tempo (Pomodoro) e externalização da memória de trabalho.
+
+Local e Data: ${new Date().toLocaleDateString('pt-BR')}
+
+___________________________________________________
+${p.psychologistName || 'Psicólogo(a) Responsável'}
+CRP: ${p.crp || '06/150409'}`;
+
+    setReportText(simulatedText);
+    const updatedLaudo: LaudoTdahIntegrativo = {
+      aiAssistedSynthesis: simulatedText,
+      conclusaoFinal: 'Critérios Plenamente Atendidos para TDAH Tipo Combinado (F90.2) com comorbidade de Ansiedade Secundária',
+      encaminhamentos: '1. Avaliação Psiquiátrica para farmacoterapia; 2. Psicoterapia TCC com Treino de Habilidades Psicológicas (THP); 3. Estruturação ergonômica ambiental.',
+      completedAt: new Date().toISOString()
+    };
+    onUpdateLaudo(updatedLaudo);
+    toast.success('Laudo simulado de alta precisão preenchido!');
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(reportText);
     setCopied(true);
@@ -208,6 +283,14 @@ VI. ENCAMINHAMENTOS E RECOMENDAÇÕES
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleSimulate}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[9px] font-black uppercase tracking-widest text-amber-400 transition-all cursor-pointer shadow-sm"
+            title="Preencher laudo modelo para teste"
+          >
+            <Zap size={11} /> Simular
+          </button>
+
           <button
             onClick={handleGenerateAiReport}
             disabled={isGeneratingAi}

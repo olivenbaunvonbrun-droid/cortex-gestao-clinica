@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnamneseData } from '../types';
-import { BookOpen, CheckCircle2, ArrowRight, Brain, AlertCircle, Sparkles } from 'lucide-react';
+import { BookOpen, CheckCircle2, ArrowRight, Brain, AlertCircle, Sparkles, Zap } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
 interface StageAnamneseViewProps {
@@ -73,6 +73,54 @@ export default function StageAnamneseView({
     });
   };
 
+  const handleSimulate = () => {
+    const simulated: AnamneseData = {
+      queixaPrincipal: 'Dificuldade crônica de sustentação do foco atencional, desorganização no trabalho e esquecimentos frequentes de prazos e compromissos.',
+      impactoVidaDiaria: 'Acúmulo de tarefas atrasadas, sobrecarga mental contínua, atritos conjugais por esquecer afazeres domésticos e sensação de esgotamento ao final do dia.',
+      marcosDesenvolvimento: {
+        idadeAndar: '12 meses',
+        idadeFalar: '16 meses',
+        idadeLer: '6 anos',
+        desempenhoAcademicoInfancia: 'Notas muito oscilantes: excelente em matérias de alto interesse (história, ciências) e muito baixas em disciplinas com esforço repetitivo ou memorização árida.',
+        comportamentoEscola: 'Professores relatavam que "vivia no mundo da lua", levantava frequentemente para apontar lápis ou beber água, perdia casacos e esquecia lições.',
+        problemasComportamentoInfanciaAdolescencia: 'Na adolescência a hiperatividade motora transformou-se em inquietação mental interna constante, balançar de pernas e impulsividade verbal.',
+        repetenciaOuAdvertencias: 'Não repetiu de ano, mas recebeu constantes advertências por conversar nas aulas e distrair colegas.',
+        esforcoCompensatorioOuApoioFamiliar: 'A mãe estudava diariamente com ele para garantir a entrega das tarefas; estudava apenas na véspera sob intensa adrenalina de prazo.'
+      },
+      historiaFamiliar: {
+        temHistoricoFamiliar: true,
+        parentesAfetados: 'Pai e irmão mais novo',
+        detalhes: 'Pai apresenta perfil nítido de desatenção, perde chaves/óculos com frequência e tem histórico de desorganização financeira crônica.'
+      },
+      historicoMedicoPsiquiatrico: {
+        problemasMedicosInfancia: 'Desenvolvimento físico sem intercorrências; sem crises convulsivas ou TCE.',
+        diagnosticosAnteriores: 'Diagnóstico prévio de Transtorno de Ansiedade Generalizada com resposta apenas parcial a ISRS.',
+        usoMedicacaoPsicotropica: 'Sertralina 50mg/dia',
+        tempoMedicacao: 'Uso contínuo há 8 meses',
+        historicoSono: 'Dificuldade para iniciar o sono devido a pensamentos acelerados; sono agitado, acorda com sensação de cansaço.',
+        historicoSubstancias: 'Consumo elevado de cafeína (5 a 6 xícaras de café/dia) como estratégia compensatória para manter o estado de alerta.'
+      },
+      sintomasNuclearesAtuais: {
+        focoEsforcoMental: 'Evitação ativa de tarefas burocráticas ou com esforço mental prolongado; distrai-se com qualquer estímulo do ambiente.',
+        organizacaoTarefas: 'Inicia múltiplos projetos simultâneos e tem enorme dificuldade em concluí-los; mesa de trabalho e ambiente digital caóticos.',
+        seguirInstrucoes: 'Pula etapas de manuais e e-mails longos, lendo apenas trechos rápidos e cometendo erros de procedimento.',
+        lembrarDetalhes: 'Esquece compromissos rotineiros, datas de aniversários, prazos de contas e onde guardou pertences essenciais.',
+        procrastinacao: 'Severa: empurra decisões e tarefas complexas até o limite do prazo final, gerando picos intensos de estresse.',
+        interrupcaoFala: 'Interrompe a fala de colegas por impaciência e costuma completar a frase dos outros.',
+        inquietudeAgitacao: 'Necessidade constante de manipular objetos durante reuniões (caneta, mexer nas mãos, tamborilar dedos, balançar pernas).'
+      },
+      tratamentosAnteriores: {
+        fezTratamentoTdah: false,
+        qualTratamentoETempo: 'Nunca realizou avaliação neuropsicológica específica ou uso de psicoestimulantes.',
+        houveMelhora: 'N/A'
+      },
+      expectativasTratamento: 'Obter clareza diagnóstica, desculpabilizar seu histórico de vida, estruturar rotinas funcionais e avaliar intervenção farmacológica e psicoterapêutica com médico psiquiatra.',
+      completedAt: new Date().toISOString()
+    };
+    setFormData(simulated);
+    onUpdateAnamnese(simulated);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Cabeçalho */}
@@ -92,6 +140,16 @@ export default function StageAnamneseView({
           <p className="text-xs text-text-dim mt-1 max-w-2xl leading-relaxed">
             O DSM-5-TR exige que os sintomas tenham início antes dos 12 anos. Investigue boletins escolares, queixas de professores, histórico familiar e estratégias de compensação que mascararam o quadro no passado.
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleSimulate}
+            className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[9px] font-black uppercase tracking-widest text-amber-400 transition-all cursor-pointer shadow-sm"
+            title="Preencher com dados simulados para teste"
+          >
+            <Zap size={11} /> Simular
+          </button>
         </div>
       </div>
 

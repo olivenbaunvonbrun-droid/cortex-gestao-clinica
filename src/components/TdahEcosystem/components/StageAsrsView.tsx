@@ -80,6 +80,42 @@ export default function StageAsrsView({
     onUpdateAsrs(updated);
   };
 
+  const handleSimulate = () => {
+    // Typical positive ASRS screening for adult ADHD: 5 items >= threshold in Part A, elevated Part B
+    const simulatedAnswers: Record<number, number> = {
+      1: 3, // Com frequência
+      2: 4, // Muito frequentemente
+      3: 3, // Com frequência
+      4: 2, // Às vezes
+      5: 3, // Com frequência
+      6: 4, // Muito frequentemente
+      7: 3,
+      8: 2,
+      9: 3,
+      10: 4,
+      11: 3,
+      12: 2,
+      13: 3,
+      14: 4,
+      15: 3,
+      16: 2,
+      17: 3,
+      18: 4
+    };
+    setAnswers(simulatedAnswers);
+    const scoring = calculateTdahAssessment(simulatedAnswers);
+    onUpdateAsrs({
+      answers: simulatedAnswers,
+      partAScore: scoring.partA.rawScore,
+      partBScore: scoring.partB.rawScore,
+      partASignificant: scoring.partA.significantSymptoms,
+      partBSignificant: scoring.partB.significantSymptoms,
+      thresholdMetA: scoring.partA.thresholdMet,
+      classification: scoring.classification,
+      completedAt: new Date().toISOString()
+    });
+  };
+
   const currentScoring = calculateTdahAssessment(answers);
   const totalAnswered = Object.keys(answers).length;
 
@@ -105,14 +141,24 @@ export default function StageAsrsView({
           </p>
         </div>
 
-        {onOpenStandaloneAsrs && (
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={onOpenStandaloneAsrs}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-text-main text-xs font-bold uppercase tracking-wider border border-white/10 transition-all cursor-pointer"
+            onClick={handleSimulate}
+            className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 rounded-xl text-[9px] font-black uppercase tracking-widest text-amber-400 transition-all cursor-pointer shadow-sm"
+            title="Preencher com dados simulados para teste"
           >
-            <ExternalLink size={13} /> Abrir Ferramenta Isolada
+            <Zap size={11} /> Simular
           </button>
-        )}
+
+          {onOpenStandaloneAsrs && (
+            <button
+              onClick={onOpenStandaloneAsrs}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-text-main text-xs font-bold uppercase tracking-wider border border-white/10 transition-all cursor-pointer"
+            >
+              <ExternalLink size={13} /> Abrir Isolada
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Painel de Resultados do Rastreio */}
