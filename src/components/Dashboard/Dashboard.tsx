@@ -16,10 +16,9 @@ import {
   Mail,
   Send,
   X,
+  Edit2,
   Play,
-  Video,
-  Brain,
-  Sparkles
+  Video
 } from 'lucide-react';
 import { db, type Patient, type Appointment } from '../../lib/db';
 import { motion } from 'motion/react';
