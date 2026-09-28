@@ -655,7 +655,7 @@ export function ClinicalAudioRecorder({
         throw new Error('A inteligência artificial não identificou falas clínicas audíveis no áudio. A gravação continua protegida no cofre.');
       }
 
-      // Step 2: Análise Clínica Abrangente (Modelo RID - 5 Pilares) com Streaming Progressivo
+      // Step 2: Análise Clínica Abrangente (TCC de 4ª Geração - Modelo RID / THP) com Streaming Progressivo
       setProcessingStep('Formulando raciocínio clínico de 4ª Geração (Padrão RID) e preenchendo os campos ao vivo...');
       const clinicalAnalysis = await analyzeSessionTranscriptComprehensive(
         fullTranscript,

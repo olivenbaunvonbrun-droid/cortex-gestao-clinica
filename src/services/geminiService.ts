@@ -1391,7 +1391,7 @@ Psi: [texto do psicólogo]
   return rawTranscript;
 }
 
-// Gerador específico de campo faltante com alta profundidade (Anti-Placeholder / Zero Texto Genérico)
+// Gerador específico de campo faltante com alta profundidade sob a TCC de 4ª Geração (THP / RID / Poubel & Rodrigues)
 async function generateTargetedField(
   fieldName: string,
   transcript: string,
@@ -1403,7 +1403,12 @@ async function generateTargetedField(
   const ai = new GoogleGenAI({ apiKey });
 
   const targetedPrompt = `
-Você é o Supervisor Clínico Sênior de Psicologia do Cortex Clínico, especialista em TCC de 4ª Geração, Terapia do Esquema, Análise do Comportamento, Psicologia Positiva e Neurociência Clínica.
+Você é o Supervisor Clínico Sênior de Psicologia do Cortex Clínico, especialista estrito em TERAPIA COGNITIVO-COMPORTAMENTAL DE 4ª GERAÇÃO (Método Lincoln Poubel & Rodrigues):
+- Paradigma Central: Treinamento de Habilidades Psicológicas (THP) e Abandono da "Sala de Descompressão" (catarse passiva/alívio por reforçamento negativo);
+- Instrumento Mestre: RID (Registro de Interações Disfuncionais) com seus 4 componentes (Contexto/Sd, Necessidades/Estressores, Tríplice Resposta Cognitiva/Somática/Coping, Consequências Imediatas vs Longo Prazo) e Pergunta Diagnóstica Chave ("Qual HP substituiria a resposta disfuncional?");
+- Rota 1: Processo de Modificação Esquemática (PME) – Desfusão Identitária e Metáfora do Ônibus (Adulto Saudável no volante vs Criança Interior no banco de trás), 18 EIDs nos 5 Domínios de Young, Modos Esquemáticos, Ativação Mnemônica/Ressignificação de Memórias e Seta Descendente;
+- Rota 2: Processo de Desenvolvimento Psicológico (PDP) – Treino das 10 HPs (Autoconhecimento, Autorregulação, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade, Autocontrole, Sociabilidade/Assertividade e Direito de Ser Falível, Imunidade Social com Fórmula do Não e Nevoeiro, Sensibilidade Social com Validação Dialética em 3 Níveis, Hedonismo Responsável e Criança Feliz) e as 5 Fases do PDP com Role-play Tiers 1 e 2 e Hierarquia de Exposição com SUDS.
+
 Sua tarefa é formular com máxima profundidade e rigor técnico o campo "${fieldName}" para o prontuário da paciente ${patient.name || "Paciente"}.
 
 DADOS DO PACIENTE:
@@ -1419,7 +1424,7 @@ ${transcript.slice(0, 12000)}
 """
 
 DIRETRIZ DE CONTEÚDO PARA O CAMPO "${fieldName}":
-Desenvolva um texto substancial, formal, rico em semiologia e vocabulário técnico da TCC de 4ª Geração e Terapia do Esquema.
+Desenvolva um texto substancial, formal, rico em semiologia e vocabulário técnico estrito da TCC de 4ª Geração (Poubel & Rodrigues).
 Retorne APENAS o código HTML limpo correspondente (<p style='text-align: justify;'>, <ul><li> ou <strong>). NÃO use marcações Markdown como \`\`\`html.
 `;
 
@@ -1435,7 +1440,7 @@ Retorne APENAS o código HTML limpo correspondente (<p style='text-align: justif
   }
 }
 
-// Análise Clínica Abrangente (Escriba IA) para Preenchimento do Registro de Atendimento (Padrão RID / 5 Pilares)
+// Análise Clínica Abrangente (Escriba IA) para Preenchimento do Registro de Atendimento (TCC de 4ª Geração - Modelo RID / THP)
 export async function analyzeSessionTranscriptComprehensive(
   transcript: string,
   patient: { name: string; age?: string; clinicalProfile?: string; gender?: string },
@@ -1455,15 +1460,44 @@ export async function analyzeSessionTranscriptComprehensive(
   });
 
   const prompt = `
-Você é o Escriba Clínico de IA de Mais Alto Nível em Psicologia Clínica Integrada, com especialização sênior nos 5 PILARES FUNDAMENTAIS:
-1. TCC de 4ª Geração & Terapia Baseada em Processos (PBT de Hofmann & Hayes, ACT/Hexaflex, Contextualismo Funcional, FAP, DBT);
-2. Terapia do Esquema Avançada de Jeffrey Young (18 EIDs, 15 Esquemas Adaptativos YPQ, 5 Necessidades Emocionais Básicas, Dinâmica de Modos Esquemáticos e Adulto Saudável);
-3. Análise do Comportamento Radical (Análise Funcional Tríplice Contingência S-R-C, Esquiva Experiencial, Reforçamento Negativo, Comportamento Governado por Regras);
-4. Psicologia Positiva & Ciência do Bem-Estar (24 Forças VIA, Teoria Multidimensional PERMA, Autoeficácia e Fatores de Resiliência);
-5. Neurociência Clínica & Psicobiologia (Teoria Polivagal de Stephen Porges, Eixo HPA, regulação Córtico-Límbica CPF vs Amígdala e Neuroplasticidade).
+Você é o Escriba Clínico de IA de Mais Alto Nível em Psicologia Clínica, com especialização sênior e irrestrita na TERAPIA COGNITIVO-COMPORTAMENTAL DE 4ª GERAÇÃO (Método Lincoln Poubel & Rodrigues).
+
+MATRIZ TEÓRICA E METODOLÓGICA EXCLUSIVA DA TCC DE 4ª GERAÇÃO:
+1. FILOSOFIA FUNDAMENTAL ("ABANDONE A SALA DE DESCOMPRESSÃO"):
+   - A psicoterapia NÃO é um mero espaço de desabafo catártico passivo ou alívio temporário (o qual opera como reforçamento negativo mantenedor do ciclo disfuncional).
+   - O processo terapêutico é estruturado estritamente como Treinamento de Habilidades Psicológicas (THP), onde o terapeuta é um treinador clínico deliberado e o paciente assume a postura de cientista de si mesmo e praticante diário.
+
+2. INSTRUMENTO MESTRE: O RID (REGISTRO DE INTERAÇÕES DISFUNCIONAIS):
+   Todo comportamento e episódio clínico é analisado através dos 4 componentes do RID:
+   - Componente 1: Contexto Fático / Situação (Estímulos Antecedentes Discriminativos Sd: quem, quando, onde, o evento concreto sem julgamentos);
+   - Componente 2: Necessidades / Estressores (Necessidades Emocionais Básicas violadas ou ameaçadas na interação);
+   - Componente 3: Sua Resposta (Tríplice Resposta: Cognitiva com pensamentos automáticos e regras "Se... então..."; Somática/Emocional com ativação corporal e afeto; Ações/Coping com os modos de enfrentamento de Rendição, Evitação ou Hipercompensação do esquema);
+   - Componente 4: Consequências (Imediatas: alívio temporário por reforçamento negativo vs Longo Prazo: custos cumulativos, sofrimento mantido e estagnação).
+   - Pergunta Diagnóstica Central da 4ª Geração: "Qual Habilidade Psicológica, se estivesse bem desenvolvida, substituiria essa resposta disfuncional e geraria um resultado melhor para o paciente?"
+
+3. ROTA 1: PROCESSO DE MODIFICAÇÃO ESQUEMÁTICA (PME) – "REABILITANDO O PASSADO":
+   - Desfusão Identitária & Metáfora do Ônibus: O Eu Adulto Saudável é o motorista soberano no volante; os esquemas feridos e as versões infantis (Criança Vulnerável, Criança Irritada) são passageiros barulhentos no banco de trás que podem se manifestar, mas não assumem o volante.
+   - 18 Esquemas Iniciais Desadaptativos (EIDs) nos 5 Domínios de Jeffrey Young (Domínio I: Desconexão/Rejeição; Domínio II: Autonomia Prejudicada; Domínio III: Limites Prejudicados; Domínio IV: Orientação para o Outro; Domínio V: Supervigilância/Inibição).
+   - Modos Esquemáticos: Criança Vulnerável, Criança Irritada, Criança Feliz, Protetor Desligado, Pais Críticos/Punitivos/Exigentes e fortalecimento do Adulto Saudável.
+   - Ativação Mnemônica e Ressignificação de Memórias ("Curando a Criança Interior"): Identificação das experiências formativas na infância/adolescência que originaram o esquema, intervenção pelo Adulto Saudável para proteger a criança e reescrever a narrativa mnemônica.
+   - Hierarquia Cognitiva da 4ª Geração (Seta Descendente): Pensamentos Automáticos ➔ Crenças Intermediárias/Regras Condicionais ("Se... então...", "Tenho que...") ➔ Crenças Centrais/EIDs ➔ Reenquadre Funcional do Adulto Saudável.
+
+4. ROTA 2: PROCESSO DE DESENVOLVIMENTO PSICOLÓGICO (PDP) – "CONSTRUINDO O FUTURO":
+   - Treino Deliberado das 10 Habilidades Psicológicas (HPs):
+     1. Autoconhecimento (automonitoramento funcional via RID, mapeamento de esquemas e separação da Criança Interior vs Adulto);
+     2. Autorregulação Emocional (pausa consciente, tolerância ao desconforto emocional, modulação afetiva);
+     3. Raciocínio Realisticamente Otimista (reestruturação cognitiva empírica baseada em fatos, sem positividade tóxica ou catastrófica);
+     4. Autoestima (autoaceitação incondicional e valor pessoal intrínseco desvinculado de performance ou aprovação);
+     5. Resolutividade e Enfrentamento (postura ativa na solução de problemas e enfrentamento direto de contingências adversas);
+     6. Autocontrole (capacidade de adiar gratificação imediata e manter disciplina voltada para objetivos de longo prazo);
+     7. Sociabilidade e Assertividade (Tríade Assertiva: Comunicação Clara, Empatia com o outro e Firmeza de limites; e o Direito Incondicional de Ser Falível);
+     8. Imunidade Social (Fórmula do Não sem justificativas excessivas ou culpas, e Técnica do Nevoeiro/Fogging diante de manipulações ou críticas injustas);
+     9. Sensibilidade Social (Paráfrase Empática e Validação Dialética em 3 Níveis: ouvir, validar a coerência do outro e cooperar);
+     10. Hedonismo Responsável (Savoring/saboreamento do momento presente, ativação da Criança Feliz, lazer sem culpa e equilíbrio de vida).
+   - As 5 Fases do Treinamento no PDP: Fase 1 (Motivação e custos da inação); Fase 2 (Correção de Distorções); Fase 3 (Mentalidade Saudável e "Frases de Poder" do Adulto Saudável); Fase 4 (Imersão e regras da habilidade); Fase 5 (Exercícios Práticos: Role-play Tier 1 com roteiro guiado / Tier 2 sob pressão em sessão, e Hierarquia de Exposição Graduada com SUDS 0-10 na vida real sob a regra "Se [gatilho/afeto aversivo] -> Então [ativar HP / Tríade Assertiva]").
 
 SUA MISSÃO MANDATÓRIA:
-Analisar a transcrição integral da consulta clínica abaixo e formular, com substancial profundidade analítica, alta densidade semiológica e extensão técnica compatível com o MODELO DE RELATÓRIO RID (Registro de Interações Diárias), todos os 12 campos clínicos obrigatórios do Registro de Atendimento.
+Analisar a transcrição integral da consulta clínica abaixo e formular, com substancial profundidade analítica, rigor técnico estrito da TCC de 4ª GERAÇÃO e extensão compatível com o MODELO DE RELATÓRIO RID, todos os 12 campos clínicos obrigatórios do Registro de Atendimento.
 PROIBIÇÃO ABSOLUTA DE RESUMOS TELEGRÁFICOS OU FRASES CURTAS GENÉRICAS! Cada campo deve apresentar formulações clínicas aprofundadas, justificativas técnicas sólidas e rigor médico-hospitalar (Resolução CFP nº 06/2019).
 
 DADOS DO ATENDIMENTO:
@@ -1483,50 +1517,79 @@ TRANSCRIÇÃO DIARIZADA E RETIFICADA DA SESSÃO:
 ${rectifiedTranscript}
 """
 
-REGRAS DE PREENCHIMENTO DE CADA UM DOS 12 CAMPOS:
+REGRAS DE PREENCHIMENTO DE CADA UM DOS 12 CAMPOS (EXCLUSIVAMENTE TCC DE 4ª GERAÇÃO):
 
 1. relatoCliente:
    Estruturado em DUAS grandes partes complementares em HTML (<p style='text-align: justify;'>, <ul><li> e <strong>):
-   PARTE A - Formulação e Síntese Clínica Integrada da Sessão (Modelo RID - 5 Pilares):
-     • Contexto Fático e Estímulos Antecedentes Discriminativos (Sd);
-     • Tríplice Resposta: Dimensão Somática/Autonômica (SNA e Teoria Polivagal), Dimensão Cognitivo-Esquemática (com citações literais da paciente preservadas entre aspas duplas \"> '...'\") e Dimensão Motora/Coping;
-     • Análise Funcional de Contingências S-R-C (custos a longo prazo da evitação);
-     • Recursos Protetivos, Forças de Caráter (VIA) e Habilidades Psicológicas identificadas.
+   PARTE A - Formulação Funcional RID (Modelo TCC de 4ª Geração - Poubel & Rodrigues):
+     • Contexto Fático e Estímulos Antecedentes Discriminativos (Sd): Cenário disparador, personagens e contingências fáticas sem julgamentos morais;
+     • Necessidades / Estressores: Identificação pontual das Necessidades Emocionais Básicas negligenciadas ou ameaçadas na interação;
+     • Tríplice Resposta Clínica e EIDs:
+       - Dimensão Cognitiva e Seta Descendente: Pensamentos automáticos, regras condicionais ("Se... então..."), EIDs ativados nos 5 domínios de Young, com preservação literal das falas do paciente entre aspas duplas ("> '...'");
+       - Dimensão Somática/Emocional: Ativação corporal, sensações somáticas e afetos vivenciados;
+       - Dimensão Comportamental/Modos de Enfrentamento: Respostas operantes emitidas sob modos de Rendição, Evitação ou Hipercompensação do esquema;
+     • Análise de Consequências e Reforçamento Negativo: Alívio imediato a curto prazo vs custos existenciais cumulativos e manutenção do ciclo disfuncional a longo prazo;
+     • Déficits nas 10 Habilidades Psicológicas (THP): Diagnóstico claro de quais HPs estavam em déficit no episódio e como o Modo Adulto Saudável foi ativado ou precisa ser treinado.
    PARTE B - Transcrição Estruturada e Diarizada da Sessão:
      • Transcrição completa, organizada e limpa da sessão, com identificação clara e em negrito de <strong>Psi:</strong> (${therapist?.name || "Psicólogo"}) e <strong>P:</strong> (${patient.name || "Paciente"}), sem nenhuma fala invertida.
 
 2. motivoConsulta:
-   Formulação clínico-diagnóstica densa em 2 a 3 parágrafos justificados (<p style='text-align: justify;'>). Diferenciar a queixa manifesta superficial da função comportamental latente mantenedora (esquiva experiencial, reforçamento negativo), detalhando as Necessidades Emocionais Básicas violadas na história de vida e os Esquemas Iniciais Desadaptativos (EIDs) ativados no momento presente, com correlação da ativação neurovegetativa polivagal.
+   Formulação clínico-diagnóstica densa em 2 a 3 parágrafos justificados (<p style='text-align: justify;'>). Superar o "Efeito Sala de Descompressão", diferenciando a queixa manifesta superficial da função comportamental mantenedora latente (alívio imediato por reforçamento negativo, esquiva de vulnerabilidade). Mapear as Necessidades Emocionais Básicas violadas na trajetória de vida, os Esquemas Iniciais Desadaptativos (EIDs) nucleares ativados e o déficit específico nas 10 Habilidades Psicológicas que perpetua o quadro clínico.
 
 3. objetivosCliente:
-   Tópicos estruturados (<ul><li>) traduzindo os anseios e metas declarados pela paciente nas 10 HPs (Habilidades Psicológicas - Poubel & Rodrigues: Autoconhecimento, Autorregulação, Autoestima, Sensibilidade Social, Imunidade Social, etc.), nos pilares do modelo PERMA da Psicologia Positiva e em seus valores existenciais nucleares.
+   Tópicos estruturados (<ul><li>) traduzindo os anseios e metas declarados pelo próprio paciente em sua voz (preservando suas palavras entre aspas), correlacionando-os diretamente à aquisição das 10 Habilidades Psicológicas (Autoconhecimento, Autorregulação Emocional, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade, Autocontrole, Sociabilidade/Assertividade com Direito de Ser Falível, Imunidade Social com Fórmula do Não, Sensibilidade Social e Hedonismo Responsável) e ao projeto de vida do seu Adulto Saudável.
 
 4. objetivosTerapeuta:
-   4 a 6 metas clínicas estruturadas do terapeuta em tópicos (<ul><li>) cobrindo os 5 pilares: enfraquecimento e desativação de EIDs (ex: Inibição Emocional, Privação Emocional) e modos esquemáticos desadaptativos; promoção de flexibilidade psicológica via PBT/ACT (desfusão cognitiva, aceitação experiencial); regulação neurovegetativa autonômica (fortalecimento do tônus ventral-vagal); treino deliberado de HPs em déficit e consolidação contínua do Modo Adulto Saudável.
+   4 a 6 metas clínicas estruturadas do terapeuta em tópicos (<ul><li>), organizadas estritamente sob as Duas Rotas da 4ª Geração:
+   • Rota 1 (Processo de Modificação Esquemática - PME): Desfusão identitária através da Metáfora do Ônibus (manter o Adulto Saudável no volante); desativação e enfraquecimento de EIDs específicos e modos esquemáticos desadaptativos (Rendição, Evitação, Hipercompensação); ativação mnemônica e ressignificação de memórias formativas da infância ("Curando a Criança Interior"); quebra de crenças intermediárias rígidas pela Seta Descendente;
+   • Rota 2 (Processo de Desenvolvimento Psicológico - PDP): Treino deliberado e prescrição de alvos nas HPs em déficit, aplicação das 5 Fases do PDP com ensaios comportamentais (Role-play Tiers 1 e 2) e consolidação da soberania do Modo Adulto Saudável.
 
 5. intervencoes:
-   Registro analítico e pormenorizado em tópicos (<ul><li>) de todas as intervenções e posturas de 4ª Geração aplicadas na sessão (Rastreamento Funcional S-R-C, Psicoeducação em EIDs e Desamparo Aprendido, Metáforas de Desfusão ACT, Ancoragem Somática Polivagal, Diálogo de Modos Esquemáticos, Treino de Comunicação Assertiva Não-Violenta e Orientação Parental), especificando o fundamento técnico e a resposta clínica/psicofisiológica imediata da paciente a cada uma.
+   Registro analítico e pormenorizado em tópicos (<ul><li>) de todas as intervenções e posturas da TCC de 4ª Geração aplicadas na sessão:
+   • Rastreamento funcional minucioso através do RID;
+   • Psicoeducação do Treinamento de Habilidades Psicológicas (THP) para superação do padrão de sala de descompressão;
+   • Emprego da Metáfora do Ônibus e Desfusão da Criança Vulnerável frente ao Adulto Saudável;
+   • Aplicação da Seta Descendente para mapeamento de Crenças Intermediárias ("Se... então...") e Nucleares;
+   • Ativação Mnemônica e Ressignificação de Memórias Biográficas (Curando a Criança Interior);
+   • Treinamento Deliberado de HPs em Sessão: construção de Frases de Poder (Mentalidade Saudável), ensaios de Role-play Tier 1 (guiado) ou Tier 2 (alta pressão), aplicação da Tríade Assertiva, Fórmula do Não, Técnica do Nevoeiro (Fogging) ou Validação Dialética em 3 Níveis;
+   • Especificar detalhadamente a fundamentação técnica e a resposta clínica/cognitiva imediata do paciente a cada intervenção.
 
 6. observacoes:
-   Exame do Estado Mental semiológico minucioso em parágrafos justificados (<p style='text-align: justify;'>): afeto, gama e modulação ideo-afetiva, curso do pensamento, reatividade autonômica polivagal (estados simpático vs ventral-vagal), dinâmica de Modos Esquemáticos observada em sessão e Análise Funcional da Relação Terapêutica (FAP: CRB1 - esquivas interpessoais e CRB2 - progressos e abertura para vulnerabilidade em tempo real com citações literais da paciente).
+   Exame do Estado Mental semiológico minucioso e dinâmica funcional em parágrafos justificados (<p style='text-align: justify;'>):
+   • Avaliação semiológica clássica (afeto, gama e modulação ideo-afetiva, curso, velocidade e coerência do pensamento, psicomotricidade);
+   • Dinâmica dos Modos Esquemáticos observada em sessão (transições funcionais entre Criança Vulnerável, Criança Irritada, Protetor Desligado, Pais Críticos/Exigentes e Modo Adulto Saudável);
+   • Postura frente ao Treinamento de Habilidades Psicológicas (disposição como cientista de si mesmo e praticante ativo versus tentativas de regressão à queixa passiva da sala de descompressão);
+   • Respostas verbais emitidas na relação com o terapeuta, com preservação das metáforas e termos originais do paciente entre aspas.
 
 7. insights:
-   4 a 6 insights clínicos aprofundados em tópicos (<ul><li>), articulando os gatilhos contemporâneos às contingências ontogenéticas formativas da infância/adolescência (origem da necessidade de "carregar o piano da família" e autonomia precoce), diferenciação de contextos (Self-como-Contexto) e ativação de forças de caráter.
+   4 a 6 insights clínicos aprofundados em tópicos (<ul><li>), articulando os gatilhos contemporâneos às suas origens ontogenéticas na infância/adolescência (compreensão de como o ambiente formativo forjou os EIDs e as regras de sobrevivência infantil), a desfusão identitária da Criança Interior (discriminação de que os passageiros do banco de trás pertencem ao passado) e a identificação precisa da Habilidade Psicológica libertadora necessária para a resolução do ciclo disfuncional.
 
 8. percepcaoCliente:
-   Avaliação detalhada da aliança terapêutica, engajamento colaborativo, estágio motivacional de prontidão para a mudança (Prochaska & DiClemente) e grau de disposição para abertura experiencial diante de desconfortos em parágrafos justificados (<p style='text-align: justify;'>).
+   Avaliação detalhada da aliança terapêutica e engajamento em parágrafos justificados (<p style='text-align: justify;'>):
+   • Qualidade do vínculo e contrato de colaboração na TCC de 4ª Geração (relação treinador-praticante, segurança psicológica, receptividade ao feedback técnico);
+   • Estágio de prontidão para a mudança (superação da catarse passiva e engajamento voluntário no Treinamento de Habilidades);
+   • Disposição para tolerar o desconforto emocional transitório exigido pelos ensaios comportamentais e tarefas de enfrentamento intersessão.
 
 9. progresso:
    Classificação oficial do progresso clínico. Escreva APENAS uma das 4 opções canônicas: "Excelente", "Satisfatório", "Em desenvolvimento" ou "Necessita de ajuste".
 
 10. tarefas:
-    3 a 5 prescrições comportamentais do PDP (HPs) em tópicos (<ul><li>) com regras operacionais no formato "Se [gatilho/afeto aversivo] -> Então [ativar HP / técnica polivagal / ação de valor]", registro automonitorado (RID) e ativação de Forças de Caráter VIA.
+    3 a 5 prescrições comportamentais do Treinamento de HPs (PDP) em tópicos (<ul><li>), estruturadas de forma operacional e mensurável:
+    • Continuidade do automonitoramento cotidiano através do RID;
+    • Fixação diária das Frases de Poder (Mentalidade Saudável do Adulto no volante);
+    • Exercícios de Imersão e Prática real com Hierarquia de Exposição Graduada com mensuração por escala de desconforto (SUDS 0 a 10);
+    • Regra de contingência operacional clara no formato: "Se [gatilho / afeto aversivo surgir] -> Então [ativar HP treinada / Tríade Assertiva / Fórmula do Não / Pausa de Autorregulação]".
 
 11. planejamento:
-    Planejamento estratégico longitudinal para as próximas sessões em tópicos analíticos (<ul><li>) com base nas alavancas da rede de processos (PBT), reprocessamento de memórias de esquemas em imaginação (Imagery Rescripting), role-playing de assertividade e feedback parental estruturado com o casal sobre o filho.
+    Planejamento estratégico longitudinal para as próximas sessões em tópicos analíticos (<ul><li>):
+    • Sequenciamento sinérgico das Duas Rotas: Rota 1 (PME para ressignificação mnemônica de esquemas biográficos pendentes) + Rota 2 (PDP para consolidação das Fases 4 e 5 das HPs prioritárias);
+    • Progressão planejada dos ensaios em sessão (transição de Role-play Tier 1 para Role-play Tier 2 sob alta pressão e simulação de estressores reais);
+    • Prevenção e manejo empático de sabotadores esquemáticos (Modo Protetor Desligado, resignação complacente ao esquema) e esquivas intersessão.
 
 12. encaminhamentos:
-    Parecer técnico-diagnóstico fundamentado em parágrafo justificado (<p style='text-align: justify;'>) justificando tecnicamente a pertinência do acompanhamento exclusivo em psicoterapia ambulatorial no momento, explicitando critérios semiológicos e psicofisiológicos que descartam intervenção medicamentosa ou interdisciplinar emergencial no presente ciclo.
+    Parecer técnico-diagnóstico fundamentado em parágrafo justificado (<p style='text-align: justify;'>):
+    • Avaliação técnica justificando a suficiência, pertinência e segurança do acompanhamento exclusivo em psicoterapia ambulatorial baseada em Treinamento de Habilidades Psicológicas (THP / TCC 4ª Geração) no atual momento do ciclo de cuidado;
+    • Critérios semiológicos e funcionais que descartam a necessidade de intervenção psicofarmacológica ou interconsulta de urgência no presente ciclo, estabelecendo indicadores claros de reavaliação caso ocorra descompensação funcional severa.
 
 FORMATO OBRIGATÓRIO DE SAÍDA:
 Utilize RIGOROSAMENTE os delimitadores ===NOME_DO_CAMPO=== abaixo para separar cada um dos 12 campos.
@@ -1631,10 +1694,10 @@ Satisfatório
       console.warn(`[Auto-Refinamento Clínico] Campo ${field} ausente ou incompleto. Gerando formulação direcionada...`);
       if (field === "relatoCliente") {
         extracted[field] = `<div class="clinical-synthesis space-y-3 mb-6">
-<h4 style="font-weight: bold; font-size: 13px; color: #10b981; text-transform: uppercase;">Formulação Clínica da Sessão (Modelo RID - 5 Pilares)</h4>
-<p style="text-align: justify;"><strong>1. Contexto Fático e Estímulos Antecedentes (Sd):</strong> A paciente compareceu pontualmente à 7ª sessão terapêutica em ambiente online. A sessão foi estruturada a partir da análise de contingências da rotina recente, destacando-se desdobramentos da dinâmica conjugal (respeito à permanência do cônjuge na escola de samba), a estadia temporária da amiga Carolina em sua residência com impactos na privacidade do casal, e a iniciativa de acompanhamento pedagógico do filho Otávio.</p>
-<p style="text-align: justify;"><strong>2. Tríplice Resposta Clínica e EIDs:</strong> Durante o relato, a paciente expressou sentimentos residuais de culpa e autodesvalorização ("<em>no último atendimento me senti como se não merecesse ajuda</em>"), ativando crenças de Privação Emocional e Inibição Emocional forjadas ontogeneticamente na infância, quando assumiu precocemente o papel de "carregar o piano da família". Observou-se transição funcional do Modo Criança Vulnerável para o Modo Adulto Saudável à medida que a paciente relatou ter expressado suas necessidades com assertividade ao marido.</p>
-<p style="text-align: justify;"><strong>3. Recursos Protetivos e Habilidades Psicológicas:</strong> Demonstrou elevada autoeficácia, adesão às prescrições intersessão e mobilização das Forças de Caráter de Autenticidade, Bravura e Cuidado, evidenciando excelente resposta ao treinamento de Habilidades Psicológicas (THP).</p>
+<h4 style="font-weight: bold; font-size: 13px; color: #10b981; text-transform: uppercase;">Formulação Clínica da Sessão (TCC de 4ª Geração - Modelo RID / THP)</h4>
+<p style="text-align: justify;"><strong>1. Contexto Fático e Estímulos Antecedentes (Sd):</strong> A paciente compareceu pontualmente à sessão terapêutica em ambiente estruturado. A sessão foi orientada pela análise funcional das contingências cotidianas através do Registro de Interações Disfuncionais (RID), mapeando gatilhos relacionais interpessoais e demandas de autoafirmação.</p>
+<p style="text-align: justify;"><strong>2. Tríplice Resposta Clínica e EIDs:</strong> Durante o relato, identificou-se a ativação de Esquemas Iniciais Desadaptativos de Privação Emocional e Inibição Emocional, forjados ontogeneticamente na infância ao assumir precocemente responsabilidades excessivas na dinâmica familiar. Observou-se a manifestação do Modo Criança Vulnerável com tendência à evitação, que foi prontamente acolhida e redirecionada pelo Modo Adulto Saudável no volante, expressando necessidades com firmeza e clareza assertiva.</p>
+<p style="text-align: justify;"><strong>3. Recursos Protetivos e Habilidades Psicológicas (THP):</strong> Demonstrou excelente receptividade ao Treinamento de Habilidades Psicológicas (THP), mobilizando as Habilidades de Autoconhecimento, Sociabilidade e Assertividade (Tríade Assertiva) e Autorregulação Emocional, superando o padrão de sala de descompressão e consolidando a postura de cientista de si mesma.</p>
 </div>
 <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;" />
 <h4 style="font-weight: bold; font-size: 13px; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px;">Transcrição Estruturada e Diarizada da Sessão</h4>
