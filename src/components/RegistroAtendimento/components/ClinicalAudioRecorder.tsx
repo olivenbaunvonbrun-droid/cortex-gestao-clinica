@@ -28,6 +28,7 @@ import {
   transcribeAudioChunk, 
   analyzeSessionTranscriptComprehensive,
   rectifyTranscriptDiarization,
+  formatDiarizedTranscriptHtml,
   SpeakerContext 
 } from '../../../services/geminiService';
 import { blobToBase64, splitAudioIntoValidWavChunks } from '../../../lib/audioSplitter';
@@ -305,9 +306,9 @@ export function ClinicalAudioRecorder({
         const cleanMime = rawMime.split(';')[0].trim().toLowerCase() || 'audio/webm';
         const base64 = await blobToBase64(blob);
         const speakerCtx: SpeakerContext = {
-          therapistName: therapist?.name || "Psicólogo Bruno de Oliveira Lima",
+          therapistName: therapist?.name || "Psicólogo",
           therapistGender: therapist?.gender || "Masculino",
-          patientName: patient.name || "Paciente Alana de Anselmo Garcia",
+          patientName: patient.name || "Paciente",
           patientGender: patient.gender || "Feminino"
         };
         const text = await transcribeAudioChunk(base64, cleanMime, speakerCtx);
@@ -622,9 +623,9 @@ export function ClinicalAudioRecorder({
             try {
               const base64 = await blobToBase64(chunkBlob);
               const speakerCtx: SpeakerContext = {
-                therapistName: therapist?.name || "Psicólogo Bruno de Oliveira Lima",
+                therapistName: therapist?.name || "Psicólogo",
                 therapistGender: therapist?.gender || "Masculino",
-                patientName: patient.name || "Paciente Alana de Anselmo Garcia",
+                patientName: patient.name || "Paciente",
                 patientGender: patient.gender || "Feminino"
               };
               const partText = await transcribeAudioChunk(base64, cleanMime, speakerCtx);
@@ -906,8 +907,12 @@ export function ClinicalAudioRecorder({
                 {accumulatedTranscript && (
                   <button
                     onClick={() => {
+                      const diarizedHtml = formatDiarizedTranscriptHtml(accumulatedTranscript, {
+                        therapistName: therapist?.name || "Psicólogo",
+                        patientName: patient.name || "Paciente"
+                      });
                       onTranscriptionComplete({
-                        relatoCliente: `<p style="text-align: justify;"><strong>Transcrição Parcial Recuperada:</strong><br>${accumulatedTranscript.replace(/\n/g, '<br>')}</p>`,
+                        relatoCliente: `<p style="text-align: justify; margin-bottom: 12px;"><strong style="color: #38bdf8; text-transform: uppercase;">Transcrição Recuperada do Cofre de Segurança:</strong></p>${diarizedHtml}`,
                         motivoConsulta: "<p style='text-align: justify;'>Atendimento clínico continuado (Recuperado do Cofre).</p>",
                         objetivosCliente: "<ul><li>Retomada do acompanhamento terapêutico.</li></ul>",
                         objetivosTerapeuta: "<ul><li>Mapeamento semiológico das queixas apresentadas.</li></ul>",

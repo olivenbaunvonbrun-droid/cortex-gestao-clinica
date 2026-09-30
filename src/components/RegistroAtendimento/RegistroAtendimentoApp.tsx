@@ -18,7 +18,8 @@ import {
   FileDown, 
   FileUp,
   Brain,
-  Video
+  Video,
+  Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'react-hot-toast';
@@ -31,7 +32,10 @@ import { AttendanceRecord, PatientData } from './types';
 import { 
   generateContentWithSystemInstruction, 
   transcribeAudioFile,
-  analyzeSessionTranscriptComprehensive 
+  analyzeSessionTranscriptComprehensive,
+  rectifyTranscriptDiarization,
+  formatDiarizedTranscriptHtml,
+  SpeakerContext
 } from '../../services/geminiService';
 import { ClinicalAudioRecorder } from './components/ClinicalAudioRecorder';
 
@@ -684,33 +688,38 @@ export default function RegistroAtendimentoApp({
     }
   };
 
-  // Decodes Audio Upload
+  // Decodes Audio Upload with Diarization
   const handleTranscribalAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsTranscribingAudio(true);
-    setRecordingStatus("Traduzindo áudio com Inteligência Artificial...");
+    setRecordingStatus("Transcrevendo e diarizando áudio com IA...");
 
     try {
       const base64Content = await convertFileToBase64(file);
       const actualBase64 = base64Content.split(",")[1];
 
-      const textOutput = await transcribeAudioFile(actualBase64, file.type);
+      const speakerCtx: SpeakerContext = {
+        patientName: nomeCliente || "Paciente",
+        patientGender: sexoCliente,
+        therapistName: psicologo || "Psicólogo",
+        therapistCrp: crp
+      };
+
+      const textOutput = await transcribeAudioFile(actualBase64, file.type, speakerCtx);
 
       if (textOutput.trim()) {
         setRelatoCliente((prev) => {
-          const formattedText = textOutput.replace(/\n/g, "<br>");
           const trimmedPrev = prev.trim();
-          if (trimmedPrev.endsWith("</p>")) {
-            return trimmedPrev.slice(0, -4) + " " + formattedText + "</p>";
-          } else if (trimmedPrev === "") {
-            return `<p style="text-align: justify;">${formattedText}</p>`;
+          if (trimmedPrev) {
+            return trimmedPrev + `<div style="margin-top: 14px;"></div>` + textOutput;
           } else {
-            return trimmedPrev + `<p style="text-align: justify;">${formattedText}</p>`;
+            return textOutput;
           }
         });
-        setRecordingStatus("Transcrição feita com sucesso!");
+        setRecordingStatus("Transcrição e diarização concluídas com sucesso!");
+        toast.success("Áudio transcrito e falas separadas com sucesso!");
       } else {
         setRecordingStatus("IA retornou resultado em branco.");
       }
@@ -722,6 +731,39 @@ export default function RegistroAtendimentoApp({
       setIsTranscribingAudio(false);
       e.target.value = "";
       setTimeout(() => setRecordingStatus(""), 4000);
+    }
+  };
+
+  const handleDiarizeTranscript = async () => {
+    const rawText = relatoCliente ? relatoCliente.replace(/<[^>]*>/g, " ").trim() : "";
+    if (!rawText || rawText.length < 10) {
+      toast.error("Cole ou digite a transcrição da sessão antes de diarizar.");
+      return;
+    }
+
+    setIsTranscribingAudio(true);
+    setRecordingStatus("Separando falas de terapeuta e paciente...");
+    const toastId = toast.loading("Identificando falas (Psi: vs P:) com IA...");
+
+    try {
+      const speakerCtx: SpeakerContext = {
+        patientName: nomeCliente || "Paciente",
+        patientGender: sexoCliente,
+        therapistName: psicologo || "Psicólogo",
+        therapistCrp: crp
+      };
+
+      const rectified = await rectifyTranscriptDiarization(relatoCliente, speakerCtx);
+      const styledHtml = formatDiarizedTranscriptHtml(rectified, speakerCtx);
+
+      setRelatoCliente(styledHtml);
+      toast.success("Falas separadas e diarizadas com sucesso!", { id: toastId });
+    } catch (err: any) {
+      console.error("Erro na diarização:", err);
+      toast.error("Falha ao separar falas: " + (err.message || "Erro desconhecido"), { id: toastId });
+    } finally {
+      setIsTranscribingAudio(false);
+      setRecordingStatus("");
     }
   };
 
@@ -851,6 +893,27 @@ export default function RegistroAtendimentoApp({
     try {
       const generatedHtml = await generateContentWithSystemInstruction(customPrompt, promptHeader);
       let cleanedHtml = generatedHtml.replace(/^```html\s*/i, "").replace(/```\s*$/i, "").trim();
+
+      if (promptType === "formatar-relato" && fieldName === "relatoCliente") {
+        const hasDialogue = /Psi:|P:|Terapeuta:|Paciente:|Speaker/i.test(relatoCliente);
+        if (hasDialogue) {
+          const speakerCtx: SpeakerContext = {
+            patientName: nomeCliente || "Paciente",
+            patientGender: sexoCliente,
+            therapistName: psicologo || "Psicólogo",
+            therapistCrp: crp
+          };
+          cleanedHtml = `<div class="rid-sintese-analitica mb-6">
+            <h3 style="color: #6366f1; font-weight: 700; margin-bottom: 12px; font-size: 1.05rem; border-bottom: 1px solid rgba(99, 102, 241, 0.2); padding-bottom: 6px;">PARTE A: Formulação e Síntese Clínica RID (4ª Geração)</h3>
+            ${cleanedHtml}
+          </div>
+          <div class="rid-transcricao-literal pt-4 border-t border-slate-700/60">
+            <h3 style="color: #10b981; font-weight: 700; margin-bottom: 12px; font-size: 1.05rem; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 6px;">PARTE B: Transcrição Integral e Diarizada da Sessão</h3>
+            ${formatDiarizedTranscriptHtml(relatoCliente, speakerCtx)}
+          </div>`;
+        }
+      }
+
       setFieldState(fieldName, cleanedHtml);
     } catch (err: any) {
       console.error(err);
@@ -1600,6 +1663,17 @@ export default function RegistroAtendimentoApp({
                               className="hidden" 
                             />
                           </label>
+
+                          <button
+                            type="button"
+                            onClick={handleDiarizeTranscript}
+                            disabled={isTranscribingAudio || aiLoadingFields["relatoCliente"]}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 cursor-pointer transition-all disabled:opacity-50"
+                            title="Identifica e separa automaticamente as falas do Psicólogo (Psi:) e do Paciente (P:), mesmo em textos colados de ferramentas externas"
+                          >
+                            <Users size={10} />
+                            <span>Separar Falas (Diarização)</span>
+                          </button>
 
                           <button
                             type="button"

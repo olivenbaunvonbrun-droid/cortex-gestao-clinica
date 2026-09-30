@@ -178,25 +178,52 @@ export async function generateContentWithSystemInstruction(prompt: string, syste
   return response.text || "";
 }
 
-export async function transcribeAudioFile(audioBase64: string, mimeType: string) {
+export async function transcribeAudioFile(
+  audioBase64: string, 
+  mimeType: string,
+  speakerContext?: SpeakerContext
+): Promise<string> {
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
+
+  const therapistLabel = speakerContext?.therapistName || "Psicólogo";
+  const therapistGender = speakerContext?.therapistGender || "Masculino";
+  const patientLabel = speakerContext?.patientName || "Paciente";
+  const patientGender = speakerContext?.patientGender || "Feminino";
+
   const systemInstruction = `
-    Você é um Especialista em Documentação Clínica Psicológica de alto nível.
-    Sua tarefa é transcrever e formatar de forma estruturada as falas do áudio da consulta.
-    Retorne apenas o conteúdo final estruturado em código HTML clássico que contenha parágrafos justificados (<p style='text-align: justify;'>), tópicos usando (<ul> e <li>) ou ênfases usando (<strong>).
-    NÃO envolva a resposta com marcações de blocos de código como \`\`\`html.
-  `;
+Você é o motor de Transcrição Clínica e Diarização de Voz de Mais Alta Precisão (padrão ouro Transcriptor AI / Whisper Diarization).
+Sua missão mandatória é transcrever o áudio na íntegra (palavra por palavra, sem resumos e sem cortes), IDENTIFICANDO E SEPARANDO COM PRECISÃO ABSOLUTA cada troca de turno entre os dois interlocutores da consulta:
+
+INTERLOCUTORES CLÍNICOS:
+1. TERAPEUTA / PSICÓLOGO(A) -> Identificador: "Psi:"
+   - Nome: ${therapistLabel} (${therapistGender})
+   - Papel Clínico/Conversacional: Conduz a sessão, faz acolhimento ("Olá, como você está?"), perguntas abertas e fechadas, investigações clínicas, escuta ativa e validações ("Uhum", "Certo", "Entendo", "Compreendo", "E como foi isso para você?"), oferece orientações e propõe reflexões.
+2. PACIENTE / CLIENTE -> Identificador: "P:"
+   - Nome: ${patientLabel} (${patientGender})
+   - Papel Clínico/Conversacional: Responde às perguntas do terapeuta, relata sua rotina, dores, sintomas, conflitos pessoais, familiares e conjugais, sentimentos de ansiedade, desabafos e memórias.
+
+REGRAS INEGOCIÁVEIS DE DIARIZAÇÃO (ESTILO TRANSCRIPTOR AI):
+1. SEPARAÇÃO RIGOROSA DE TURNOS: NUNCA aglutine falas de interlocutores distintos no mesmo parágrafo ou sob o mesmo rótulo. A cada mudança de voz ou papel, inicie uma nova linha com o identificador.
+2. ETIQUETAS EXPLÍCITAS: Cada fala DEVE começar obrigatoriamente com "Psi: " ou "P: ".
+3. DISTINÇÃO ACÚSTICA E CONVERSACIONAL: Identifique a alternância de interlocutores pelas nuances do timbre vocal, pausas de respiração e dinamismo de pergunta e resposta.
+4. NUNCA inverta: falas onde o profissional pergunta ou pontua são SEMPRE "Psi:". Falas onde o cliente responde ou desabafa são SEMPRE "P:".
+5. FIDELIDADE VERBATIM: Transcreva exatamente o que foi dito, preservando o vocabulário, termos originais e expressões emocionais, removendo apenas ruídos ininteligíveis.
+6. Retorne apenas o diálogo transcrito linha por linha com "Psi: " e "P: ", sem introduções ou metadados.
+`;
+
   const safeMime = sanitizeAudioMimeType(mimeType);
   const response = await ai.models.generateContent({
     model: DEFAULT_CLINICAL_MODEL,
     contents: [
-      { text: "Por favor, realize a transcrição clínica estruturada deste áudio." },
+      { text: `Transcreva na íntegra este áudio clínico com diarização precisa entre Psi (${therapistLabel}) e P (${patientLabel}):` },
       { inlineData: { mimeType: safeMime, data: audioBase64 } }
     ],
     config: { systemInstruction }
   });
-  return response.text || "";
+
+  const rawText = (response.text || "").trim();
+  return formatDiarizedTranscriptHtml(rawText, speakerContext);
 }
 
 export async function clinicalInsight(patientHistory: string, currentSession: string, approach: string = 'Geral') {
@@ -1286,7 +1313,101 @@ export function extractDelimiterFields(raw: string): Record<string, string> {
   return fields;
 }
 
-// Transcrição de áudio com contextualização de interlocutores (Diarização Guiada)
+/**
+ * Converte e formata qualquer transcrição ou diálogo clínico em blocos HTML elegantes
+ * com diferenciação visual e textual explícita entre Psi (Terapeuta) e P (Paciente),
+ * no padrão ouro de ferramentas especializadas como Transcriptor AI / Whisper Diarization.
+ */
+export function formatDiarizedTranscriptHtml(
+  rawTranscript: string,
+  speakerContext?: SpeakerContext
+): string {
+  if (!rawTranscript || rawTranscript.trim().length === 0) return "";
+
+  const therapistLabel = speakerContext?.therapistName || "Terapeuta";
+  const patientLabel = speakerContext?.patientName || "Paciente";
+
+  // Se já for HTML com estilização completa de cores dos interlocutores, preserva
+  if (rawTranscript.includes('#38bdf8') && rawTranscript.includes('#10b981')) {
+    return rawTranscript;
+  }
+
+  // Limpa tags HTML preliminares para normalizar o texto em linhas puras
+  const cleanText = rawTranscript
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<[^>]+>/gi, '')
+    .trim();
+
+  const rawLines = cleanText.split('\n').map(l => l.trim()).filter(Boolean);
+  const formattedParagraphs: string[] = [];
+
+  let currentSpeaker: 'psi' | 'p' | null = null;
+  let currentBuffer: string[] = [];
+
+  const flushBuffer = () => {
+    if (currentSpeaker && currentBuffer.length > 0) {
+      const text = currentBuffer.join(' ').trim();
+      if (text) {
+        if (currentSpeaker === 'psi') {
+          formattedParagraphs.push(
+            `<p style="text-align: justify; margin-bottom: 8px;"><strong style="color: #38bdf8;">Psi (${therapistLabel}):</strong> ${text}</p>`
+          );
+        } else {
+          formattedParagraphs.push(
+            `<p style="text-align: justify; margin-bottom: 8px;"><strong style="color: #10b981;">P (${patientLabel}):</strong> ${text}</p>`
+          );
+        }
+      }
+      currentBuffer = [];
+    }
+  };
+
+  // Regex abrangente para identificar marcadores de fala do psicólogo/terapeuta
+  const psiRegex = /^(?:Psi|Terapeuta|Psic[oó]log[oa]|Profissional|Speaker\s*1|Locutor\s*1|Interlocutor\s*1|Entrevistador[a]?)(?:\s*\([^)]*\))?\s*[:\-–]\s*(.*)$/i;
+  // Regex abrangente para identificar marcadores de fala do paciente/cliente
+  const pRegex = /^(?:P|Paciente|Cliente|Entrevistad[oa]|Speaker\s*2|Locutor\s*2|Interlocutor\s*2)(?:\s*\([^)]*\))?\s*[:\-–]\s*(.*)$/i;
+
+  for (const line of rawLines) {
+    const psiMatch = line.match(psiRegex);
+    const pMatch = line.match(pRegex);
+
+    if (psiMatch) {
+      flushBuffer();
+      currentSpeaker = 'psi';
+      if (psiMatch[1]?.trim()) {
+        currentBuffer.push(psiMatch[1].trim());
+      }
+    } else if (pMatch) {
+      flushBuffer();
+      currentSpeaker = 'p';
+      if (pMatch[1]?.trim()) {
+        currentBuffer.push(pMatch[1].trim());
+      }
+    } else {
+      if (currentSpeaker) {
+        currentBuffer.push(line);
+      } else {
+        // Se ainda não houve marcador inicial explícito, analisa o teor da frase:
+        // Perguntas ou saudações típicas de consulta atribuem-se ao terapeuta
+        const isLikelyTherapistGreeting = /^(ol[aá]|bom dia|boa tarde|boa noite|tudo bem|como voc[eê]|como foi|me cont|me fal)/i.test(line);
+        currentSpeaker = isLikelyTherapistGreeting ? 'psi' : 'p';
+        currentBuffer.push(line);
+      }
+    }
+  }
+
+  flushBuffer();
+
+  if (formattedParagraphs.length > 0) {
+    return formattedParagraphs.join('\n');
+  }
+
+  return `<p style="text-align: justify;">${rawTranscript.replace(/\n\n/g, '</p><p style="text-align: justify;">').replace(/\n/g, '<br>')}</p>`;
+}
+
+// Transcrição de áudio com contextualização de interlocutores (Diarização Guiada no Padrão Transcriptor AI)
 export async function transcribeAudioChunk(
   audioBase64: string, 
   mimeType: string = "audio/webm",
@@ -1301,29 +1422,29 @@ export async function transcribeAudioChunk(
   const patientGender = speakerContext?.patientGender || "Feminino";
 
   const systemInstruction = `
-    Você é um perito forense em transcrição médica e diarização de consultas de psicologia clínica.
-    Sua tarefa é transcrever na íntegra as falas contidas no áudio da sessão clínica com identificação exata dos interlocutores.
+    Você é um perito forense em transcrição médica e diarização de consultas de psicologia clínica de altíssima precisão (padrão ouro Transcriptor AI / Whisper Diarization).
+    Sua tarefa é transcrever na íntegra as falas contidas no áudio da sessão clínica com identificação e separação exata dos interlocutores.
 
     INTERLOCUTORES DA SESSÃO:
-    - "Psi:" = Terapeuta / Psicólogo: ${therapistLabel} (Voz/Gênero: ${therapistGender}).
-      Função: Conduz a sessão, faz intervenções clínicas, acolhe, propõe reflexões, pergunta sobre a semana, explica conceitos e esquemas.
-    - "P:" = Paciente / Cliente: ${patientLabel} (Voz/Gênero: ${patientGender}).
-      Função: Responde ao terapeuta, relata fatos da sua vida, trabalho, conflitos familiares e conjugais, sentimentos de incapacidade ou desconforto.
+    - "Psi:" = Terapeuta / Psicólogo(a): ${therapistLabel} (${therapistGender}).
+      Função: Conduz a sessão, faz intervenções clínicas, acolhe, propõe reflexões, pergunta sobre a semana, explica conceitos e esquemas, valida com "Uhum", "Certo", "Entendo", "Sim", "Como foi para você?".
+    - "P:" = Paciente / Cliente: ${patientLabel} (${patientGender}).
+      Função: Responde ao terapeuta, relata fatos da sua vida, trabalho, conflitos familiares e conjugais, sentimentos de incapacidade, ansiedade, dores ou desconforto.
 
     REGRAS INEGOCIÁVEIS DE TRANSCRIÇÃO E DIARIZAÇÃO:
-    1. DISTINÇÃO RIGOROSA: Diferencie os interlocutores com base no timbre da voz (${therapistGender} vs ${patientGender}) e no papel clínico.
-    2. NUNCA atribua perguntas do psicólogo ao paciente "P:", nem falas confessionais ou relatos do paciente ao psicólogo "Psi:".
-    3. Inicie cada mudança de fala com a etiqueta "Psi: " ou "P: ".
+    1. DISTINÇÃO RIGOROSA: Diferencie os interlocutores com base na alternância de vozes, timbre e no papel clínico (pergunta/intervenção vs relato/resposta).
+    2. NUNCA junte falas de interlocutores diferentes na mesma linha. Cada troca de interlocutor DEVE iniciar uma nova linha com "Psi: " ou "P: ".
+    3. NUNCA atribua perguntas do psicólogo ao paciente "P:", nem falas confessionais ou relatos do paciente ao psicólogo "Psi:".
     4. Mantenha 100% da fidelidade das palavras, sem resumir diálogos nem inventar falas inexistentes.
     5. Elimine apenas ruídos ou hesitações sem sentido ("hum", "ééé"), mas preserve afeto, desabafos e termos literais.
-    6. Retorne apenas o diálogo transcrito, sem introduções ou metadados.
+    6. Retorne apenas o diálogo transcrito linha por linha com "Psi: " e "P: ", sem introduções ou metadados.
   `;
 
   const safeMime = sanitizeAudioMimeType(mimeType);
   const response = await ai.models.generateContent({
     model: DEFAULT_CLINICAL_MODEL,
     contents: [
-      { text: "Transcreva fielmente este segmento de áudio clínico com distinção precisa entre Psi: e P:." },
+      { text: `Transcreva fielmente este segmento de áudio clínico com distinção precisa entre Psi: (${therapistLabel}) e P: (${patientLabel}).` },
       { inlineData: { mimeType: safeMime, data: audioBase64 } }
     ],
     config: { systemInstruction }
@@ -1337,35 +1458,38 @@ export async function rectifyTranscriptDiarization(
   rawTranscript: string,
   speakerContext?: SpeakerContext
 ): Promise<string> {
-  if (!rawTranscript || rawTranscript.trim().length < 30) {
+  if (!rawTranscript || rawTranscript.trim().length < 20) {
     return rawTranscript;
   }
 
   const apiKey = await getApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
-  const therapistLabel = speakerContext?.therapistName || "Psicólogo Bruno de Oliveira Lima";
+  const therapistLabel = speakerContext?.therapistName || "Psicólogo";
   const therapistGender = speakerContext?.therapistGender || "Masculino";
-  const patientLabel = speakerContext?.patientName || "Paciente Alana de Anselmo Garcia";
+  const patientLabel = speakerContext?.patientName || "Paciente";
   const patientGender = speakerContext?.patientGender || "Feminino";
 
   const systemInstruction = `
-Você é um Perito Forense em Diarização e Transcrição Clínica Psicológica.
-Sua missão crítica é corrigir e retificar rigorosamente a atribuição de interlocutores ("Psi:" e "P:") em uma transcrição clínica que possui falhas na identificação de quem fala (ex: falas da paciente incorretamente rotuladas como "Psi:", ou perguntas do psicólogo rotuladas como "P:").
+Você é o Perito Forense em Diarização e Transcrição Clínica Psicológica de Mais Alto Nível (padrão ouro Transcriptor AI / Whisper Diarization).
+Sua missão crítica é corrigir, retificar e organizar com rigor a atribuição de interlocutores ("Psi:" e "P:") em uma transcrição clínica que possui falhas na identificação de quem fala (ou que foi colada de uma ferramenta externa como Transcriptor AI, Zoom, Teams, WhatsApp, etc.).
 
 INTERLOCUTORES OFICIAIS:
-- "Psi:" = Terapeuta / Psicólogo: ${therapistLabel} (Gênero: ${therapistGender}).
-  Papel clínico: Acolhe ("Como você está, minha querida?"), pergunta sobre a semana e reflexões da sessão anterior, propõe análises de situação (ex: sobre o marido Pablo, sobre o filho Otávio, sobre a amiga Carolina), ensina sobre esquemas cognitivos (ex: inibição emocional, privação emocional, desamparo aprendido), traz metáforas terapêuticas (ex: filme "A Vila", série "Game of Thrones", múltiplos papéis de mãe/esposa/empreendedora), valida emoções e reforça avanços.
-- "P:" = Paciente / Cliente: ${patientLabel} (Gênero: ${patientGender}).
-  Papel clínico: Relata sua rotina, cirurgia recente (ex: abdominoplastia), sentimentos de vulnerabilidade ("me sentindo como se não merecesse ajuda"), conflito com o marido Pablo e permanência na escola de samba, acolhimento da amiga Carolina em casa e preocupação com privacidade, e desempenho escolar do filho Otávio.
+- "Psi:" = Terapeuta / Psicólogo(a): ${therapistLabel} (${therapistGender}).
+  Papel clínico: Acolhe ("Olá, como você está?", "Tudo bem?"), investiga a semana, faz perguntas socráticas, explora eventos disparadores e pensamentos automáticos, ensina sobre esquemas cognitivos e habilidades psicológicas, valida emoções ("Uhum", "Certo", "Entendo", "Compreendo", "Faz sentido"), pontua comportamentos e propõe exercícios práticos.
+- "P:" = Paciente / Cliente: ${patientLabel} (${patientGender}).
+  Papel clínico: Relata sua rotina, acontecimentos da semana, conflitos relacionais, conjugais ou profissionais, sentimentos de vulnerabilidade, ansiedade, angústia, dores, sintomas, desabafos e responde às indagações do psicólogo.
 
-REGRAS DE RETIFICAÇÃO:
-1. Analise todo o fluxo conversacional e atribua com exatidão máxima cada fala a "Psi:" ou "P:".
-2. Se o psicólogo fez uma pergunta ou reflexão que foi marcada com "P:", CORRIJA para "Psi:".
-3. Se a paciente respondeu ("Sim", "No último eu fiquei me sentindo...", "A gente até brincou que ela é babá...", "Isso aí, é uma ótima possibilidade") e estava marcada como "Psi:", CORRIJA para "P:".
-4. Agrupe turnos consecutivos do mesmo interlocutor para criar parágrafos de diálogo fluidos, legíveis e sem repetições fragmentadas de rótulos.
-5. NÃO invente, não resuma e não corte nenhuma informação da transcrição original. Mantenha cada frase original.
-6. Retorne APENAS o diálogo retificado no formato:
+REGRAS DE RETIFICAÇÃO E DIARIZAÇÃO:
+1. MAPEAMENTO DE LABELS: Se a transcrição contiver rótulos como "Speaker 1", "Speaker 2", "Locutor 1", "Locutor 2", "Interlocutor 1", "Interlocutor 2", "Terapeuta", "Paciente", "[00:00:10]", ou nomes próprios, converta-os com precisão:
+   - Quem conduz a consulta/pergunta/intervém -> "Psi:"
+   - Quem responde/relata suas dores e rotina -> "P:"
+2. CORREÇÃO DE INVERSÕES: Analise todo o fluxo conversacional e atribua com exatidão máxima cada fala a "Psi:" ou "P:". Se o psicólogo fez uma pergunta ou intervenção marcada com "P:", CORRIJA para "Psi:". Se o paciente respondeu ou relatou e estava marcado como "Psi:", CORRIJA para "P:".
+3. TRANSCRIÇÕES CORRIDAS SEM RÓTULO: Se a transcrição não tiver identificadores de quem fala, infira pela dinâmica do diálogo quem é o psicólogo ("Psi:") e quem é o paciente ("P:") e separe cada fala com seu rótulo na linha correspondente.
+4. NUNCA misture falas de pessoas diferentes na mesma linha. Cada troca de interlocutor DEVE iniciar uma nova linha.
+5. Agrupe turnos consecutivos do mesmo interlocutor para criar parágrafos de diálogo fluidos, legíveis e sem repetições fragmentadas de rótulos.
+6. NÃO invente, não resuma, não sintetize e não corte nenhuma informação da transcrição original. Mantenha 100% das palavras e do diálogo literal (verbatim).
+7. Retorne APENAS o diálogo retificado no formato:
 Psi: [texto do psicólogo]
 P: [texto do paciente]
 Psi: [texto do psicólogo]
@@ -1375,13 +1499,13 @@ Psi: [texto do psicólogo]
     const response = await ai.models.generateContent({
       model: DEFAULT_CLINICAL_MODEL,
       contents: [
-        { text: `Retifique na íntegra a diarização e atribuição de interlocutores desta sessão clínica:\n\n${rawTranscript}` }
+        { text: `Retifique na íntegra a diarização e atribuição de interlocutores desta sessão clínica (Psi: ${therapistLabel} vs P: ${patientLabel}):\n\n${rawTranscript}` }
       ],
       config: { systemInstruction }
     });
 
     const rectified = (response.text || "").trim();
-    if (rectified && rectified.length > rawTranscript.length * 0.4 && (rectified.includes("Psi:") || rectified.includes("P:"))) {
+    if (rectified && rectified.length > rawTranscript.length * 0.3 && (rectified.includes("Psi:") || rectified.includes("P:"))) {
       return rectified;
     }
   } catch (err) {
@@ -1453,9 +1577,9 @@ export async function analyzeSessionTranscriptComprehensive(
 
   // Etapa 1: Retificação rigorosa de diarização antes da análise
   const rectifiedTranscript = await rectifyTranscriptDiarization(transcript, {
-    therapistName: therapist?.name || "Psicólogo Bruno de Oliveira Lima",
+    therapistName: therapist?.name || "Psicólogo",
     therapistGender: therapist?.gender || "Masculino",
-    patientName: patient.name || "Paciente Alana de Anselmo Garcia",
+    patientName: patient.name || "Paciente",
     patientGender: patient.gender || "Feminino"
   });
 
@@ -1501,8 +1625,8 @@ Analisar a transcrição integral da consulta clínica abaixo e formular, com su
 PROIBIÇÃO ABSOLUTA DE RESUMOS TELEGRÁFICOS OU FRASES CURTAS GENÉRICAS! Cada campo deve apresentar formulações clínicas aprofundadas, justificativas técnicas sólidas e rigor médico-hospitalar (Resolução CFP nº 06/2019).
 
 DADOS DO ATENDIMENTO:
-- Psicólogo Clínico: ${therapist?.name || "Psicólogo Bruno de Oliveira Lima"} (CRP: ${therapist?.crp || "05/75885"})
-- Paciente: ${patient.name || "Alana de Anselmo Garcia"} (Gênero: ${patient.gender || "Feminino"}, Idade: ${patient.age || "33 anos"})
+- Psicólogo Clínico: ${therapist?.name || "Psicólogo"} ${therapist?.crp ? `(CRP: ${therapist.crp})` : ""}
+- Paciente: ${patient.name || "Paciente"} (Gênero: ${patient.gender || "Não informado"}${patient.age ? `, Idade: ${patient.age}` : ""})
 - Abordagens Norteadoras: ${approaches.join(", ")}
 ${patient.clinicalProfile ? `
 ===================================================
@@ -1713,15 +1837,20 @@ ${rectifiedTranscript.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')}
     }
   }
 
-  // Se relatoCliente veio do modelo mas não tem a transcrição anexada no final, anexa a transcrição retificada com elegância
+  // Garante que a transcrição diarizada anexada ao relatoCliente esteja no padrão Transcriptor AI (cores e blocos distintos)
   let finalRelato = extracted.relatoCliente || "";
-  if (!finalRelato.includes(rectifiedTranscript.slice(0, 80)) && rectifiedTranscript.length > 50) {
+  const formattedDiarized = formatDiarizedTranscriptHtml(rectifiedTranscript, {
+    therapistName: therapist?.name || "Psicólogo",
+    patientName: patient.name || "Paciente"
+  });
+
+  if (!finalRelato.includes('color: #38bdf8') && formattedDiarized && formattedDiarized.length > 25) {
     finalRelato = `${finalRelato}
 <br><br>
 <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;" />
 <h4 style="font-weight: bold; font-size: 13px; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px;">Transcrição Estruturada e Diarizada da Sessão</h4>
-<div style="font-size: 11px; line-height: 1.6; text-align: justify;">
-${rectifiedTranscript.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')}
+<div style="font-size: 12px; line-height: 1.6; text-align: justify;">
+${formattedDiarized}
 </div>`;
   }
 
