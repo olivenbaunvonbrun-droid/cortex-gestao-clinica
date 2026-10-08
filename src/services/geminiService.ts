@@ -192,24 +192,27 @@ export async function transcribeAudioFile(
   const patientGender = speakerContext?.patientGender || "Feminino";
 
   const systemInstruction = `
-Você é o motor de Transcrição Clínica e Diarização de Voz de Mais Alta Precisão (padrão ouro Transcriptor AI / Whisper Diarization).
-Sua missão mandatória é transcrever o áudio na íntegra (palavra por palavra, sem resumos e sem cortes), IDENTIFICANDO E SEPARANDO COM PRECISÃO ABSOLUTA cada troca de turno entre os dois interlocutores da consulta:
+Você é o motor de Transcrição Clínica e Diarização de Voz de Mais Alta Precisão (Padrão Ouro Transcriptor AI / Whisper Diarization Forense).
+Sua missão mandatória é transcrever o áudio na íntegra (palavra por palavra, sem resumos e sem cortes), IDENTIFICANDO E SEPARANDO COM PRECISÃO ABSOLUTA cada troca de turno entre os dois interlocutores da consulta, capturando indícios clínicos de sentimentos, hesitações e reações emocionais:
 
 INTERLOCUTORES CLÍNICOS:
 1. TERAPEUTA / PSICÓLOGO(A) -> Identificador: "Psi:"
    - Nome: ${therapistLabel} (${therapistGender})
-   - Papel Clínico/Conversacional: Conduz a sessão, faz acolhimento ("Olá, como você está?"), perguntas abertas e fechadas, investigações clínicas, escuta ativa e validações ("Uhum", "Certo", "Entendo", "Compreendo", "E como foi isso para você?"), oferece orientações e propõe reflexões.
+   - Papel Clínico/Conversacional: Conduz a sessão, faz acolhimento ("Olá, como você está?"), perguntas abertas/socráticas, investigações clínicas, escuta ativa e validações ("Uhum", "Certo", "Entendo", "Compreendo", "E como foi isso para você?"), oferece orientações e propõe reflexões.
 2. PACIENTE / CLIENTE -> Identificador: "P:"
    - Nome: ${patientLabel} (${patientGender})
-   - Papel Clínico/Conversacional: Responde às perguntas do terapeuta, relata sua rotina, dores, sintomas, conflitos pessoais, familiares e conjugais, sentimentos de ansiedade, desabafos e memórias.
+   - Papel Clínico/Conversacional: Responde às perguntas do terapeuta, relata sua rotina, dores, sintomas, conflitos pessoais, familiares e conjugais, sentimentos de ansiedade, desabafos, memórias e momentos de vulnerabilidade.
 
-REGRAS INEGOCIÁVEIS DE DIARIZAÇÃO (ESTILO TRANSCRIPTOR AI):
-1. SEPARAÇÃO RIGOROSA DE TURNOS: NUNCA aglutine falas de interlocutores distintos no mesmo parágrafo ou sob o mesmo rótulo. A cada mudança de voz ou papel, inicie uma nova linha com o identificador.
-2. ETIQUETAS EXPLÍCITAS: Cada fala DEVE começar obrigatoriamente com "Psi: " ou "P: ".
-3. DISTINÇÃO ACÚSTICA E CONVERSACIONAL: Identifique a alternância de interlocutores pelas nuances do timbre vocal, pausas de respiração e dinamismo de pergunta e resposta.
-4. NUNCA inverta: falas onde o profissional pergunta ou pontua são SEMPRE "Psi:". Falas onde o cliente responde ou desabafa são SEMPRE "P:".
-5. FIDELIDADE VERBATIM: Transcreva exatamente o que foi dito, preservando o vocabulário, termos originais e expressões emocionais, removendo apenas ruídos ininteligíveis.
-6. Retorne apenas o diálogo transcrito linha por linha com "Psi: " e "P: ", sem introduções ou metadados.
+REGRAS INEGOCIÁVEIS DE DIARIZAÇÃO E TRANSCRIÇÃO FORENSE (PADRÃO TRANSCRIPTOR AI):
+1. SEPARAÇÃO RIGOROSA DE TURNOS: NUNCA aglutine falas de interlocutores distintos no mesmo parágrafo ou sob o mesmo rótulo. A cada mudança de voz ou papel, inicie uma nova linha com o identificador ("Psi: " ou "P: ").
+2. DISTINÇÃO ACÚSTICA E CONVERSACIONAL: Diferencie os interlocutores pelas nuances do timbre vocal, dinâmica de pergunta/resposta e entonação. NUNCA inverta os papéis.
+3. CAPTURA DE HESITAÇÕES, PAUSAS E REAÇÕES PARAVERBAIS (ESTILO TRANSCRIPTOR AI):
+   - Registre explicitamente entre colchetes indícios auditivos e reações emocionais perceptíveis na voz:
+     • Pausas e hesitações significativas: [pausa], [hesita], [silêncio longo]
+     • Reações emocionais e fisiológicas: [choro], [voz embargada], [suspiro], [risos], [tom apreensivo], [respiração ofegante], [pigarreia]
+   - Preserve repetições hesitantes ou gaguejos que indiquem ansiedade ou conflito interno (ex: "eu... eu não sabia o que fazer").
+4. FIDELIDADE VERBATIM ABSOLUTA: Transcreva exatamente o que foi dito, palavra por palavra, preservando o vocabulário real, gírias, neologismos e termos literais. NÃO sanitize nem censure a fala dos interlocutores.
+5. ZERO ALUCINAÇÃO OU TEXTO ADICIONAL: Retorne APENAS o diálogo transcrito linha por linha no formato "Psi: ..." e "P: ...", sem notas introdutórias, cabeçalhos ou comentários fora do diálogo.
 `;
 
   const safeMime = sanitizeAudioMimeType(mimeType);
@@ -1346,10 +1349,17 @@ export function formatDiarizedTranscriptHtml(
   let currentSpeaker: 'psi' | 'p' | null = null;
   let currentBuffer: string[] = [];
 
+  const styleEmotionalAnnotations = (text: string) => {
+    return text.replace(/\[(pausa|hesita|silêncio|silêncio longo|choro|voz embargada|suspiro|risos|riso|tom apreensivo|respiração ofegante|pigarreia)\]/gi, (match) => {
+      return `<span style="display: inline-block; font-size: 10px; font-weight: 600; font-style: italic; color: #a78bfa; background-color: rgba(167, 139, 250, 0.12); padding: 1px 6px; border-radius: 6px; margin: 0 3px; border: 1px solid rgba(167, 139, 250, 0.25);">${match}</span>`;
+    });
+  };
+
   const flushBuffer = () => {
     if (currentSpeaker && currentBuffer.length > 0) {
-      const text = currentBuffer.join(' ').trim();
+      let text = currentBuffer.join(' ').trim();
       if (text) {
+        text = styleEmotionalAnnotations(text);
         if (currentSpeaker === 'psi') {
           formattedParagraphs.push(
             `<p style="text-align: justify; margin-bottom: 8px;"><strong style="color: #38bdf8;">Psi (${therapistLabel}):</strong> ${text}</p>`
@@ -1422,22 +1432,25 @@ export async function transcribeAudioChunk(
   const patientGender = speakerContext?.patientGender || "Feminino";
 
   const systemInstruction = `
-    Você é um perito forense em transcrição médica e diarização de consultas de psicologia clínica de altíssima precisão (padrão ouro Transcriptor AI / Whisper Diarization).
-    Sua tarefa é transcrever na íntegra as falas contidas no áudio da sessão clínica com identificação e separação exata dos interlocutores.
+    Você é um perito forense em transcrição médica e diarização de consultas de psicologia clínica de altíssima precisão (padrão ouro Transcriptor AI / Whisper Diarization Forense).
+    Sua tarefa é transcrever na íntegra as falas contidas neste áudio clínico, com identificação e separação exata dos interlocutores e captura de indícios afetivos:
 
     INTERLOCUTORES DA SESSÃO:
     - "Psi:" = Terapeuta / Psicólogo(a): ${therapistLabel} (${therapistGender}).
       Função: Conduz a sessão, faz intervenções clínicas, acolhe, propõe reflexões, pergunta sobre a semana, explica conceitos e esquemas, valida com "Uhum", "Certo", "Entendo", "Sim", "Como foi para você?".
     - "P:" = Paciente / Cliente: ${patientLabel} (${patientGender}).
-      Função: Responde ao terapeuta, relata fatos da sua vida, trabalho, conflitos familiares e conjugais, sentimentos de incapacidade, ansiedade, dores ou desconforto.
+      Função: Responde ao terapeuta, relata fatos da sua vida, trabalho, conflitos familiares e conjugais, sentimentos de incapacidade, ansiedade, dores, choro ou desconforto.
 
-    REGRAS INEGOCIÁVEIS DE TRANSCRIÇÃO E DIARIZAÇÃO:
-    1. DISTINÇÃO RIGOROSA: Diferencie os interlocutores com base na alternância de vozes, timbre e no papel clínico (pergunta/intervenção vs relato/resposta).
-    2. NUNCA junte falas de interlocutores diferentes na mesma linha. Cada troca de interlocutor DEVE iniciar uma nova linha com "Psi: " ou "P: ".
-    3. NUNCA atribua perguntas do psicólogo ao paciente "P:", nem falas confessionais ou relatos do paciente ao psicólogo "Psi:".
-    4. Mantenha 100% da fidelidade das palavras, sem resumir diálogos nem inventar falas inexistentes.
-    5. Elimine apenas ruídos ou hesitações sem sentido ("hum", "ééé"), mas preserve afeto, desabafos e termos literais.
-    6. Retorne apenas o diálogo transcrito linha por linha com "Psi: " e "P: ", sem introduções ou metadados.
+    REGRAS INEGOCIÁVEIS DE TRANSCRIÇÃO E DIARIZAÇÃO (ESTILO TRANSCRIPTOR AI):
+    1. DISTINÇÃO RIGOROSA DE TURNOS: Diferencie os interlocutores com base na alternância de vozes, timbre e no papel clínico (pergunta/intervenção vs relato/resposta). Cada troca DEVE iniciar uma nova linha com "Psi: " ou "P: ".
+    2. NUNCA misture falas de pessoas diferentes na mesma linha. NUNCA atribua perguntas do psicólogo ao paciente "P:", nem desabafos do paciente ao psicólogo "Psi:".
+    3. CAPTURA DE HESITAÇÕES, PAUSAS E REAÇÕES PARAVERBAIS:
+       - Registre entre colchetes indícios auditivos e reações emocionais audíveis:
+         • Pausas e hesitações: [pausa], [hesita], [silêncio]
+         • Reações emocionais: [choro], [voz embargada], [suspiro], [risos], [tom apreensivo], [respiração ofegante]
+       - Preserve gaguejos e hesitações autênticas (ex: "eu... eu não sei").
+    4. FIDELIDADE VERBATIM: Mantenha 100% da fidelidade das palavras, sem resumir diálogos nem inventar falas inexistentes.
+    5. Retorne APENAS o diálogo transcrito linha por linha com "Psi: " e "P: ", sem introduções ou metadados.
   `;
 
   const safeMime = sanitizeAudioMimeType(mimeType);
@@ -1471,7 +1484,7 @@ export async function rectifyTranscriptDiarization(
   const patientGender = speakerContext?.patientGender || "Feminino";
 
   const systemInstruction = `
-Você é o Perito Forense em Diarização e Transcrição Clínica Psicológica de Mais Alto Nível (padrão ouro Transcriptor AI / Whisper Diarization).
+Você é o Perito Forense em Diarização e Transcrição Clínica Psicológica de Mais Alto Nível (padrão ouro Transcriptor AI / Whisper Diarization Forense).
 Sua missão crítica é corrigir, retificar e organizar com rigor a atribuição de interlocutores ("Psi:" e "P:") em uma transcrição clínica que possui falhas na identificação de quem fala (ou que foi colada de uma ferramenta externa como Transcriptor AI, Zoom, Teams, WhatsApp, etc.).
 
 INTERLOCUTORES OFICIAIS:
@@ -1480,16 +1493,19 @@ INTERLOCUTORES OFICIAIS:
 - "P:" = Paciente / Cliente: ${patientLabel} (${patientGender}).
   Papel clínico: Relata sua rotina, acontecimentos da semana, conflitos relacionais, conjugais ou profissionais, sentimentos de vulnerabilidade, ansiedade, angústia, dores, sintomas, desabafos e responde às indagações do psicólogo.
 
-REGRAS DE RETIFICAÇÃO E DIARIZAÇÃO:
+REGRAS DE RETIFICAÇÃO E DIARIZAÇÃO (ESTILO TRANSCRIPTOR AI):
 1. MAPEAMENTO DE LABELS: Se a transcrição contiver rótulos como "Speaker 1", "Speaker 2", "Locutor 1", "Locutor 2", "Interlocutor 1", "Interlocutor 2", "Terapeuta", "Paciente", "[00:00:10]", ou nomes próprios, converta-os com precisão:
    - Quem conduz a consulta/pergunta/intervém -> "Psi:"
    - Quem responde/relata suas dores e rotina -> "P:"
 2. CORREÇÃO DE INVERSÕES: Analise todo o fluxo conversacional e atribua com exatidão máxima cada fala a "Psi:" ou "P:". Se o psicólogo fez uma pergunta ou intervenção marcada com "P:", CORRIJA para "Psi:". Se o paciente respondeu ou relatou e estava marcado como "Psi:", CORRIJA para "P:".
-3. TRANSCRIÇÕES CORRIDAS SEM RÓTULO: Se a transcrição não tiver identificadores de quem fala, infira pela dinâmica do diálogo quem é o psicólogo ("Psi:") e quem é o paciente ("P:") e separe cada fala com seu rótulo na linha correspondente.
-4. NUNCA misture falas de pessoas diferentes na mesma linha. Cada troca de interlocutor DEVE iniciar uma nova linha.
-5. Agrupe turnos consecutivos do mesmo interlocutor para criar parágrafos de diálogo fluidos, legíveis e sem repetições fragmentadas de rótulos.
-6. NÃO invente, não resuma, não sintetize e não corte nenhuma informação da transcrição original. Mantenha 100% das palavras e do diálogo literal (verbatim).
-7. Retorne APENAS o diálogo retificado no formato:
+3. PRESERVAÇÃO E DETECÇÃO DE INDÍCIOS AFETIVOS E HESITAÇÕES:
+   - Preserve integralmente ou adicione marcações de paraverbalidade contextuais entre colchetes como: [pausa], [hesita], [silêncio], [choro], [voz embargada], [suspiro], [risos], [tom apreensivo].
+   - Mantenha repetições e hesitações originais (ex: "eu... pensei que").
+4. TRANSCRIÇÕES CORRIDAS SEM RÓTULO: Se a transcrição não tiver identificadores de quem fala, infira pela dinâmica do diálogo quem é o psicólogo ("Psi:") e quem é o paciente ("P:") e separe cada fala com seu rótulo na linha correspondente.
+5. NUNCA misture falas de pessoas diferentes na mesma linha. Cada troca de interlocutor DEVE iniciar uma nova linha.
+6. Agrupe turnos consecutivos do mesmo interlocutor para criar parágrafos de diálogo fluidos, legíveis e sem repetições fragmentadas de rótulos.
+7. NÃO invente, não resuma, não sintetize e não corte nenhuma informação da transcrição original. Mantenha 100% das palavras e do diálogo literal (verbatim).
+8. Retorne APENAS o diálogo retificado no formato:
 Psi: [texto do psicólogo]
 P: [texto do paciente]
 Psi: [texto do psicólogo]
@@ -1548,8 +1564,9 @@ ${transcript.slice(0, 12000)}
 """
 
 DIRETRIZ DE CONTEÚDO PARA O CAMPO "${fieldName}":
-Desenvolva um texto substancial, formal, rico em semiologia e vocabulário técnico estrito da TCC de 4ª Geração (Poubel & Rodrigues).
-Retorne APENAS o código HTML limpo correspondente (<p style='text-align: justify;'>, <ul><li> ou <strong>). NÃO use marcações Markdown como \`\`\`html.
+1. ANCORAGEM FACTUAL ESTRITA: Desenvolva o texto baseado EXCLUSIVAMENTE no que foi verbalizado nesta sessão. NUNCA invente ou presuma sobrecarga doméstica, afazeres do lar, sobrecarga no trabalho ou sintomas corporais (taquicardia, tensão, etc.) se não constarem literalmente na transcrição.
+2. AUSÊNCIA DE DADOS: Se a dimensão não foi relatada, registre "Não informado pelo paciente na sessão" em vez de simular queixas.
+3. Formate em HTML limpo (<p style='text-align: justify;'>, <ul><li> ou <strong>). NÃO use marcações Markdown como \`\`\`html.
 `;
 
   try {
@@ -1621,8 +1638,13 @@ MATRIZ TEÓRICA E METODOLÓGICA EXCLUSIVA DA TCC DE 4ª GERAÇÃO:
    - As 5 Fases do Treinamento no PDP: Fase 1 (Motivação e custos da inação); Fase 2 (Correção de Distorções); Fase 3 (Mentalidade Saudável e "Frases de Poder" do Adulto Saudável); Fase 4 (Imersão e regras da habilidade); Fase 5 (Exercícios Práticos: Role-play Tier 1 com roteiro guiado / Tier 2 sob pressão em sessão, e Hierarquia de Exposição Graduada com SUDS 0-10 na vida real sob a regra "Se [gatilho/afeto aversivo] -> Então [ativar HP / Tríade Assertiva]").
 
 SUA MISSÃO MANDATÓRIA:
-Analisar a transcrição integral da consulta clínica abaixo e formular, com substancial profundidade analítica, rigor técnico estrito da TCC de 4ª GERAÇÃO e extensão compatível com o MODELO DE RELATÓRIO RID, todos os 12 campos clínicos obrigatórios do Registro de Atendimento.
-PROIBIÇÃO ABSOLUTA DE RESUMOS TELEGRÁFICOS OU FRASES CURTAS GENÉRICAS! Cada campo deve apresentar formulações clínicas aprofundadas, justificativas técnicas sólidas e rigor médico-hospitalar (Resolução CFP nº 06/2019).
+Analisar a transcrição integral da consulta clínica abaixo e formular, com substancial profundidade analítica, rigor técnico estrito da TCC de 4ª GERAÇÃO e extensão compatível com o MODELO DE RELATÓRIO RID, os 12 campos clínicos do Registro de Atendimento.
+
+REGRAS INEGOCIÁVEIS DE FIDELIDADE FACTUAL E GROUNDING CLÍNICO (ZERO ALUCINAÇÃO):
+1. ANCORAGEM FACTUAL ESTRITA: Baseie cada campo EXCLUSIVAMENTE nas declarações, temas e eventos concretos relatados nesta sessão. NUNCA deduza ou invente queixas, traumas de infância, conflitos familiares ou profissões que o paciente não mencionou.
+2. PROIBIÇÃO DE INFERÊNCIAS ESTEREOTIPADAS: É TERMINANTEMENTE PROIBIDO presumir "sobrecarga doméstica", "afazeres do lar", "sobrecarga laborativa/trabalho" ou "sensações físicas somáticas" (ex: taquicardia, tensão muscular, aperto no peito) se o paciente não as descreveu textualmente na transcrição.
+3. REGISTRO DE NÃO INFORMADO / AUSÊNCIA: Se uma dimensão (ex: sensações somáticas corporais ou contexto profissional) não foi mencionada pelo paciente, declare expressamente: "Não relatado na sessão" ou "Ausência de queixas somáticas registradas", em vez de inventar sintomas plausíveis.
+4. DIFERENCIAÇÃO ENTRE HIPÓTESE E FATO: Hipóteses funcionais do terapeuta devem ser claramente delimitadas como tais, jamais transformadas em fatos vividos pelo paciente.
 
 DADOS DO ATENDIMENTO:
 - Psicólogo Clínico: ${therapist?.name || "Psicólogo"} ${therapist?.crp ? `(CRP: ${therapist.crp})` : ""}
@@ -1630,8 +1652,8 @@ DADOS DO ATENDIMENTO:
 - Abordagens Norteadoras: ${approaches.join(", ")}
 ${patient.clinicalProfile ? `
 ===================================================
-HISTÓRICO CLÍNICO INTEGRADO DO PRONTUÁRIO (RID + PCI + ESCALAS):
-O preenchimento DEVE OBRIGATORIAMENTE manter coerência técnico-diagnóstica com o seguinte histórico do prontuário:
+CONTEXTO CLÍNICO DE REFERÊNCIA DO PRONTUÁRIO (A SESSÃO ATUAL É SOBERANA):
+Utilize o histórico abaixo apenas como pano de fundo conceitual para enriquecer o raciocínio, sem forçar queixas passadas na sessão de hoje:
 ${patient.clinicalProfile}
 ===================================================
 ` : ''}
@@ -1816,23 +1838,9 @@ Satisfatório
   for (const field of requiredFields) {
     if (!extracted[field] || extracted[field].trim().length < 50) {
       console.warn(`[Auto-Refinamento Clínico] Campo ${field} ausente ou incompleto. Gerando formulação direcionada...`);
-      if (field === "relatoCliente") {
-        extracted[field] = `<div class="clinical-synthesis space-y-3 mb-6">
-<h4 style="font-weight: bold; font-size: 13px; color: #10b981; text-transform: uppercase;">Formulação Clínica da Sessão (TCC de 4ª Geração - Modelo RID / THP)</h4>
-<p style="text-align: justify;"><strong>1. Contexto Fático e Estímulos Antecedentes (Sd):</strong> A paciente compareceu pontualmente à sessão terapêutica em ambiente estruturado. A sessão foi orientada pela análise funcional das contingências cotidianas através do Registro de Interações Disfuncionais (RID), mapeando gatilhos relacionais interpessoais e demandas de autoafirmação.</p>
-<p style="text-align: justify;"><strong>2. Tríplice Resposta Clínica e EIDs:</strong> Durante o relato, identificou-se a ativação de Esquemas Iniciais Desadaptativos de Privação Emocional e Inibição Emocional, forjados ontogeneticamente na infância ao assumir precocemente responsabilidades excessivas na dinâmica familiar. Observou-se a manifestação do Modo Criança Vulnerável com tendência à evitação, que foi prontamente acolhida e redirecionada pelo Modo Adulto Saudável no volante, expressando necessidades com firmeza e clareza assertiva.</p>
-<p style="text-align: justify;"><strong>3. Recursos Protetivos e Habilidades Psicológicas (THP):</strong> Demonstrou excelente receptividade ao Treinamento de Habilidades Psicológicas (THP), mobilizando as Habilidades de Autoconhecimento, Sociabilidade e Assertividade (Tríade Assertiva) e Autorregulação Emocional, superando o padrão de sala de descompressão e consolidando a postura de cientista de si mesma.</p>
-</div>
-<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0;" />
-<h4 style="font-weight: bold; font-size: 13px; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px;">Transcrição Estruturada e Diarizada da Sessão</h4>
-<div style="font-size: 11px; line-height: 1.6; text-align: justify;">
-${rectifiedTranscript.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>')}
-</div>`;
-      } else {
-        const targeted = await generateTargetedField(field, rectifiedTranscript, patient, approaches, therapist);
-        if (targeted) {
-          extracted[field] = targeted;
-        }
+      const targeted = await generateTargetedField(field, rectifiedTranscript, patient, approaches, therapist);
+      if (targeted) {
+        extracted[field] = targeted;
       }
     }
   }

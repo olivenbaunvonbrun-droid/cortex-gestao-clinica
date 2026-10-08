@@ -299,17 +299,41 @@ export default function RegistroAtendimentoApp({
     }
   }, [selectedPatientId]);
 
-  // Pre-fill fields from selected patient
+  // Pre-fill fields from selected patient and prevent cross-patient contamination
+  const prevSelectedPatientIdRef = useRef<string>('');
   useEffect(() => {
     if (selectedPatientId && patients.length > 0) {
       const p = patients.find(p => String(p.id) === String(selectedPatientId));
       if (p) {
+        // Se mudou de paciente, limpa campos clínicos para evitar contaminação cruzada
+        if (prevSelectedPatientIdRef.current && prevSelectedPatientIdRef.current !== selectedPatientId) {
+          setRecordId(undefined);
+          setDefaultFormDates();
+          setNumeroSessao("");
+          setMotivoConsulta("");
+          setObjetivosCliente("");
+          setObjetivosTerapeuta("");
+          setRelatoCliente("");
+          setIntervencoes("");
+          setObservacoes("");
+          setInsights("");
+          setPercepcaoCliente("");
+          setProgresso("");
+          setTarefas("");
+          setPlanejamento("");
+          setEncaminhamentos("");
+          setAutoSaveStatus("");
+        }
+        prevSelectedPatientIdRef.current = selectedPatientId;
+
         setNomeCliente(p.nome || "");
         const age = p.nascimento ? String(new Date().getFullYear() - new Date(p.nascimento).getFullYear()) : "";
         setIdadeCliente(age);
         setSexoCliente(p.sexo || "Masculino");
         setContatoCliente(p.telefone || p.email || "");
       }
+    } else {
+      prevSelectedPatientIdRef.current = '';
     }
   }, [selectedPatientId, patients]);
 
@@ -774,12 +798,15 @@ export default function RegistroAtendimentoApp({
     promptHeader += "3. ROTA 1: PROCESSO DE MODIFICAÇÃO ESQUEMÁTICA (PME) – 'REABILITANDO O PASSADO': Desfusão Identitária e Metáfora do Ônibus (Adulto Saudável no volante vs versões infantis feridas no banco de trás); 18 Esquemas Iniciais Desadaptativos (EIDs) nos 5 Domínios de Young; Modos Esquemáticos (Criança Vulnerável/Irritada, Protetor Desligado, Pais Críticos/Exigentes, Adulto Saudável); Ativação Mnemônica e Ressignificação de Memórias biográficas ('Curando a Criança Interior'); Seta Descendente desmantelando regras condicionais e crenças centrais.\n";
     promptHeader += "4. ROTA 2: PROCESSO DE DESENVOLVIMENTO PSICOLÓGICO (PDP) – 'CONSTRUINDO O FUTURO': Treino deliberado das 10 Habilidades Psicológicas (Autoconhecimento, Autorregulação Emocional, Raciocínio Realisticamente Otimista, Autoestima, Resolutividade e Enfrentamento, Autocontrole, Sociabilidade/Assertividade com Tríade Assertiva e Direito de Ser Falível, Imunidade Social com Fórmula do Não e Nevoeiro/Fogging, Sensibilidade Social com Validação Dialética em 3 Níveis, Hedonismo Responsável com saboreamento/Savoring e Modo Criança Feliz); 5 Fases do PDP com ensaios práticos (Role-play Tiers 1 e 2 em sessão) e Hierarquia de Exposição Graduada com SUDS (0-10) na vida real.\n\n";
 
-    promptHeader += "DIRETRIZ MANDATÓRIA DE VOLUME ANALÍTICO E PROFUNDIDADE TÉCNICO-DIAGNÓSTICA:\n";
-    promptHeader += "O conteúdo produzido DEVE ser substancial, denso, aprofundado e de alta excelência médica/psicológica. NÃO produza resumos superficiais, telegráficos ou burocráticos. Desenvolva redações clínicas completas, com parágrafos justificados extensos (<p style='text-align: justify;'>), tópicos analíticos detalhados (<ul> e <li>) e citações literais do paciente preservadas entre aspas duplas (\"> '...'\") em conformidade estrita com a Resolução CFP nº 06/2019.\n\n";
+    promptHeader += "DIRETRIZ MANDATÓRIA DE FIDELIDADE FACTUAL E RIGOR SEMIOLÓGICO (ZERO ALUCINAÇÃO):\n";
+    promptHeader += "1. ANCORAGEM FACTUAL ESTRITA: Formule a análise EXCLUSIVAMENTE a partir das informações e falas literais relatadas nesta sessão. NÃO invente, não deduza e não presuma eventos, conflitos familiares, traumas de infância ou profissões que não foram expressamente narrados.\n";
+    promptHeader += "2. PROIBIÇÃO DE INFERÊNCIAS ESTEREOTIPADAS: É expressamente PROIBIDO deduzir 'sobrecarga doméstica', 'afazeres da casa', 'sobrecarga profissional/laborativa' ou 'sensações físicas somáticas' (como taquicardia, tensão muscular ou fadiga) se o paciente não as descreveu verbalmente nesta consulta.\n";
+    promptHeader += "3. DIMENSÕES NÃO MENCIONADAS: Caso o relato não mencione sensações corporais, contexto de trabalho ou doméstico, registre 'Não relatado na sessão' ou foque exclusivamente nos elementos fáticos trazidos pelo paciente, sem preencher lacunas com especulações.\n";
+    promptHeader += "4. PROFUNDIDADE TÉCNICA BASEADA EM EVIDÊNCIAS: O rigor e a excelência clínica (Resolução CFP nº 06/2019) devem vir da análise funcional refinada dos fatos REAIS apresentados, preservando citações literais entre aspas duplas (\"> '...'\").\n\n";
 
     if (patientClinicalBackground) {
-      promptHeader += "CONFORMIDADE CLÍNICA MANDATÓRIA COM O HISTÓRICO INTEGRADO DO PRONTUÁRIO (RID + PCI + ESCALAS):\n";
-      promptHeader += "A sua formulação DEVE seguir rigorosamente a mesma linha diagnóstica, os mesmos Esquemas Iniciais Desadaptativos (EIDs), as mesmas Necessidades Emocionais Básicas violadas e as metas terapêuticas consolidadas no histórico clínico do paciente:\n";
+      promptHeader += "CONTEXTO CLÍNICO DE REFERÊNCIA DO PRONTUÁRIO (A SESSÃO ATUAL É SOBERANA):\n";
+      promptHeader += "Utilize o histórico a seguir como apoio de referência conceitual, sem forçar queixas passadas caso a sessão atual verse sobre outros tópicos:\n";
       promptHeader += `${patientClinicalBackground}\n\n`;
     }
 
