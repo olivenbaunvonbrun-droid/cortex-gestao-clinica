@@ -1667,17 +1667,18 @@ REGRAS DE PREENCHIMENTO DE CADA UM DOS 12 CAMPOS (EXCLUSIVAMENTE TCC DE 4ª GERA
 
 1. relatoCliente:
    Estruturado em DUAS grandes partes complementares em HTML (<p style='text-align: justify;'>, <ul><li> e <strong>):
-   PARTE A - Formulação Funcional RID (Modelo TCC de 4ª Geração - Poubel & Rodrigues):
+   PARTE A - Formulação e Síntese Funcional RID (Modelo TCC de 4ª Geração - Poubel & Rodrigues):
      • Contexto Fático e Estímulos Antecedentes Discriminativos (Sd): Cenário disparador, personagens e contingências fáticas sem julgamentos morais;
      • Necessidades / Estressores: Identificação pontual das Necessidades Emocionais Básicas negligenciadas ou ameaçadas na interação;
      • Tríplice Resposta Clínica e EIDs:
        - Dimensão Cognitiva e Seta Descendente: Pensamentos automáticos, regras condicionais ("Se... então..."), EIDs ativados nos 5 domínios de Young, com preservação literal das falas do paciente entre aspas duplas ("> '...'");
-       - Dimensão Somática/Emocional: Ativação corporal, sensações somáticas e afetos vivenciados;
+       - Dimensão Somática/Emocional: Ativação corporal, sensações somáticas e afetos vivenciados (se relatados; se não houver queixa somática, registre 'Não relatado na sessão');
        - Dimensão Comportamental/Modos de Enfrentamento: Respostas operantes emitidas sob modos de Rendição, Evitação ou Hipercompensação do esquema;
      • Análise de Consequências e Reforçamento Negativo: Alívio imediato a curto prazo vs custos existenciais cumulativos e manutenção do ciclo disfuncional a longo prazo;
      • Déficits nas 10 Habilidades Psicológicas (THP): Diagnóstico claro de quais HPs estavam em déficit no episódio e como o Modo Adulto Saudável foi ativado ou precisa ser treinado.
-   PARTE B - Transcrição Estruturada e Diarizada da Sessão:
-     • Transcrição completa, organizada e limpa da sessão, com identificação clara e em negrito de <strong>Psi:</strong> (${therapist?.name || "Psicólogo"}) e <strong>P:</strong> (${patient.name || "Paciente"}), sem nenhuma fala invertida.
+   PARTE B - Transcrição Integral, Verbatim e Diarizada da Sessão:
+     • INTEGRIDADE TOTAL E ZERO CORTES: Transcrição literal e completa de cada turno de fala, sem resumos, elipses, cortes ou omissões de trechos falados.
+     • Preservação de 100% das falas com identificação clara de <strong>Psi:</strong> (${therapist?.name || "Psicólogo"}) e <strong>P:</strong> (${patient.name || "Paciente"}), incluindo marcadores paraverbais [pausa], [choro], [risos], [hesita].
 
 2. motivoConsulta:
    Formulação clínico-diagnóstica densa em 2 a 3 parágrafos justificados (<p style='text-align: justify;'>). Superar o "Efeito Sala de Descompressão", diferenciando a queixa manifesta superficial da função comportamental mantenedora latente (alívio imediato por reforçamento negativo, esquiva de vulnerabilidade). Mapear as Necessidades Emocionais Básicas violadas na trajetória de vida, os Esquemas Iniciais Desadaptativos (EIDs) nucleares ativados e o déficit específico nas 10 Habilidades Psicológicas que perpetua o quadro clínico.
