@@ -88,6 +88,7 @@ export function formatRecordToHtml(record: AttendanceRecord): string {
             <div class="mt-1 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] text-[11px] prose prose-invert max-w-none text-justify">${f.relatoCliente}</div>
           </div>
         ` : ''}
+        ${f.sinteseClinica ? `<div class="mt-2 text-xs leading-relaxed"><strong>Síntese interpretativa da IA (revisada pelo profissional):</strong><div class="mt-1">${f.sinteseClinica}</div></div>` : ''}
         ${f.intervencoes ? `
           <div class="mt-2 text-xs leading-relaxed text-text-main/80">
             <strong>Intervenções Clínicas:</strong>

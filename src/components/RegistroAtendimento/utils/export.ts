@@ -70,6 +70,7 @@ function renderRecordContent(record: AttendanceRecord, logoUrl: string, signatur
           </div>
           <div style="font-family: 'Inter', sans-serif;">
             ${fieldsHtml}
+        ${record.fields.sinteseClinica ? `<h3>Síntese interpretativa da IA (revisada pelo profissional)</h3><div>${record.fields.sinteseClinica}</div>` : ''}
           </div>
         </div>
 

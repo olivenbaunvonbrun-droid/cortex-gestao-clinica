@@ -684,7 +684,7 @@ export function ClinicalAudioRecorder({
       setAudioPurgedMessage(true);
       setTimeout(() => setAudioPurgedMessage(false), 9000);
 
-      toast.success('Atendimento transcrito e todos os campos preenchidos com sucesso!');
+      toast.success('Rascunho transcrito. Revise os campos e salve para registrar no prontuário.');
       setRecordingStatus('idle');
       recordingStatusRef.current = 'idle';
       setDurationSeconds(0);
