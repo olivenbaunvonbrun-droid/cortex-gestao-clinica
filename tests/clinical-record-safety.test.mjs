@@ -23,6 +23,9 @@ await build({ entryPoints: ['src/services/geminiService.ts'], outfile: out,
 const safetyOut = join(dir, 'safety.mjs');
 await build({ entryPoints: ['src/lib/clinicalRecordSafety.ts'], outfile: safetyOut, bundle: true, platform: 'node', format: 'esm' });
 const safety = await import(pathToFileURL(safetyOut).href);
+const frameworkOut = join(dir, 'framework.mjs');
+await build({ entryPoints: ['src/lib/registroTcc4.ts'], outfile: frameworkOut, bundle: true, platform: 'node', format: 'esm' });
+const framework = await import(pathToFileURL(frameworkOut).href);
 const tdahTypesOut = join(dir, 'tdahTypes.mjs');
 await build({ entryPoints: ['src/components/TdahEcosystem/types.ts'], outfile: tdahTypesOut, bundle: true, platform: 'node', format: 'esm' });
 const tdahTypes = await import(pathToFileURL(tdahTypesOut).href);
@@ -84,6 +87,54 @@ test('original markup characters are escaped when rendering source', async () =>
   assert.equal(result.sourceTranscript, source);
   assert.ok(result.relatoCliente.includes('&lt;script&gt;'));
   assert.ok(!result.relatoCliente.includes('<script>'));
+});
+test('comprehensive analysis and streaming send the mandatory document-based framework as system instructions', async () => {
+  for (const streaming of [false, true]) {
+    fake('===CONFIDENCIALIDADE===\n<p>Limites do sigilo discutidos.</p>');
+    const result = await service.analyzeSessionTranscriptComprehensive(
+      'Psi: Discutimos os limites do sigilo.', { name: 'Teste', clinicalProfile: 'Histórico fictício separado.' },
+      ['Outra abordagem'], streaming ? () => {} : undefined);
+    const request = globalThis.__clinicalRequests[0];
+    assert.equal(request.config.systemInstruction, framework.registroAllFieldsInstruction());
+    assert.match(request.contents, /metadados; não substituem a orientação TCC4/);
+    assert.ok(!request.config.systemInstruction.includes('Histórico fictício separado.'));
+    assert.equal(result.confidencialidade, '<p>Limites do sigilo discutidos.</p>');
+    assert.equal(result.sourceTranscript, 'Psi: Discutimos os limites do sigilo.');
+  }
+});
+test('individual field requests preserve the common framework and field-specific evidence rules', async () => {
+  for (const field of Object.keys(framework.REGISTRO_FIELD_GUIDANCE)) {
+    fake('<p>Não relatado na sessão.</p>');
+    await service.generateContentWithSystemInstruction('Fonte fictícia: P: Vim conversar.', framework.registroFieldInstruction(field));
+    const instruction = globalThis.__clinicalRequests[0].config.systemInstruction;
+    assert.ok(instruction.startsWith(framework.REGISTRO_TCC4_FRAMEWORK));
+    assert.ok(instruction.includes(framework.REGISTRO_FIELD_GUIDANCE[field]));
+    assert.ok(framework.registroAllFieldsInstruction().includes(framework.REGISTRO_FIELD_GUIDANCE[field]));
+  }
+  assert.throws(() => framework.registroFieldInstruction('campo_inexistente'), /não reconhecido/);
+  assert.throws(() => framework.registroFieldInstruction('toString'), /não reconhecido/);
+});
+test('framework supports formulation without converting hypotheses, teaching examples or plans into facts', () => {
+  const instruction = framework.registroAllFieldsInstruction();
+  for (const concept of ['RID', 'crenças intermediárias', 'crenças centrais', 'PME', 'PDP',
+    'Imunidade Social', 'Resolutividade', 'Punitividade', 'reparentalização', 'prevenção de recaída']) {
+    assert.ok(instruction.includes(concept), concept);
+  }
+  assert.match(instruction, /Hipótese a confirmar/);
+  assert.match(instruction, /com trecho de suporte e pergunta/);
+  assert.match(instruction, /Catálogos e exemplos didáticos dos materiais não são dados deste paciente/);
+  assert.match(instruction, /vivências imagéticas,\n+não comprovação histórica/);
+  assert.match(framework.REGISTRO_FIELD_GUIDANCE.intervencoes, /Somente ações realizadas/);
+  assert.match(framework.REGISTRO_FIELD_GUIDANCE.tarefas, /Somente tarefas pactuadas/);
+  assert.match(framework.REGISTRO_FIELD_GUIDANCE.planejamento, /Sugestão para revisão/);
+  assert.match(framework.REGISTRO_FIELD_GUIDANCE.confidencialidade, /Não relatado na sessão/);
+  assert.match(framework.REGISTRO_FIELD_GUIDANCE.progresso, /caso contrário vazio/);
+  assert.ok(!/Pedro|engenheiro|festival de talentos/i.test(instruction));
+});
+test('comprehensive missing confidentiality remains an evidence gap rather than implied consent', async () => {
+  fake('===MOTIVO_CONSULTA===\n<p>Conversa.</p>');
+  const result = await service.analyzeSessionTranscriptComprehensive('P: Vim conversar.', { name: 'Teste' });
+  assert.equal(result.confidencialidade, '<p>Não relatado na sessão.</p>');
 });
 test('medical record entry types inspection preserves raw data without silent mutation to evolucao', () => {
   assert.equal(safety.isValidMedicalRecordEntryType('registro_atendimento'), true);
