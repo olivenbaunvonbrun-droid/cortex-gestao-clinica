@@ -455,6 +455,7 @@ export default function App() {
       });
       return unsubscribe;
     }
+    return undefined;
   }, [isGoogleUser]);
 
   useEffect(() => {
@@ -471,6 +472,7 @@ export default function App() {
       }, 30000);
       return () => clearInterval(syncInterval);
     }
+    return undefined;
   }, [firebaseUser]);
 
   const handleLogin = (user: any) => {

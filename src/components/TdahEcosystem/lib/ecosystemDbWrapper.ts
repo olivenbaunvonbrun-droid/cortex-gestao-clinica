@@ -1,6 +1,6 @@
 import { db } from '../../../lib/db';
 import { syncService } from '../../../lib/syncService';
-import { TdahEcosystemAssessment } from '../types';
+import { TdahEcosystemAssessment, validateLaudoTdahIntegrativo } from '../types';
 import { evaluateDsm5Criteria } from './scoring';
 
 export function formatTdahEcosystemToHtml(assessment: TdahEcosystemAssessment): string {
@@ -158,14 +158,18 @@ class TdahEcosystemDbWrapper {
     const timestamp = Number(assessment.id) || Date.now();
     assessment.id = String(timestamp);
 
+    const validation = validateLaudoTdahIntegrativo(assessment.laudoData);
     const newEntry = {
       timestamp,
       data: new Date(assessment.updatedAt).toLocaleDateString('pt-BR'),
       textoHtml: textHtml,
-      tipo: 'tdah-ecosystem' as any,
+      tipo: 'tdah-ecosystem' as const,
       metadata: {
         type: 'tdah-ecosystem',
-        ecosystemData: assessment
+        ecosystemData: assessment,
+        isDraft: validation.isDraft,
+        laudoStatus: validation.isValid ? 'final' : 'draft',
+        missingFields: validation.missingFields
       }
     };
 

@@ -43,6 +43,7 @@ export default defineConfig(({mode}) => {
                 return 'vendor-icons';
               }
             }
+            return undefined;
           },
         },
       },

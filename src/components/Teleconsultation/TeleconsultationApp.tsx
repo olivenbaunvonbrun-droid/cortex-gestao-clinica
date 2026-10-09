@@ -144,7 +144,7 @@ export default function TeleconsultationApp({
       } else {
         existingScript.addEventListener('load', () => setScriptLoaded(true));
       }
-      return;
+      return undefined;
     }
 
     setScriptLoaded(false);
@@ -165,7 +165,7 @@ export default function TeleconsultationApp({
 
   // Initialize Jitsi with Anti-Lag WebRTC Constraints & STUN Acceleration
   useEffect(() => {
-    if (!scriptLoaded || !selectedPatientId || !jitsiContainerRef.current) return;
+    if (!scriptLoaded || !selectedPatientId || !jitsiContainerRef.current) return undefined;
 
     let isObsolete = false;
     const sessionKey = `${selectedPatientId}_${jitsiServer}_${videoQuality}`;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TdahEcosystemAssessment, LaudoTdahIntegrativo } from '../types';
+import { TdahEcosystemAssessment, LaudoTdahIntegrativo, validateLaudoTdahIntegrativo } from '../types';
 import { evaluateDsm5Criteria } from '../lib/scoring';
 import { exportTdahEcosystemToHtml } from '../utils/export';
 import { analyzeTdahEcosystemAssessment } from '../../../services/geminiService';
@@ -241,6 +241,21 @@ CRP: ${p.crp || '06/150409'}`;
 
     setReportText(simulatedText);
     const updatedLaudo: LaudoTdahIntegrativo = {
+      identificacao: {
+        nome: p.name || 'Pedro Henrique Albuquerque',
+        idade: p.age || '32 anos',
+        nascimento: p.birthDate || '14/05/1992',
+        documento: 'MG-14.892.110',
+        escolaridade: p.education || 'Ensino Superior Completo',
+        profissao: p.profession || 'Engenheiro de Software',
+        solicitante: 'O Próprio Paciente / Médico Assistente',
+        finalidade: 'Avaliação Diagnóstica de TDAH em Adultos',
+        dataAvaliacao: new Date().toLocaleDateString('pt-BR'),
+        psicologo: p.psychologistName || 'Psicólogo Clínico',
+        crp: p.crp || '06/150409'
+      },
+      descricaoDemanda: 'Queixas atencionais crônicas, procrastinação severa e desorganização executiva na vida adulta.',
+      procedimentosUtilizados: ['ASRS-18', 'ETDAH-AD', 'EPF-TDAH', 'BDEFS', 'Heterorrelato', 'Entrevista Clínica DSM-5-TR'],
       aiAssistedSynthesis: simulatedText,
       conclusaoFinal: 'Critérios Plenamente Atendidos para TDAH Tipo Combinado (F90.2) com comorbidade de Ansiedade Secundária',
       encaminhamentos: '1. Avaliação Psiquiátrica para farmacoterapia; 2. Psicoterapia TCC com Treino de Habilidades Psicológicas (THP); 3. Estruturação ergonômica ambiental.',
@@ -257,7 +272,15 @@ CRP: ${p.crp || '06/150409'}`;
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const laudoValidation = validateLaudoTdahIntegrativo(assessment.laudoData);
+
   const handlePrint = () => {
+    if (!laudoValidation.isValid) {
+      toast(`Atenção: O documento está em formato de Rascunho com pendências: ${laudoValidation.missingFields.join(', ')}`, {
+        icon: '⚠️',
+        duration: 4000
+      });
+    }
     exportTdahEcosystemToHtml(assessment);
   };
 
@@ -316,6 +339,42 @@ CRP: ${p.crp || '06/150409'}`;
             {copied ? 'Copiado!' : 'Copiar'}
           </button>
         </div>
+      </div>
+
+      {/* Indicador de Status: Rascunho vs Final */}
+      <div className={cn(
+        "p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs transition-colors",
+        laudoValidation.isValid
+          ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-300"
+          : "bg-amber-500/10 border-amber-500/25 text-amber-300"
+      )}>
+        <div className="flex items-center gap-2.5">
+          {laudoValidation.isValid ? (
+            <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+          ) : (
+            <AlertCircle size={18} className="text-amber-400 shrink-0" />
+          )}
+          <div>
+            <span className="font-bold uppercase tracking-wider block">
+              {laudoValidation.isValid
+                ? "Laudo Clínico Final Concluído (CFP nº 06/2019)"
+                : "Laudo em Elaboração (Rascunho Clínico)"}
+            </span>
+            <span className="text-[11px] opacity-80 font-normal">
+              {laudoValidation.isValid
+                ? "Todos os requisitos obrigatórios preenchidos: identificação completa com CRP, demanda, procedimentos e conclusão datada."
+                : `Pendências para validação final: ${laudoValidation.missingFields.join(', ')}`}
+            </span>
+          </div>
+        </div>
+        <span className={cn(
+          "px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest shrink-0 border",
+          laudoValidation.isValid
+            ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+            : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+        )}>
+          {laudoValidation.isValid ? "Documento Final" : "Rascunho"}
+        </span>
       </div>
 
       {/* Resumo Diagnóstico Preliminar */}

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 
 interface ErrorBoundaryProps {
@@ -23,7 +23,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error(
       `[Cortex ErrorBoundary] Erro na ferramenta "${this.props.toolTitle || 'desconhecida'}":`,
       error,
@@ -36,7 +36,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center bg-bg-deep text-text-main p-8 gap-5">

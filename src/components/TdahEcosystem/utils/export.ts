@@ -1,8 +1,10 @@
-import { TdahEcosystemAssessment } from '../types';
+import { TdahEcosystemAssessment, validateLaudoTdahIntegrativo } from '../types';
 import { evaluateDsm5Criteria } from '../lib/scoring';
 
 export function exportTdahEcosystemToHtml(assessment: TdahEcosystemAssessment, customLogo?: string, customSignature?: string): void {
   const dsm5 = evaluateDsm5Criteria(assessment);
+  const validation = validateLaudoTdahIntegrativo(assessment.laudoData);
+  const isFinal = validation.isValid;
   const p = assessment.patientInfo;
   const asrs = assessment.asrsData;
   const etdah = assessment.etdahData;
@@ -167,8 +169,13 @@ export function exportTdahEcosystemToHtml(assessment: TdahEcosystemAssessment, c
       <!-- CABEÇALHO -->
       <div class="header">
         <div class="title-block">
-          <h1>Laudo Psicológico - TDAH em Adultos</h1>
-          <p>Conforme Resolução CFP nº 06/2019 • Avaliação Neuropsicológica & Clínica</p>
+          <h1>${isFinal ? 'Laudo Psicológico - TDAH em Adultos' : 'Rascunho de Laudo - TDAH em Adultos'}</h1>
+          <p>
+            ${isFinal 
+              ? '<span class="badge badge-success">Documento Final Concluído</span>' 
+              : '<span class="badge badge-warning">Rascunho Clínico / Em Elaboração</span>'}
+            • Conforme Resolução CFP nº 06/2019 • Avaliação Neuropsicológica & Clínica
+          </p>
         </div>
         ${customLogo ? `<img src="${customLogo}" class="logo-img" alt="Logo" />` : ''}
       </div>

@@ -96,7 +96,8 @@ export type MedicalRecordEntryType =
   | 'ihp_pr'
   | 'thp'
   | 'tdah'
-  | 'tdah-ecosystem';
+  | 'tdah-ecosystem'
+  | 'incompativel';
 
 export interface MedicalRecordEntry {
   timestamp: number;

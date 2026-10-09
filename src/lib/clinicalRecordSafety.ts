@@ -53,11 +53,41 @@ export function isValidMedicalRecordEntryType(value: unknown): value is KnownCli
   return typeof value === 'string' && (VALID_ENTRY_TYPES as readonly string[]).includes(value);
 }
 
-export function sanitizeMedicalRecordEntryType(value: unknown): KnownClinicalEntryType {
-  if (isValidMedicalRecordEntryType(value)) {
-    return value;
+export interface InspectedRecordEntryType {
+  rawTipo: string;
+  isRecognized: boolean;
+  effectiveTipo: KnownClinicalEntryType | 'incompativel';
+  warning?: string;
+}
+
+export function inspectMedicalRecordEntryType(value: unknown): InspectedRecordEntryType {
+  const rawTipo = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+  if (isValidMedicalRecordEntryType(rawTipo)) {
+    return {
+      rawTipo,
+      isRecognized: true,
+      effectiveTipo: rawTipo
+    };
   }
-  console.warn(`[Cortex Safety] Tipo de registro desconhecido ou inválido detectado: "${String(value)}". Normalizado para "evolucao".`);
-  return 'evolucao';
+  return {
+    rawTipo,
+    isRecognized: false,
+    effectiveTipo: 'incompativel',
+    warning: `Tipo de registro não reconhecido: "${rawTipo}". O dado foi preservado integralmente sem conversão forçada.`
+  };
+}
+
+/**
+ * Valida ou sinaliza tipo de registro clínico.
+ * NUNCA altera silenciosamente um tipo desconhecido para "evolucao".
+ * Preserva o dado original bruto e sinaliza incompatibilidade.
+ */
+export function sanitizeMedicalRecordEntryType(value: unknown): KnownClinicalEntryType | string {
+  const inspection = inspectMedicalRecordEntryType(value);
+  if (inspection.isRecognized) {
+    return inspection.effectiveTipo as KnownClinicalEntryType;
+  }
+  console.warn(`[Cortex Safety] ${inspection.warning}`);
+  return inspection.rawTipo || 'incompativel';
 }
 

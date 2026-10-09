@@ -11,7 +11,8 @@ import {
   BdefsData,
   HeterorrelatoData,
   DiferenciaisData,
-  LaudoTdahIntegrativo
+  LaudoTdahIntegrativo,
+  validateLaudoTdahIntegrativo
 } from './types';
 import { tdahEcosystemDbWrapper } from './lib/ecosystemDbWrapper';
 import { exportTdahEcosystemToHtml } from './utils/export';
@@ -294,7 +295,12 @@ export default function TdahEcosystemApp({
     try {
       setIsSaving(true);
       await tdahEcosystemDbWrapper.saveToMedicalRecord(assessment, userId);
-      toast.success('Avaliação completa salva no prontuário com sucesso!');
+      const validation = validateLaudoTdahIntegrativo(assessment.laudoData);
+      if (validation.isValid) {
+        toast.success('Avaliação completa e Laudo Final salvos no prontuário!');
+      } else {
+        toast.success('Avaliação e Rascunho do Laudo salvos no prontuário.');
+      }
     } catch (err: any) {
       console.error('Erro ao salvar no prontuário:', err);
       toast.error('Erro ao registrar no prontuário do paciente.');

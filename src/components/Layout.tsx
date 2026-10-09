@@ -35,6 +35,7 @@ export default function Layout({
       });
       return unsubscribe;
     }
+    return undefined;
   }, [isGoogleUser]);
 
   // --- ENGINE DE NOTIFICAÇÕES REAL-TIME ---

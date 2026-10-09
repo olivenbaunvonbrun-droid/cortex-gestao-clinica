@@ -23,6 +23,9 @@ await build({ entryPoints: ['src/services/geminiService.ts'], outfile: out,
 const safetyOut = join(dir, 'safety.mjs');
 await build({ entryPoints: ['src/lib/clinicalRecordSafety.ts'], outfile: safetyOut, bundle: true, platform: 'node', format: 'esm' });
 const safety = await import(pathToFileURL(safetyOut).href);
+const tdahTypesOut = join(dir, 'tdahTypes.mjs');
+await build({ entryPoints: ['src/components/TdahEcosystem/types.ts'], outfile: tdahTypesOut, bundle: true, platform: 'node', format: 'esm' });
+const tdahTypes = await import(pathToFileURL(tdahTypesOut).href);
 process.env.GEMINI_API_KEY = 'test-only';
 const service = await import(pathToFileURL(out).href);
 after(() => rm(dir, { recursive: true, force: true }));
@@ -82,14 +85,59 @@ test('original markup characters are escaped when rendering source', async () =>
   assert.ok(result.relatoCliente.includes('&lt;script&gt;'));
   assert.ok(!result.relatoCliente.includes('<script>'));
 });
-test('medical record entry types are strictly validated and typos are rejected', () => {
+test('medical record entry types inspection preserves raw data without silent mutation to evolucao', () => {
   assert.equal(safety.isValidMedicalRecordEntryType('registro_atendimento'), true);
   assert.equal(safety.isValidMedicalRecordEntryType('thp'), true);
   assert.equal(safety.isValidMedicalRecordEntryType('tdah-ecosystem'), true);
   assert.equal(safety.isValidMedicalRecordEntryType('registro_atendimeto'), false);
   assert.equal(safety.isValidMedicalRecordEntryType('unknown_arbitrary'), false);
   assert.equal(safety.isValidMedicalRecordEntryType(null), false);
+
+  const inspectedValid = safety.inspectMedicalRecordEntryType('registro_atendimento');
+  assert.equal(inspectedValid.isRecognized, true);
+  assert.equal(inspectedValid.effectiveTipo, 'registro_atendimento');
+
+  const inspectedTypo = safety.inspectMedicalRecordEntryType('registro_atendimeto');
+  assert.equal(inspectedTypo.isRecognized, false);
+  assert.equal(inspectedTypo.effectiveTipo, 'incompativel');
+  assert.equal(inspectedTypo.rawTipo, 'registro_atendimeto');
+
   assert.equal(safety.sanitizeMedicalRecordEntryType('registro_atendimento'), 'registro_atendimento');
-  assert.equal(safety.sanitizeMedicalRecordEntryType('registro_atendimeto'), 'evolucao');
+  // Raw data is preserved, never silently morphed to evolucao
+  assert.equal(safety.sanitizeMedicalRecordEntryType('registro_atendimeto'), 'registro_atendimeto');
+});
+
+test('laudo completeness validation strictly rejects incomplete reports, missing CRP and empty dates', () => {
+  // ChatGPT's test case: object with only nome, conclusao and empty date
+  const chatGptTestCase = {
+    identificacao: { nome: 'Paciente Teste' },
+    conclusaoFinal: 'Hipótese confirmada',
+    completedAt: ''
+  };
+  const valChatGpt = tdahTypes.validateLaudoTdahIntegrativo(chatGptTestCase);
+  assert.equal(valChatGpt.isValid, false);
+  assert.equal(valChatGpt.isDraft, true);
+  assert.ok(valChatGpt.missingFields.includes('identificacao.psicologo'));
+  assert.ok(valChatGpt.missingFields.includes('identificacao.crp'));
+  assert.ok(valChatGpt.missingFields.includes('completedAt'));
+  assert.equal(tdahTypes.isCompleteLaudoTdah(chatGptTestCase), false);
+
+  // Complete final report
+  const completeReport = {
+    identificacao: {
+      nome: 'Pedro Henrique Albuquerque',
+      idade: '32 anos',
+      psicologo: 'Dra. Ana Silva',
+      crp: '06/123456',
+      finalidade: 'Avaliação Diagnóstica de TDAH'
+    },
+    conclusaoFinal: 'Critérios preenchidos para TDAH',
+    completedAt: new Date().toISOString()
+  };
+  const valComplete = tdahTypes.validateLaudoTdahIntegrativo(completeReport);
+  assert.equal(valComplete.isValid, true);
+  assert.equal(valComplete.isDraft, false);
+  assert.equal(valComplete.missingFields.length, 0);
+  assert.equal(tdahTypes.isCompleteLaudoTdah(completeReport), true);
 });
 

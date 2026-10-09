@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck, ClipboardList, Layers, Activity, TrendingUp, FileSpreadsheet, Zap } from 'lucide-react';
+import { Search, FileText, User, ChevronRight, Clock, History, Calendar as CalendarIcon, Save, Download, Plus, Sparkles, Trash2, RotateCcw, Folder, Upload, File, MoreHorizontal, Shield, Eye, Edit, X, Maximize2, Wrench, Brain, ClipboardCheck, ClipboardList, Layers, Activity, TrendingUp, FileSpreadsheet, Zap, AlertTriangle } from 'lucide-react';
 import { db, type Patient, type MedicalRecord, type MedicalRecordEntry, logAction, type Attachment } from '../../lib/db';
 import { cn, formatDate } from '../../lib/utils';
 import { syncService } from '../../lib/syncService';
 import { auth } from '../../lib/firebase';
+import { inspectMedicalRecordEntryType } from '../../lib/clinicalRecordSafety';
 import RichTextEditor from '../RichTextEditor';
 import { clinicalInsight } from '../../services/geminiService';
 import ConfirmModal from '../ui/ConfirmModal';
@@ -87,32 +88,95 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
 
     const events: any[] = [];
 
-    // Map entries
+    // Map entries with safety inspection - preserves raw data without silent fallback
     entries.forEach(e => {
-      let type = 'evolution';
-      let title = 'Evolução Clínica';
-      if (e.tipo === 'rid' || e.metadata?.type === 'rid') {
-        type = 'rid';
-        title = 'Registro de Informações Diárias (RID)';
-      } else if (e.tipo === 'ihs' || e.metadata?.type === 'ihs') {
-        type = 'ihs';
-        title = 'Inventário de Habilidades Sociais (IHS)';
-      } else if (e.tipo === 'ysq' || e.metadata?.type === 'ysq') {
-        type = 'ysq';
-        title = 'Questionário de Esquemas de Young (YSQ)';
-      } else if (e.tipo === 'thp' || e.metadata?.type === 'thp') {
-        type = 'thp';
-        title = 'Treinamento de Habilidade Psicológica (THP)';
-      } else if (e.tipo === 'tdah' || e.metadata?.type === 'tdah') {
-        type = 'tdah';
-        title = 'Escala de TDAH em Adultos (ASRS-18)';
-      } else if (e.tipo === 'tdah-ecosystem' || e.metadata?.type === 'tdah-ecosystem') {
-        type = 'tdah-ecosystem';
-        title = 'Ecossistema de Avaliação: TDAH em Adultos';
-      } else if (e.tipo === 'psicometrik' || e.metadata?.type === 'psicometrik') {
-        type = 'psicometrik';
-        const toolTitle = e.metadata?.psicometrikData?.toolTitle || 'Avaliação Psicometrik';
-        title = `Biblioteca Psicometrik - ${toolTitle}`;
+      const candidateType = e.tipo || e.metadata?.type || 'evolucao';
+      const inspection = inspectMedicalRecordEntryType(candidateType);
+
+      let type: string = 'evolution';
+      let title: string = 'Evolução Clínica';
+      let isIncompatible = false;
+      let incompatibleBadge = '';
+
+      if (!inspection.isRecognized) {
+        type = 'incompativel';
+        title = `Registro Clínico [Tipo Incompatível: "${inspection.rawTipo}"]`;
+        isIncompatible = true;
+        incompatibleBadge = inspection.rawTipo || 'Incompatível';
+      } else {
+        switch (inspection.effectiveTipo) {
+          case 'rid':
+            type = 'rid';
+            title = 'Registro de Informações Diárias (RID)';
+            break;
+          case 'ihs':
+            type = 'ihs';
+            title = 'Inventário de Habilidades Sociais (IHS)';
+            break;
+          case 'ysq':
+            type = 'ysq';
+            title = 'Questionário de Esquemas de Young (YSQ)';
+            break;
+          case 'thp':
+            type = 'thp';
+            title = 'Treinamento de Habilidade Psicológica (THP)';
+            break;
+          case 'tdah':
+            type = 'tdah';
+            title = 'Escala de TDAH em Adultos (ASRS-18)';
+            break;
+          case 'tdah-ecosystem':
+            type = 'tdah-ecosystem';
+            title = 'Ecossistema de Avaliação: TDAH em Adultos';
+            break;
+          case 'psicometrik': {
+            type = 'psicometrik';
+            const toolTitle = e.metadata?.psicometrikData?.toolTitle || 'Avaliação Psicometrik';
+            title = `Biblioteca Psicometrik - ${toolTitle}`;
+            break;
+          }
+          case 'dfc':
+            type = 'dfc';
+            title = 'Diagrama de Conceitualização Cognitiva (DFC)';
+            break;
+          case 'pci':
+            type = 'pci';
+            title = 'Plano Clínico Integrado (PCI)';
+            break;
+          case 'registro_atendimento':
+            type = 'registro_atendimento';
+            title = 'Registro de Atendimento Clínico';
+            break;
+          case 'linha_vida':
+            type = 'linha_vida';
+            title = 'Linha da Vida';
+            break;
+          case 'ihp_pr':
+            type = 'ihp_pr';
+            title = 'Inventário de Habilidades Psicológicas (IHP)';
+            break;
+          case 'psidiagnostic':
+            type = 'psidiagnostic';
+            title = 'Psicodiagnóstico Clínico';
+            break;
+          case 'agendamento':
+            type = 'agendamento';
+            title = 'Registro de Agendamento';
+            break;
+          case 'arquivo':
+            type = 'arquivo';
+            title = 'Documento / Arquivo Clínico';
+            break;
+          case 'sistema':
+            type = 'sistema';
+            title = 'Registro do Sistema';
+            break;
+          case 'evolucao':
+          default:
+            type = 'evolution';
+            title = 'Evolução Clínica';
+            break;
+        }
       }
 
       events.push({
@@ -121,8 +185,11 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
         data: e.data,
         title,
         content: e.textoHtml,
-        icon: type === 'evolution' ? 'evolution' : 'document',
-        rawEntry: e
+        icon: type === 'evolution' ? 'evolution' : (isIncompatible ? 'alert' : 'document'),
+        rawEntry: e,
+        isIncompatible,
+        incompatibleBadge,
+        warning: inspection.warning
       });
     });
 
@@ -190,18 +257,20 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                   event.type === 'tdah' ? "bg-amber-500/20 text-amber-400 border-amber-500/30" :
                   event.type === 'tdah-ecosystem' ? "bg-gradient-to-br from-amber-500/30 to-amber-600/20 text-amber-300 border-amber-400/40 shadow-amber-500/10" :
                   event.type === 'psicometrik' ? "bg-[#00A3FF]/20 text-[#00A3FF] border-[#00A3FF]/30" :
+                  event.type === 'incompativel' ? "bg-rose-500/20 text-rose-400 border-rose-500/30" :
                   "bg-blue-500/20 text-blue-500 border-blue-500/30"
                 )}>
                   {event.type === 'evolution' ? <Clock size={12} /> :
                    event.type === 'appointment' ? <CalendarIcon size={12} /> :
                    event.type === 'tdah' ? <Zap size={12} className="text-amber-400" /> :
                    event.type === 'tdah-ecosystem' ? <Brain size={12} className="text-amber-300 animate-pulse" /> :
+                   event.type === 'incompativel' ? <AlertTriangle size={12} className="text-rose-400" /> :
                    <File size={12} />}
                 </div>
 
                 <div 
                   onClick={() => {
-                    if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah', 'tdah-ecosystem'].includes(event.type)) {
+                    if (['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah', 'tdah-ecosystem', 'dfc', 'pci', 'registro_atendimento', 'linha_vida', 'ihp_pr', 'psidiagnostic', 'incompativel'].includes(event.type)) {
                       setSelectedEvent(event);
                       setEditEventContent(event.content || '');
                       setIsEditingEvent(false);
@@ -209,7 +278,8 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                   }}
                   className={cn(
                     "bg-bg-sidebar/30 border border-border-subtle rounded-2xl p-6 hover:bg-bg-sidebar/50 transition-all group/card cursor-pointer",
-                    event.isAlert && "border-red-500/50 bg-red-500/5 shadow-lg shadow-red-500/5 ring-1 ring-red-500/20"
+                    event.isAlert && "border-red-500/50 bg-red-500/5 shadow-lg shadow-red-500/5 ring-1 ring-red-500/20",
+                    event.isIncompatible && "border-rose-500/40 bg-rose-500/5 ring-1 ring-rose-500/20"
                   )}
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
@@ -226,6 +296,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                           event.type === 'tdah' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
                           event.type === 'tdah-ecosystem' ? "bg-amber-500/20 text-amber-300 border-amber-500/40 font-black" :
                           event.type === 'psicometrik' ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/20" :
+                          event.type === 'incompativel' ? "bg-rose-500/10 text-rose-400 border-rose-500/20" :
                           "bg-blue-500/10 text-blue-500 border-blue-500/30",
                           event.isAlert && "bg-red-500 text-white border-red-400"
                         )}>
@@ -237,11 +308,18 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                            event.type === 'thp' ? 'THP' :
                            event.type === 'tdah' ? 'TDAH ASRS' :
                            event.type === 'tdah-ecosystem' ? 'Ecossistema TDAH' :
-                           event.type === 'psicometrik' ? 'PsicoMetrik' : 'Arquivo'}
+                           event.type === 'psicometrik' ? 'PsicoMetrik' :
+                           event.type === 'dfc' ? 'DFC' :
+                           event.type === 'pci' ? 'PCI' :
+                           event.type === 'registro_atendimento' ? 'Registro Atendimento' :
+                           event.type === 'linha_vida' ? 'Linha da Vida' :
+                           event.type === 'ihp_pr' ? 'IHP' :
+                           event.type === 'psidiagnostic' ? 'Psicodiagnóstico' :
+                           event.type === 'incompativel' ? `Tipo Incompatível [${event.incompatibleBadge}]` : 'Arquivo'}
                         </span>
                         <h5 className={cn(
                           "text-[11px] font-bold uppercase tracking-widest",
-                          event.isAlert ? "text-red-500" : "text-text-main"
+                          event.isAlert ? "text-red-500" : (event.isIncompatible ? "text-rose-400" : "text-text-main")
                         )}>{event.title}</h5>
                       </div>
                       <p className="text-[10px] text-text-dim font-medium uppercase tracking-wider flex items-center gap-2">
@@ -257,7 +335,7 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah', 'tdah-ecosystem'].includes(event.type) && (
+                      {['evolution', 'attachment', 'rid', 'ihs', 'ysq', 'thp', 'psicometrik', 'tdah', 'tdah-ecosystem', 'dfc', 'pci', 'registro_atendimento', 'linha_vida', 'ihp_pr', 'psidiagnostic', 'incompativel'].includes(event.type) && (
                         <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
                           <button 
                             onClick={(e) => {
@@ -335,7 +413,14 @@ export default function Records({ preSelectedPatientId, onClearPreSelection, onP
                     </div>
                   </div>
 
-                  {event.type === 'evolution' ? (
+                  {event.isIncompatible && (
+                    <div className="mb-3 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px] flex items-center gap-2">
+                      <AlertTriangle size={14} className="shrink-0 text-rose-400" />
+                      <span>Dado preservado integralmente. Identificador clínico não reconhecido: <strong>{event.incompatibleBadge}</strong>. Nenhuma conversão forçada foi aplicada.</span>
+                    </div>
+                  )}
+
+                  {['evolution', 'incompativel', 'dfc', 'pci', 'registro_atendimento', 'linha_vida', 'ihp_pr', 'psidiagnostic'].includes(event.type) ? (
                     <div className="text-[12px] text-text-main/80 line-clamp-2 record-entry-summary prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: event.content }} />
                   ) : (
                     <p className="text-[11px] text-text-dim leading-relaxed truncate">{event.content}</p>

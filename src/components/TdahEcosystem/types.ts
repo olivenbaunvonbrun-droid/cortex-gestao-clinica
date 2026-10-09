@@ -285,19 +285,76 @@ export interface LaudoTdahIntegrativoFinal extends LaudoTdahIntegrativo {
   completedAt: string;
 }
 
-export function isCompleteLaudoTdah(laudo: unknown): laudo is LaudoTdahIntegrativoFinal {
-  if (!laudo || typeof laudo !== 'object') return false;
+export interface LaudoValidationResult {
+  isValid: boolean;
+  isDraft: boolean;
+  missingFields: string[];
+}
+
+export function validateLaudoTdahIntegrativo(laudo: unknown): LaudoValidationResult {
+  const missingFields: string[] = [];
+
+  if (!laudo || typeof laudo !== 'object') {
+    return {
+      isValid: false,
+      isDraft: true,
+      missingFields: ['Objeto do Laudo inválido ou ausente']
+    };
+  }
+
   const l = laudo as Record<string, unknown>;
   const ident = l.identificacao as Record<string, unknown> | undefined;
-  return (
-    typeof l.conclusaoFinal === 'string' &&
-    l.conclusaoFinal.trim().length > 0 &&
-    typeof l.completedAt === 'string' &&
-    typeof ident === 'object' &&
-    ident !== null &&
-    typeof ident.nome === 'string' &&
-    ident.nome.trim().length > 0
-  );
+
+  if (!ident || typeof ident !== 'object') {
+    missingFields.push('identificacao');
+  } else {
+    if (!ident.nome || typeof ident.nome !== 'string' || ident.nome.trim().length === 0) {
+      missingFields.push('identificacao.nome');
+    }
+    if (!ident.idade || typeof ident.idade !== 'string' || ident.idade.trim().length === 0) {
+      missingFields.push('identificacao.idade');
+    }
+    if (!ident.psicologo || typeof ident.psicologo !== 'string' || ident.psicologo.trim().length === 0) {
+      missingFields.push('identificacao.psicologo');
+    }
+    if (!ident.crp || typeof ident.crp !== 'string' || ident.crp.trim().length === 0) {
+      missingFields.push('identificacao.crp');
+    }
+    if (!ident.finalidade || typeof ident.finalidade !== 'string' || ident.finalidade.trim().length === 0) {
+      missingFields.push('identificacao.finalidade');
+    }
+  }
+
+  const conclusao = (typeof l.conclusaoFinal === 'string' && l.conclusaoFinal.trim().length > 0)
+    ? l.conclusaoFinal
+    : (typeof l.conclusaoDiagnostica === 'string' && l.conclusaoDiagnostica.trim().length > 0)
+      ? l.conclusaoDiagnostica
+      : '';
+
+  if (!conclusao) {
+    missingFields.push('conclusaoFinal');
+  }
+
+  // Data de conclusão obrigatória e estritamente válida (rejeita "" ou data inválida)
+  if (
+    typeof l.completedAt !== 'string' ||
+    l.completedAt.trim().length === 0 ||
+    Number.isNaN(Date.parse(l.completedAt))
+  ) {
+    missingFields.push('completedAt');
+  }
+
+  const isValid = missingFields.length === 0;
+
+  return {
+    isValid,
+    isDraft: !isValid,
+    missingFields
+  };
+}
+
+export function isCompleteLaudoTdah(laudo: unknown): laudo is LaudoTdahIntegrativoFinal {
+  return validateLaudoTdahIntegrativo(laudo).isValid;
 }
 
 // ----------------------------------------
