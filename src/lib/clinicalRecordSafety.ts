@@ -26,3 +26,38 @@ export function preservesTranscript(original: string, candidate: string): boolea
     .replace(/\s+/g, ' ').trim();
   return canonical(original) === canonical(candidate);
 }
+
+export const VALID_ENTRY_TYPES = [
+  'evolucao',
+  'agendamento',
+  'arquivo',
+  'sistema',
+  'rid',
+  'pci',
+  'ysq',
+  'ihs',
+  'dfc',
+  'psidiagnostic',
+  'psicometrik',
+  'registro_atendimento',
+  'linha_vida',
+  'ihp_pr',
+  'thp',
+  'tdah',
+  'tdah-ecosystem'
+] as const;
+
+export type KnownClinicalEntryType = typeof VALID_ENTRY_TYPES[number];
+
+export function isValidMedicalRecordEntryType(value: unknown): value is KnownClinicalEntryType {
+  return typeof value === 'string' && (VALID_ENTRY_TYPES as readonly string[]).includes(value);
+}
+
+export function sanitizeMedicalRecordEntryType(value: unknown): KnownClinicalEntryType {
+  if (isValidMedicalRecordEntryType(value)) {
+    return value;
+  }
+  console.warn(`[Cortex Safety] Tipo de registro desconhecido ou inválido detectado: "${String(value)}". Normalizado para "evolucao".`);
+  return 'evolucao';
+}
+

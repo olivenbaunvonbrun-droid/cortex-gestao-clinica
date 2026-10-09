@@ -265,6 +265,41 @@ export interface LaudoTdahIntegrativo {
   completedAt?: string;
 }
 
+export type DraftLaudoTdah = Partial<LaudoTdahIntegrativo>;
+
+export interface LaudoTdahIntegrativoFinal extends LaudoTdahIntegrativo {
+  identificacao: {
+    nome: string;
+    idade: string;
+    nascimento: string;
+    documento: string;
+    escolaridade: string;
+    profissao: string;
+    solicitante: string;
+    finalidade: string;
+    dataAvaliacao: string;
+    psicologo: string;
+    crp: string;
+  };
+  conclusaoFinal: string;
+  completedAt: string;
+}
+
+export function isCompleteLaudoTdah(laudo: unknown): laudo is LaudoTdahIntegrativoFinal {
+  if (!laudo || typeof laudo !== 'object') return false;
+  const l = laudo as Record<string, unknown>;
+  const ident = l.identificacao as Record<string, unknown> | undefined;
+  return (
+    typeof l.conclusaoFinal === 'string' &&
+    l.conclusaoFinal.trim().length > 0 &&
+    typeof l.completedAt === 'string' &&
+    typeof ident === 'object' &&
+    ident !== null &&
+    typeof ident.nome === 'string' &&
+    ident.nome.trim().length > 0
+  );
+}
+
 // ----------------------------------------
 // ECOSSISTEMA COMPLETO DO PACIENTE
 // ----------------------------------------

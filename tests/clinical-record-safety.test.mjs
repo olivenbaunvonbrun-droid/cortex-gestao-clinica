@@ -20,6 +20,9 @@ await build({ entryPoints: ['src/services/geminiService.ts'], outfile: out,
         }; } }` : args.path.endsWith('/db') ? 'export const db = {};' : 'export const decryptData = x => x;'
     }));
   } }] });
+const safetyOut = join(dir, 'safety.mjs');
+await build({ entryPoints: ['src/lib/clinicalRecordSafety.ts'], outfile: safetyOut, bundle: true, platform: 'node', format: 'esm' });
+const safety = await import(pathToFileURL(safetyOut).href);
 process.env.GEMINI_API_KEY = 'test-only';
 const service = await import(pathToFileURL(out).href);
 after(() => rm(dir, { recursive: true, force: true }));
@@ -79,3 +82,14 @@ test('original markup characters are escaped when rendering source', async () =>
   assert.ok(result.relatoCliente.includes('&lt;script&gt;'));
   assert.ok(!result.relatoCliente.includes('<script>'));
 });
+test('medical record entry types are strictly validated and typos are rejected', () => {
+  assert.equal(safety.isValidMedicalRecordEntryType('registro_atendimento'), true);
+  assert.equal(safety.isValidMedicalRecordEntryType('thp'), true);
+  assert.equal(safety.isValidMedicalRecordEntryType('tdah-ecosystem'), true);
+  assert.equal(safety.isValidMedicalRecordEntryType('registro_atendimeto'), false);
+  assert.equal(safety.isValidMedicalRecordEntryType('unknown_arbitrary'), false);
+  assert.equal(safety.isValidMedicalRecordEntryType(null), false);
+  assert.equal(safety.sanitizeMedicalRecordEntryType('registro_atendimento'), 'registro_atendimento');
+  assert.equal(safety.sanitizeMedicalRecordEntryType('registro_atendimeto'), 'evolucao');
+});
+

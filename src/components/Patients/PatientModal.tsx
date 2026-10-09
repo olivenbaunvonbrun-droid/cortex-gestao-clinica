@@ -516,7 +516,7 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
             timestamp: Date.now(),
             data: new Date().toISOString().split('T')[0],
             textoHtml: '<p><strong>Cadastro Inicial:</strong> Paciente registrado no sistema.</p>',
-            tipo: 'sistema'
+            tipo: 'sistema' as const
           }],
           anamneseData: {}
         };

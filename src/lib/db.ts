@@ -37,18 +37,29 @@ export interface Patient {
   valorFinalCombinado?: number;
   dataReajuste?: string;
   status?: 'ativo' | 'inativo';
-  evolucoes?: any[];
+  evolucoes?: PatientEvolucao[];
   updatedAt?: string;
 }
 
+export interface PatientEvolucao {
+  id?: string;
+  data: string;
+  conteudo: string;
+  titulo?: string;
+  tags?: string[];
+  [key: string]: unknown;
+}
+
 export type Paciente = Patient;
+
+export type AppointmentType = 'individual' | 'grupo' | 'online' | 'sessão';
 
 export interface Appointment {
   id: string;
   pacienteId: string;
   data: string;
   hora: string;
-  tipo: 'individual' | 'grupo' | 'online' | 'sessão' | string;
+  tipo: AppointmentType;
   recorrencia: 'nao' | 'semanal' | 'quinzenal' | 'mensal_data' | 'mensal_dia_semana' | 'anual_semanal';
   recorrenciaPaiId?: string;
   obsAgendamento?: string;
@@ -68,29 +79,30 @@ export interface MedicalRecord {
   thpState?: any;
 }
 
+export type MedicalRecordEntryType =
+  | 'evolucao'
+  | 'agendamento'
+  | 'arquivo'
+  | 'sistema'
+  | 'rid'
+  | 'pci'
+  | 'ysq'
+  | 'ihs'
+  | 'dfc'
+  | 'psidiagnostic'
+  | 'psicometrik'
+  | 'registro_atendimento'
+  | 'linha_vida'
+  | 'ihp_pr'
+  | 'thp'
+  | 'tdah'
+  | 'tdah-ecosystem';
+
 export interface MedicalRecordEntry {
   timestamp: number;
   data: string;
   textoHtml: string;
-  tipo?:
-    | 'evolucao'
-    | 'agendamento'
-    | 'arquivo'
-    | 'sistema'
-    | 'rid'
-    | 'pci'
-    | 'ysq'
-    | 'ihs'
-    | 'dfc'
-    | 'psidiagnostic'
-    | 'psicometrik'
-    | 'registro_atendimento'
-    | 'linha_vida'
-    | 'ihp_pr'
-    | 'thp'
-    | 'tdah'
-    | 'tdah-ecosystem'
-    | (string & {});
+  tipo?: MedicalRecordEntryType;
   metadata?: Record<string, any>;
 }
 
