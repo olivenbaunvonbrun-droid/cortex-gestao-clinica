@@ -228,7 +228,7 @@ export interface DiferenciaisData {
 // FASE 8: LAUDO INTEGRATIVO
 // ----------------------------------------
 export interface LaudoTdahIntegrativo {
-  identificacao: {
+  identificacao?: {
     nome: string;
     idade: string;
     nascimento: string;
@@ -241,14 +241,14 @@ export interface LaudoTdahIntegrativo {
     psicologo: string;
     crp: string;
   };
-  descricaoDemanda: string;
-  procedimentosUtilizados: string[];
-  analiseSintomatologica: string;
-  analisePrejuizoFuncional: string;
-  analiseFuncoesExecutivas: string;
-  triangulacaoHeterorrelato: string;
-  diagnosticosDiferenciaisEComorbidades: string;
-  criteriosDsm5Fulfillment: {
+  descricaoDemanda?: string;
+  procedimentosUtilizados?: string[];
+  analiseSintomatologica?: string;
+  analisePrejuizoFuncional?: string;
+  analiseFuncoesExecutivas?: string;
+  triangulacaoHeterorrelato?: string;
+  diagnosticosDiferenciaisEComorbidades?: string;
+  criteriosDsm5Fulfillment?: {
     desatencaoMet: boolean; // >= 5 sintomas
     hiperatividadeMet: boolean; // >= 5 sintomas
     inicioAntes12: boolean;
@@ -257,8 +257,10 @@ export interface LaudoTdahIntegrativo {
     exclusaoOutrasCausas: boolean;
     apresentacaoSugerida: 'Combinada' | 'Predominantemente Desatenta' | 'Predominantemente Hiperativa/Impulsiva' | 'Inconclusiva / Não sustenta TDAH';
   };
-  conclusaoDiagnostica: string;
-  encaminhamentosEOrientacoes: string[];
+  conclusaoDiagnostica?: string;
+  conclusaoFinal?: string;
+  encaminhamentosEOrientacoes?: string[];
+  encaminhamentos?: string | string[];
   aiAssistedSynthesis?: string;
   completedAt?: string;
 }

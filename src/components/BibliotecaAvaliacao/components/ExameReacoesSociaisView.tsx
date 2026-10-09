@@ -294,7 +294,7 @@ export default function ExameReacoesSociaisView({ patient, state, setState }: Ex
             <span className="text-indigo-400 font-bold text-xs uppercase tracking-wider font-mono">
               Contexto Relacional em Avaliação
             </span>
-            <HelpCircle className="w-3.5 h-3.5 text-gray-500 cursor-help" title="Atitudes variam muito pelo contexto. Analise cada um individualmente!" />
+            <span title="Atitudes variam muito pelo contexto. Analise cada um individualmente!"><HelpCircle className="w-3.5 h-3.5 text-gray-500 cursor-help" /></span>
           </div>
           <span className="text-[10px] font-mono text-gray-400 bg-gray-900 px-2 py-0.5 rounded border border-gray-800">
             {totalChecked} Reações Registradas no contexto atual

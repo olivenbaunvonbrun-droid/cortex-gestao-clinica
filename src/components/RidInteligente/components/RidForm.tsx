@@ -285,7 +285,7 @@ export function RidForm({ onSave, onCancel, initialData, settings, patientId, pa
 
       // Higienização para garantir que não haja texto de justificativa anexado (ex: "Nome: justificativa" vira "Nome")
       const cleanItems = selected
-        .map(item => (typeof item === 'string' ? item.split(':')[0].replace(/^[•\s*-]+/, '').trim() : (item.name || item.title || '').trim()))
+        .map(item => item.split(':')[0].replace(/^[•\s*-]+/, '').trim())
         .filter(Boolean);
 
       if (fieldName === 'necessidade' || fieldName === 'esquema') {

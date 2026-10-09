@@ -230,7 +230,7 @@ export default function RadarMultidimensionalView({
                       const tx = 210 + 184 * Math.cos(rad);
                       const ty = 210 + 184 * Math.sin(rad);
                       
-                      let textAnchor = "middle";
+                      let textAnchor: "start" | "middle" | "end" = "middle";
                       if (Math.cos(rad) > 0.1) textAnchor = "start";
                       else if (Math.cos(rad) < -0.1) textAnchor = "end";
 

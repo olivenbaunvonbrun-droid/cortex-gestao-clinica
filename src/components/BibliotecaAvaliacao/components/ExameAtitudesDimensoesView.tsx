@@ -611,7 +611,7 @@ export default function ExameAtitudesDimensoesView({
                       const lblX = radarCX + labelDistance * Math.cos(ang);
                       const lblY = radarCY + labelDistance * Math.sin(ang);
                       
-                      let textAnchor = "middle";
+                      let textAnchor: "start" | "middle" | "end" = "middle";
                       if (Math.cos(ang) > 0.1) textAnchor = "start";
                       else if (Math.cos(ang) < -0.1) textAnchor = "end";
 

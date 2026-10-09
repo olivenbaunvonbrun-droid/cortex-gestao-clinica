@@ -1694,6 +1694,7 @@ export interface ClinicalItemWithJustification {
 export interface FieldFillingResult {
   text?: string;
   tags?: string[];
+  selectedSuggestions?: string[];
   itens?: ClinicalItemWithJustification[];
   emotion?: { name: string; intensity: number; justificativa?: string };
 }

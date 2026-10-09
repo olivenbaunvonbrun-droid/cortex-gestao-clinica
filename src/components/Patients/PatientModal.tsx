@@ -442,10 +442,10 @@ export default function PatientModal({ patient, isOpen, onClose }: PatientModalP
     try {
       const saveData = {
         ...formData,
-        valorConsulta: formData.valorConsulta !== undefined && formData.valorConsulta !== null && formData.valorConsulta !== '' ? Number(formData.valorConsulta) : 0,
-        frequenciaSemanal: formData.frequenciaSemanal !== undefined && formData.frequenciaSemanal !== null && formData.frequenciaSemanal !== '' ? Number(formData.frequenciaSemanal) : 1,
-        valorMensal: formData.valorMensal !== undefined && formData.valorMensal !== null && formData.valorMensal !== '' ? Number(formData.valorMensal) : 0,
-        valorFinalCombinado: formData.valorFinalCombinado !== undefined && formData.valorFinalCombinado !== null && formData.valorFinalCombinado !== '' ? Number(formData.valorFinalCombinado) : 0,
+        valorConsulta: formData.valorConsulta != null && String(formData.valorConsulta) !== '' ? Number(formData.valorConsulta) : 0,
+        frequenciaSemanal: formData.frequenciaSemanal != null && String(formData.frequenciaSemanal) !== '' ? Number(formData.frequenciaSemanal) : 1,
+        valorMensal: formData.valorMensal != null && String(formData.valorMensal) !== '' ? Number(formData.valorMensal) : 0,
+        valorFinalCombinado: formData.valorFinalCombinado != null && String(formData.valorFinalCombinado) !== '' ? Number(formData.valorFinalCombinado) : 0,
       };
 
       const currentUser = localStorage.getItem('psiCurrentUsername_v9') || 'unknown';

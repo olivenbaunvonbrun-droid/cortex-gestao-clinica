@@ -37,20 +37,26 @@ export interface Patient {
   valorFinalCombinado?: number;
   dataReajuste?: string;
   status?: 'ativo' | 'inativo';
+  evolucoes?: any[];
+  updatedAt?: string;
 }
+
+export type Paciente = Patient;
 
 export interface Appointment {
   id: string;
   pacienteId: string;
   data: string;
   hora: string;
-  tipo: 'individual' | 'grupo' | 'online';
+  tipo: 'individual' | 'grupo' | 'online' | 'sessão' | string;
   recorrencia: 'nao' | 'semanal' | 'quinzenal' | 'mensal_data' | 'mensal_dia_semana' | 'anual_semanal';
   recorrenciaPaiId?: string;
   obsAgendamento?: string;
   linksSessao?: { titulo: string; url: string }[];
   registroAtendimentoData?: Record<string, any>;
   status?: 'pending' | 'completed' | 'cancelled' | 'rescheduled' | 'reagendamento' | 'confirmed';
+  isMenor?: boolean;
+  responsavelNome?: string;
 }
 
 export interface MedicalRecord {
@@ -59,13 +65,32 @@ export interface MedicalRecord {
   anamneseData: Record<string, any>;
   treatmentPlan?: { goals: { text: string; completed: boolean }[]; notes: string };
   longitudinalProfile?: string;
+  thpState?: any;
 }
 
 export interface MedicalRecordEntry {
   timestamp: number;
   data: string;
   textoHtml: string;
-  tipo?: 'evolucao' | 'agendamento' | 'arquivo' | 'sistema';
+  tipo?:
+    | 'evolucao'
+    | 'agendamento'
+    | 'arquivo'
+    | 'sistema'
+    | 'rid'
+    | 'pci'
+    | 'ysq'
+    | 'ihs'
+    | 'dfc'
+    | 'psidiagnostic'
+    | 'psicometrik'
+    | 'registro_atendimento'
+    | 'linha_vida'
+    | 'ihp_pr'
+    | 'thp'
+    | 'tdah'
+    | 'tdah-ecosystem'
+    | (string & {});
   metadata?: Record<string, any>;
 }
 

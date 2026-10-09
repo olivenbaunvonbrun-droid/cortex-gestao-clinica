@@ -43,7 +43,15 @@ export default function ExameDuploVantagensView({
   } | null>(null);
 
   // Clinical decision-making presets
-  const DECISION_PRESETS = [
+  const DECISION_PRESETS: {
+    label: string;
+    alternativa1: string;
+    alternativa2: string;
+    pros1: DecisionItem[];
+    contras1: DecisionItem[];
+    pros2: DecisionItem[];
+    contras2: DecisionItem[];
+  }[] = [
     {
       label: "Mudar de Carreira vs. Permanecer no Emprego",
       alternativa1: "Mudar para transição de carreira de Tecnologia / Empreendedorismo autonomamente.",

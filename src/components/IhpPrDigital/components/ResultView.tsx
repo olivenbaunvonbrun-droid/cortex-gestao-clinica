@@ -19,12 +19,28 @@ interface ResultViewProps {
 export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: ResultViewProps) {
   const [isGenerating, setIsGenerating] = React.useState(false);
 
+  // Use exact scoring logic
+  const { subscales, qip } = calculateAssessment(assessment.answers);
+
   const handleRegenerate = async () => {
     setIsGenerating(true);
     try {
+      const resultsText = Object.entries(subscales)
+        .map(([key, res]) => `- ${res.name}: Pontuação ${res.score} / ${res.maxScore} (${res.classification})`)
+        .concat(`- ${qip.name}: Pontuação Total ${qip.score} / ${qip.maxScore} (${qip.classification})`)
+        .join('\n');
+
+      const answersText = Object.entries(assessment.answers)
+        .map(([id, freq]) => {
+          const question = IHP_QUESTIONS.find(q => q.id === parseInt(id));
+          return `Item ${id}: ${freq} - "${question?.text}" (Dimensão: ${HP_DETAILS[question?.categoryKey || '']?.name || ''})`;
+        })
+        .join('\n');
+
       const generated = await analyzeIhpAssessment(
         { name: assessment.patient.name, age: assessment.patient.age },
-        categoryScores
+        resultsText,
+        answersText
       );
       if (onUpdateAnalysis) {
         await onUpdateAnalysis(generated);
@@ -37,8 +53,6 @@ export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: R
       setIsGenerating(false);
     }
   };
-  // Use exact scoring logic
-  const { subscales, qip } = calculateAssessment(assessment.answers);
 
   const categoryScores = Object.entries(subscales).map(([key, res]) => {
     const pct = Math.round((res.score / res.maxScore) * 100);

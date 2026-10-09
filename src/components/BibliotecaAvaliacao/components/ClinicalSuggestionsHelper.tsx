@@ -1170,7 +1170,7 @@ export function ClinicalSuggestionsButton({
 }
 
 export function ClinicalSuggestionsApp({ onClose }: { onClose?: () => void }) {
-  const [viewMode, setViewMode] = useState<"dictionary" | "needs" | "schemas" | "disorders">("mchf");
+  const [viewMode, setViewMode] = useState<"dictionary" | "needs" | "schemas" | "disorders" | "mchf">("mchf");
   
   // Dictionary category state
   const [selectedCategory, setSelectedCategory] = useState<SuggestionsCategoryType>("esquemas");

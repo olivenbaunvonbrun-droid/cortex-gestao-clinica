@@ -30,9 +30,14 @@ export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: R
   const handleRegenerate = async () => {
     setIsGenerating(true);
     try {
+      const sortedEvents = [...assessment.events].sort((a, b) => a.age - b.age);
+      const eventsText = sortedEvents
+        .map(e => `Idade: ${e.age} anos | Evento: ${e.title} | Valência: ${e.type === 'positive' ? 'Positivo' : e.type === 'negative' ? 'Negativo' : 'Neutro'} (Intensidade: ${e.intensity}/5) | Relato: ${e.description}`)
+        .join('\n');
+
       const generated = await analyzeLinhaVidaAssessment(
         { name: assessment.patient.name, age: assessment.patient.age },
-        assessment.events
+        eventsText
       );
       if (onUpdateAnalysis) {
         await onUpdateAnalysis(generated);

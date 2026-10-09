@@ -155,3 +155,29 @@ export interface RIDEntry {
   conImmediates: string;                     // Consequências Imediatas
   conLongTerm: string;                       // Consequências Longo Prazo
 }
+
+export interface ThpRecord {
+  id: string;
+  patientId?: string;
+  createdAt: string | number;
+  date?: string;
+  skillName: string;
+  skillDescription?: string;
+  currentLevel?: number;
+  targetLevel?: number;
+  exercises: { id?: string; title?: string; completed: boolean; [key: string]: any }[];
+  sessions: { description: string; duration: number; difficulty: number; [key: string]: any }[];
+  aiAnalysis?: string;
+  patient: {
+    id?: string;
+    name: string;
+    age?: number | string;
+    psychologistName?: string;
+    crp?: string;
+    logoUrl?: string;
+    signatureUrl?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+

@@ -289,7 +289,7 @@ export default function ExameEvidenciasCognicaoView({
             <div className="flex justify-between text-xs text-gray-400">
               <span className="font-bold flex items-center gap-1">
                 Convicção Inicial:
-                <HelpCircle className="w-3 h-3 text-gray-500 cursor-help" title="De 0 a 100%, o quão verdadeiro esse pensamento parece para você hoje emocionalmente?" />
+                <span title="De 0 a 100%, o quão verdadeiro esse pensamento parece para você hoje emocionalmente?"><HelpCircle className="w-3 h-3 text-gray-500 cursor-help" /></span>
               </span>
               <strong className="text-red-400 font-mono text-sm">{state.initialBeliefPercentage}%</strong>
             </div>
@@ -664,7 +664,7 @@ export default function ExameEvidenciasCognicaoView({
               <div className="flex justify-between text-xs text-gray-400">
                 <span className="font-bold flex items-center gap-1 font-sans">
                   Convicção Subjectiva ATUAL na Crença Inicial:
-                  <HelpCircle className="w-3" title="Depois de listar as evidências e ler as alternativas, o quanto você ainda acredita emocionalmente no pensamento limitante anterior?" />
+                  <span title="Depois de listar as evidências e ler as alternativas, o quanto você ainda acredita emocionalmente no pensamento limitante anterior?"><HelpCircle className="w-3" /></span>
                 </span>
                 <strong className="text-emerald-400 font-mono text-sm">{state.currentBeliefPercentage}%</strong>
               </div>

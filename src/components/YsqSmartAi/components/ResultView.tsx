@@ -18,24 +18,6 @@ interface ResultViewProps {
 export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: ResultViewProps) {
   const [isGenerating, setIsGenerating] = React.useState(false);
 
-  const handleRegenerate = async () => {
-    setIsGenerating(true);
-    try {
-      const generated = await analyzeYsqAssessment(
-        { name: assessment.patient.name, age: assessment.patient.age },
-        activeSchemas
-      );
-      if (onUpdateAnalysis) {
-        await onUpdateAnalysis(generated);
-      }
-      toast.success('Relatório gerado com sucesso!');
-    } catch (err) {
-      console.error(err);
-      toast.error('Falha ao gerar relatório de IA. Verifique as configurações de chave de API.');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
   // Group answers by schema
   const schemaSums: Record<string, number> = {};
   const schemaCounts: Record<string, number> = {};
@@ -56,6 +38,36 @@ export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: R
       description: info.description
     };
   });
+
+  const handleRegenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const activeSchemasText = schemaScores
+        .filter(s => s.score >= 4.0)
+        .map(s => `- ${s.name}: ${s.score.toFixed(1)} / 6.0`)
+        .join('\n') || "Nenhum esquema clínico altamente ativado detectado (Média >= 4.0).";
+
+      const answersText = YSQ_QUESTIONS.map(q => {
+        const freq = assessment.answers[q.id] || Frequency.F1;
+        return `Item ${q.id}: ${freq} - "${q.text}"`;
+      }).join('\n');
+
+      const generated = await analyzeYsqAssessment(
+        { name: assessment.patient.name, age: assessment.patient.age },
+        activeSchemasText,
+        answersText
+      );
+      if (onUpdateAnalysis) {
+        await onUpdateAnalysis(generated);
+      }
+      toast.success('Relatório gerado com sucesso!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Falha ao gerar relatório de IA. Verifique as configurações de chave de API.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Calculate domain averages
   const domainGroups = [

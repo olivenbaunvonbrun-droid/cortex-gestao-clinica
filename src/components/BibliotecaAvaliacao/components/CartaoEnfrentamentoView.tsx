@@ -554,7 +554,7 @@ export default function CartaoEnfrentamentoView({
                   <div className="bg-gray-950/45 p-4 rounded-xl border border-gray-900 space-y-3" id="scientific-box">
                     <div className="border-b border-gray-900 pb-1.5 flex justify-between items-center">
                       <span className="text-[10px] text-blue-400 font-mono font-bold uppercase">🔬 Parâmetros de Ciência e Realidade</span>
-                      <QuestionIcon className="w-3.5 h-3.5 text-gray-600 cursor-help" title="Fatos estatísticos e empíricos reais de vida que desmentem as hipóteses catastróficas fóbicas." />
+                      <span title="Fatos estatísticos e empíricos reais de vida que desmentem as hipóteses catastróficas fóbicas."><QuestionIcon className="w-3.5 h-3.5 text-gray-600 cursor-help" /></span>
                     </div>
 
                     <div className="space-y-1">
@@ -600,7 +600,7 @@ export default function CartaoEnfrentamentoView({
                   <div className="bg-gray-950/45 p-4 rounded-xl border border-gray-900 space-y-3" id="ethics-box">
                     <div className="border-b border-gray-900 pb-1.5 flex justify-between items-center">
                       <span className="text-[10px] text-emerald-400 font-mono font-bold uppercase">⚖️ Parâmetros de Ética Clínica</span>
-                      <QuestionIcon className="w-3.5 h-3.5 text-gray-600 cursor-help" title="Garante que as novas diretrizes mentais do paciente respeitam seus limites biológicos e promovem o bem-estar duradouro." />
+                      <span title="Garante que as novas diretrizes mentais do paciente respeitam seus limites biológicos e promovem o bem-estar duradouro."><QuestionIcon className="w-3.5 h-3.5 text-gray-600 cursor-help" /></span>
                     </div>
 
                     <p className="text-[9.5px] text-gray-550 leading-snug">Avalie se as novas regras mentais estabelecidas passam nos crivos para proteger o sujeito:</p>

@@ -183,7 +183,9 @@ class TdahEcosystemDbWrapper {
       }
 
       await db.prontuarios.put(record);
-      await syncService.enqueueChange('prontuarios', record.pacienteId, 'update', record);
+      if (userId) {
+        await syncService.saveToCloud(userId, 'prontuarios', record);
+      }
     } else {
       const newRecord = {
         pacienteId: patientId,
@@ -192,7 +194,9 @@ class TdahEcosystemDbWrapper {
         treatmentPlan: { goals: [], notes: '' }
       };
       await db.prontuarios.put(newRecord);
-      await syncService.enqueueChange('prontuarios', newRecord.pacienteId, 'create', newRecord);
+      if (userId) {
+        await syncService.saveToCloud(userId, 'prontuarios', newRecord);
+      }
     }
   }
 }

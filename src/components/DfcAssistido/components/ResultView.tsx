@@ -19,9 +19,25 @@ export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: R
   const handleRegenerate = async () => {
     setIsGenerating(true);
     try {
+      const dfcText = `
+Dados de Infância: ${assessment.relevantChildhoodData}
+Crenças Centrais: ${assessment.coreBeliefs}
+Regras/Suposições: ${assessment.conditionalRules}
+Estratégias Compensatórias: ${assessment.compensatoryStrategies}
+
+SITUAÇÕES MAPEADAS:
+${assessment.situations?.map((s, idx) => `
+Situação ${idx + 1}: ${s.situation}
+- Pensamento Automático: "${s.automaticThought}"
+- Significado: ${s.meaning}
+- Emoção: ${s.emotion}
+- Comportamento: ${s.behavior}
+`).join('\n') || ''}
+      `.trim();
+
       const generated = await analyzeDfcAssessment(
         { name: assessment.patient.name, age: assessment.patient.age },
-        assessment.fields
+        dfcText
       );
       if (onUpdateAnalysis) {
         await onUpdateAnalysis(generated);

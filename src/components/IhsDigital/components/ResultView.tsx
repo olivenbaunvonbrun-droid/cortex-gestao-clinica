@@ -21,9 +21,13 @@ export function ResultView({ assessment, onBack, onExport, onUpdateAnalysis }: R
   const handleRegenerate = async () => {
     setIsGenerating(true);
     try {
+      const answersText = Object.entries(assessment.answers)
+        .map(([id, freq]) => `Item ${id}: ${freq} - "${IHS_QUESTIONS.find(q => q.id === parseInt(id))?.text}"`)
+        .join('\n');
+
       const generated = await analyzeIhsAssessment(
         { name: assessment.patient.name, age: assessment.patient.age },
-        factorData
+        answersText
       );
       if (onUpdateAnalysis) {
         await onUpdateAnalysis(generated);

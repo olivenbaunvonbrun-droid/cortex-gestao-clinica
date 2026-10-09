@@ -4,9 +4,10 @@ import { Award, Check, RotateCcw } from "lucide-react";
 
 interface ExerciseProps {
   onAwardXp: (xp: number) => void;
+  patient?: Patient;
 }
 
-export default function AutoestimaExercise({ onAwardXp }: ExerciseProps) {
+export default function AutoestimaExercise({ onAwardXp, patient }: ExerciseProps) {
   const [step, setStep] = useState<"intro" | "refraction" | "success">("intro");
   const [selectedResponse, setSelectedResponse] = useState<number | null>(null);
 

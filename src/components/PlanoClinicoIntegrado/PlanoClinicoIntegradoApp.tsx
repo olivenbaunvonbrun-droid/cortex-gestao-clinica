@@ -71,6 +71,7 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
       signatureUrl: ''
     },
     approach: 'Terapia Cognitivo-Comportamental (TCC)',
+    date: new Date().toISOString().split('T')[0],
     phase: 'triagem',
     idade: '',
     escolaridade: '',
@@ -230,7 +231,7 @@ export default function PlanoClinicoIntegradoApp({ activePatientId, lockPatient 
 
       // Higienização para garantir apenas o nome puro, sem justificativas ou descrições anexadas
       const cleanItems = selected
-        .map(item => (typeof item === 'string' ? item.split(':')[0].replace(/^[•\s*-]+/, '').trim() : (item.name || item.title || '').trim()))
+        .map(item => item.split(':')[0].replace(/^[•\s*-]+/, '').trim())
         .filter(Boolean);
 
       if (cleanItems.length > 0) {

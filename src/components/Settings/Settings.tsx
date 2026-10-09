@@ -40,7 +40,7 @@ const BRAZILIAN_STATES = [
 ];
 
 interface SettingsProps {
-  onUpdateSettings: (newSettings: { appTitle?: string, appLogo?: string }) => void;
+  onUpdateSettings: (newSettings: { appTitle?: string; appLogo?: string; layoutScale?: string; [key: string]: any }) => void;
 }
 
 export default function Settings({ onUpdateSettings }: SettingsProps) {

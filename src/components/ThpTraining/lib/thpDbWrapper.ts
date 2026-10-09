@@ -80,7 +80,7 @@ class ThpDatabaseWrapper {
         });
       });
     }
-    return assessments.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '') || (b.id || '').localeCompare(a.id || ''));
+    return assessments.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')) || String(b.id || '').localeCompare(String(a.id || '')));
   }
 
   async saveEntry(assessment: ThpRecord, patientId: string, userId?: string): Promise<ThpRecord[]> {

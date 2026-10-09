@@ -464,7 +464,7 @@ export default function ExameDesenvolvimentoAutoestimaView({
             <div className="flex flex-col items-end space-y-1">
               <span className="text-[10px] text-gray-400 font-mono font-bold uppercase flex items-center gap-1">
                 Satisfação Atual:
-                <HelpCircle className="w-3 text-gray-500 cursor-help" title="No momento atual da terapia, o quanto o paciente se sente em paz e satisfeito com este vetor (0-10)?" />
+                <span title="No momento atual da terapia, o quanto o paciente se sente em paz e satisfeito com este vetor (0-10)?"><HelpCircle className="w-3 text-gray-500 cursor-help" /></span>
               </span>
               <strong className="text-red-400 text-lg font-mono tracking-tight">{activeDim.satisfaction} / 10</strong>
               <input

@@ -133,7 +133,7 @@ export default function App() {
     title: string;
     isMinimized: boolean;
     isMaximized: boolean;
-    snapState?: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | null;
+    snapState?: 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'pip' | null;
     zIndex: number;
     patientId?: string | null;
     width?: number;

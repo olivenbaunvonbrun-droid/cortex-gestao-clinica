@@ -87,37 +87,37 @@ export default function StageDifferentialView({
     const updatedItems = { ...data.items };
     // TAG
     if (updatedItems['tag']) {
-      updatedItems['tag'].status = 'comorbidity';
+      updatedItems['tag'].status = 'comorbidade_provavel';
       updatedItems['tag'].notes = 'Ansiedade de desempenho secundária ao medo crônico de cometer erros atencionais no trabalho.';
     }
     // Depressão
     if (updatedItems['depressao']) {
-      updatedItems['depressao'].status = 'ruled_out';
+      updatedItems['depressao'].status = 'descartado';
       updatedItems['depressao'].notes = 'Sem anedonia global, lentificação psicomotora ou episódios depressivos primários.';
     }
     // Burnout
     if (updatedItems['burnout']) {
-      updatedItems['burnout'].status = 'comorbidity';
+      updatedItems['burnout'].status = 'comorbidade_provavel';
       updatedItems['burnout'].notes = 'Esgotamento decorrente do esforço compensatório contínuo para manter produtividade.';
     }
     // Sono
     if (updatedItems['sono']) {
-      updatedItems['sono'].status = 'ruled_out';
+      updatedItems['sono'].status = 'descartado';
       updatedItems['sono'].notes = 'Atraso de fase do sono habitual sem apneia do sono ou parassonias explicativas.';
     }
     // Bipolar
     if (updatedItems['bipolar']) {
-      updatedItems['bipolar'].status = 'ruled_out';
+      updatedItems['bipolar'].status = 'descartado';
       updatedItems['bipolar'].notes = 'Ausência de episódios maníacos ou hipomaníacos circunscritos independentes.';
     }
     // TEA
     if (updatedItems['tea']) {
-      updatedItems['tea'].status = 'ruled_out';
+      updatedItems['tea'].status = 'descartado';
       updatedItems['tea'].notes = 'Reciprocidade socioemocional preservada; sem padrões rígidos de movimentos repetitivos.';
     }
     // Substâncias
     if (updatedItems['substancias']) {
-      updatedItems['substancias'].status = 'ruled_out';
+      updatedItems['substancias'].status = 'descartado';
       updatedItems['substancias'].notes = 'Apenas uso moderado de cafeína; sem histórico de abuso ou dependência de substâncias.';
     }
 
