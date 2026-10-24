@@ -217,7 +217,11 @@ REGRAS INEGOCIÁVEIS DE DIARIZAÇÃO E TRANSCRIÇÃO FORENSE (PADRÃO TRANSCRIPT
      • Reações emocionais e fisiológicas: [choro], [voz embargada], [suspiro], [risos], [tom apreensivo], [respiração ofegante], [pigarreia]
    - Preserve repetições hesitantes ou gaguejos que indiquem ansiedade ou conflito interno (ex: "eu... eu não sabia o que fazer").
 4. FIDELIDADE VERBATIM ABSOLUTA: Transcreva exatamente o que foi dito, palavra por palavra, preservando o vocabulário real, gírias, neologismos e termos literais. NÃO sanitize nem censure a fala dos interlocutores.
-5. ZERO ALUCINAÇÃO OU TEXTO ADICIONAL: Retorne APENAS o diálogo transcrito linha por linha no formato "Psi: ..." e "P: ...", sem notas introdutórias, cabeçalhos ou comentários fora do diálogo.
+5. CAPTAÇÃO DE VOZES COM VOLUMES DISTINTOS OU DISTANTES (ANTI-INAUDÍVEL):
+   - É frequente que a voz de um dos interlocutores soe em volume menor ou mais distante (ex: microfone próximo ao psicólogo ou paciente falando baixo/remoto).
+   - NUNCA rotule a fala do paciente como "[inaudível]" se houver fonemas ou palavras audíveis. Use a audição contextual para decodificar as palavras reais.
+   - O marcador "[inaudível]" deve ser reservado EXCLUSIVAMENTE para silêncio absoluto, ruído puro ou murmúrio 100% indecifrável sem fonemas identificáveis.
+6. ZERO ALUCINAÇÃO OU TEXTO ADICIONAL: Retorne APENAS o diálogo transcrito linha por linha no formato "Psi: ..." e "P: ...", sem notas introdutórias, cabeçalhos ou comentários fora do diálogo.
 `;
 
   const safeMime = sanitizeAudioMimeType(mimeType);
@@ -1456,7 +1460,10 @@ export async function transcribeAudioChunk(
          • Reações emocionais: [choro], [voz embargada], [suspiro], [risos], [tom apreensivo], [respiração ofegante]
        - Preserve gaguejos e hesitações autênticas (ex: "eu... eu não sei").
     4. FIDELIDADE VERBATIM: Mantenha 100% da fidelidade das palavras, sem resumir diálogos nem inventar falas inexistentes.
-    5. Retorne APENAS o diálogo transcrito linha por linha com "Psi: " e "P: ", sem introduções ou metadados.
+    5. CAPTAÇÃO DE VOZES COM VOLUMES DISTINTOS OU DISTANTES:
+       - É frequente que a voz de um dos interlocutores soe em volume menor ou mais distante. NUNCA rotule a fala do paciente como "[inaudível]" se houver fonemas decodificáveis. Amplie sua sensibilidade contextual para transcrever fielmente as palavras pronunciadas.
+       - Reserve "[inaudível]" estritamente para silêncio absoluto ou estática impenetrável sem qualquer fonema decifrável.
+    6. Retorne APENAS o diálogo transcrito linha por linha com "Psi: " e "P: ", sem introduções ou metadados.
   `;
 
   const safeMime = sanitizeAudioMimeType(mimeType);

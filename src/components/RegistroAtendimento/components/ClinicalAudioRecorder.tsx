@@ -19,7 +19,16 @@ import {
   RefreshCw,
   Archive,
   Save,
-  RotateCcw
+  RotateCcw,
+  Monitor,
+  Headphones,
+  Users,
+  Volume2,
+  Settings2,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Sliders
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
@@ -71,6 +80,17 @@ export function ClinicalAudioRecorder({
   const [isPrivacyMuted, setIsPrivacyMuted] = useState(false);
   const [audioPurgedMessage, setAudioPurgedMessage] = useState(false);
 
+  // Modo de Gravação Inteligente (Teleconsulta / Presencial HD / Presencial Padrão)
+  const [captureMode, setCaptureMode] = useState<'teleconsulta' | 'presencial_hd' | 'presencial_std'>(() => {
+    return (localStorage.getItem('cortex_recording_capture_mode') as any) || 'teleconsulta';
+  });
+  const [availableAudioDevices, setAvailableAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>(() => {
+    return localStorage.getItem('cortex_selected_audio_device') || '';
+  });
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState<boolean>(false);
+  const [isDisplayStreamActive, setIsDisplayStreamActive] = useState<boolean>(false);
+
   // Vault / Cofre Local de Contingência (Zero Data Loss)
   const [vaultSession, setVaultSession] = useState<{
     patientName: string;
@@ -89,6 +109,9 @@ export function ClinicalAudioRecorder({
   // Refs for media recording & esteira contínua
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
+  const systemStreamRef = useRef<MediaStream | null>(null);
+  const activeRecordingStreamRef = useRef<MediaStream | null>(null);
+  const mixingAudioContextRef = useRef<AudioContext | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const segmentBlobsRef = useRef<Blob[]>([]);
   const backgroundTranscriptsMapRef = useRef<Map<number, string>>(new Map());
@@ -105,6 +128,26 @@ export function ClinicalAudioRecorder({
   useEffect(() => {
     recordingStatusRef.current = recordingStatus;
   }, [recordingStatus]);
+
+  // Carrega lista de dispositivos de microfone conectados
+  useEffect(() => {
+    const updateAudioDevices = async () => {
+      try {
+        if (!navigator.mediaDevices?.enumerateDevices) return;
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+        setAvailableAudioDevices(audioInputs);
+      } catch (err) {
+        console.warn("Não foi possível listar microfones:", err);
+      }
+    };
+
+    updateAudioDevices();
+    navigator.mediaDevices?.addEventListener?.('devicechange', updateAudioDevices);
+    return () => {
+      navigator.mediaDevices?.removeEventListener?.('devicechange', updateAudioDevices);
+    };
+  }, []);
 
   // Cofre de Gravação: restaura sessão pendente se houver no Dexie
   useEffect(() => {
@@ -362,8 +405,11 @@ export function ClinicalAudioRecorder({
       }
       audioChunksRef.current = [];
       // Se ainda estiver no modo de gravação ativa, inicia imediatamente o próximo bloco
-      if (recordingStatusRef.current === 'recording' && audioStreamRef.current) {
-        startSegmentRecorder(audioStreamRef.current);
+      if (recordingStatusRef.current === 'recording') {
+        const streamToContinue = activeRecordingStreamRef.current || audioStreamRef.current;
+        if (streamToContinue) {
+          startSegmentRecorder(streamToContinue);
+        }
       }
     };
 
@@ -380,17 +426,127 @@ export function ClinicalAudioRecorder({
         return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          channelCount: 1 // Mono otimiza tamanho e fidelidade
-        }
-      });
+      let streamToRecord: MediaStream;
+      let sysStream: MediaStream | null = null;
+      let mixCtx: AudioContext | null = null;
 
-      audioStreamRef.current = stream;
-      setupAudioVisualizer(stream);
+      if (captureMode === 'teleconsulta') {
+        // Explicação instrutiva ao psicólogo
+        toast(
+          'Selecione a janela/aba da chamada (Google Meet, Zoom, Jitsi, WhatsApp) e marque "Compartilhar áudio da aba" para capturar a voz do paciente.',
+          { icon: '🌐', duration: 7000 }
+        );
+
+        try {
+          sysStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              displaySurface: 'browser'
+            } as any,
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: false
+            }
+          });
+        } catch (dispErr: any) {
+          if (dispErr.name === 'NotAllowedError') {
+            toast.error('Seleção de áudio da chamada cancelada. Escolha "Presencial" se estiver no consultório.');
+            return;
+          }
+          throw dispErr;
+        }
+
+        // Interrompe imediatamente as faixas de vídeo para não consumir GPU/RAM
+        sysStream.getVideoTracks().forEach(track => track.stop());
+
+        const audioTracks = sysStream.getAudioTracks();
+        if (audioTracks.length === 0) {
+          toast.error(
+            'Atenção: A opção "Compartilhar áudio da aba" NÃO foi marcada! A voz do paciente não seria capturada. Tente novamente marcando a caixinha de áudio.',
+            { duration: 8000 }
+          );
+          sysStream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        setIsDisplayStreamActive(true);
+
+        // Microfone do Terapeuta / Psicólogo
+        const micConstraints: MediaStreamConstraints = {
+          audio: {
+            deviceId: selectedAudioDeviceId ? { exact: selectedAudioDeviceId } : undefined,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1
+          }
+        };
+        const micStream = await navigator.mediaDevices.getUserMedia(micConstraints);
+
+        // Mixagem com Web Audio API (Microfone + Chamada Virtual)
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        mixCtx = new AudioCtx();
+        mixingAudioContextRef.current = mixCtx;
+
+        const micSource = mixCtx.createMediaStreamSource(micStream);
+        const sysSource = mixCtx.createMediaStreamSource(sysStream);
+        const destination = mixCtx.createMediaStreamDestination();
+
+        const micGain = mixCtx.createGain();
+        micGain.gain.value = 1.0;
+
+        const sysGain = mixCtx.createGain();
+        sysGain.gain.value = 1.25; // Ganho acústico para a voz remota do paciente
+
+        micSource.connect(micGain).connect(destination);
+        sysSource.connect(sysGain).connect(destination);
+
+        streamToRecord = destination.stream;
+        audioStreamRef.current = micStream;
+        systemStreamRef.current = sysStream;
+        activeRecordingStreamRef.current = streamToRecord;
+
+        // Se o usuário clicar em "Interromper compartilhamento" no banner nativo do navegador
+        if (sysStream.getAudioTracks()[0]) {
+          sysStream.getAudioTracks()[0].onended = () => {
+            toast('Áudio da chamada desconectado.', { icon: '⚠️' });
+            setIsDisplayStreamActive(false);
+          };
+        }
+      } else if (captureMode === 'presencial_hd') {
+        // Presencial Alta Sensibilidade (Consultório - Paciente a 2-3 metros)
+        // Desativa cancelamento de eco e supressão agressiva que tratam a fala distante do paciente como ruído
+        const micConstraints: MediaStreamConstraints = {
+          audio: {
+            deviceId: selectedAudioDeviceId ? { exact: selectedAudioDeviceId } : undefined,
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: true, // Amplifica vozes baixas ou distantes
+            channelCount: 1
+          }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(micConstraints);
+        streamToRecord = stream;
+        audioStreamRef.current = stream;
+        activeRecordingStreamRef.current = stream;
+      } else {
+        // Presencial Padrão (Ambiente com Ruído Externo)
+        const micConstraints: MediaStreamConstraints = {
+          audio: {
+            deviceId: selectedAudioDeviceId ? { exact: selectedAudioDeviceId } : undefined,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1
+          }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(micConstraints);
+        streamToRecord = stream;
+        audioStreamRef.current = stream;
+        activeRecordingStreamRef.current = stream;
+      }
+
+      setupAudioVisualizer(streamToRecord);
 
       segmentBlobsRef.current = [];
       audioChunksRef.current = [];
@@ -401,17 +557,16 @@ export function ClinicalAudioRecorder({
       setDurationSeconds(0);
       segmentDurationSecondsRef.current = 0;
 
-      startSegmentRecorder(stream);
+      startSegmentRecorder(streamToRecord);
 
       setRecordingStatus('recording');
       recordingStatusRef.current = 'recording';
 
-      // Timer de sessão com rotação automática a cada 8 minutos
+      // Timer de sessão com rotação automática a cada 2.5 minutos (esteira rápida)
       timerIntervalRef.current = setInterval(() => {
         setDurationSeconds((prev) => prev + 1);
         segmentDurationSecondsRef.current += 1;
 
-        // Se o bloco atual atingir o intervalo de 8 minutos, rotaciona sem parar o áudio
         if (
           segmentDurationSecondsRef.current >= SEGMENT_ROTATE_INTERVAL_SEC &&
           mediaRecorderRef.current &&
@@ -430,7 +585,8 @@ export function ClinicalAudioRecorder({
               patientName: patient.name,
               timestamp: Date.now(),
               duration: durationSeconds,
-              segmentsCount: segmentBlobsRef.current.length
+              segmentsCount: segmentBlobsRef.current.length,
+              captureMode
             }
           });
         } catch (e) {
@@ -438,10 +594,15 @@ export function ClinicalAudioRecorder({
         }
       }, 30000);
 
-      toast.success('Gravação da sessão iniciada com sucesso!');
+      const modeLabel = captureMode === 'teleconsulta'
+        ? 'Teleconsulta (Microfone + Áudio da Chamada)'
+        : captureMode === 'presencial_hd'
+        ? 'Presencial Alta Sensibilidade (Sem corte de ruído)'
+        : 'Presencial Padrão';
+      toast.success(`Gravação iniciada: ${modeLabel}`);
     } catch (err: any) {
       console.error('Error starting audio recording:', err);
-      toast.error('Não foi possível acessar o microfone: ' + (err.message || 'Permissão negada'));
+      toast.error('Não foi possível acessar os dispositivos de áudio: ' + (err.message || 'Permissão negada'));
     }
   };
 
@@ -485,6 +646,9 @@ export function ClinicalAudioRecorder({
       if (audioStreamRef.current) {
         audioStreamRef.current.getAudioTracks().forEach(t => t.enabled = false);
       }
+      if (systemStreamRef.current) {
+        systemStreamRef.current.getAudioTracks().forEach(t => t.enabled = false);
+      }
       setIsPrivacyMuted(true);
       toast('🔒 Modo Sigilo Ético Ativado: Captação suspensa.', {
         icon: '🔒',
@@ -493,6 +657,9 @@ export function ClinicalAudioRecorder({
     } else {
       if (audioStreamRef.current) {
         audioStreamRef.current.getAudioTracks().forEach(t => t.enabled = true);
+      }
+      if (systemStreamRef.current) {
+        systemStreamRef.current.getAudioTracks().forEach(t => t.enabled = true);
       }
       if (mediaRecorderRef.current.state === 'paused') {
         mediaRecorderRef.current.resume();
@@ -512,6 +679,19 @@ export function ClinicalAudioRecorder({
       audioStreamRef.current.getTracks().forEach((track) => track.stop());
       audioStreamRef.current = null;
     }
+    if (systemStreamRef.current) {
+      systemStreamRef.current.getTracks().forEach((track) => track.stop());
+      systemStreamRef.current = null;
+    }
+    if (activeRecordingStreamRef.current) {
+      activeRecordingStreamRef.current.getTracks().forEach((track) => track.stop());
+      activeRecordingStreamRef.current = null;
+    }
+    if (mixingAudioContextRef.current && mixingAudioContextRef.current.state !== 'closed') {
+      mixingAudioContextRef.current.close().catch(() => {});
+      mixingAudioContextRef.current = null;
+    }
+    setIsDisplayStreamActive(false);
   };
 
   // Descartar Gravação
@@ -1006,6 +1186,21 @@ export function ClinicalAudioRecorder({
                     }`}>
                       {recordingStatus === 'recording' ? 'Gravando Sessão' : 'Pausado'}
                     </span>
+                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-primary/10 text-primary border-primary/20 flex items-center gap-1">
+                      {captureMode === 'teleconsulta' ? (
+                        <>
+                          <Monitor size={10} /> Chamada + Mic
+                        </>
+                      ) : captureMode === 'presencial_hd' ? (
+                        <>
+                          <Users size={10} /> Presencial HD
+                        </>
+                      ) : (
+                        <>
+                          <Mic size={10} /> Presencial Padrão
+                        </>
+                      )}
+                    </span>
                     {completedSegmentsCount > 0 && (
                       <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-400 border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
                         <Sparkles size={11} className="text-emerald-400 animate-pulse" />
@@ -1098,29 +1293,168 @@ export function ClinicalAudioRecorder({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-bg-deep/40 rounded-xl border border-white/[0.04]"
+            className="space-y-4"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                <Mic size={20} />
+            {/* Seletor de Modo de Captação */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-text-dim flex items-center gap-1.5">
+                  <Sliders size={12} className="text-primary" /> Selecione o Ambiente da Consulta:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsDrawer(!showSettingsDrawer)}
+                  className="text-[10px] text-primary hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Settings2 size={11} />
+                  <span>Configurações & Microfone</span>
+                  {showSettingsDrawer ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                </button>
               </div>
-              <div>
-                <h4 className="text-xs font-bold text-text-main">
-                  Pronto para Iniciar o Atendimento
-                </h4>
-                <p className="text-[10px] text-text-dim mt-0.5">
-                  Clique no botão ao lado antes de acolher o paciente. Ao concluir a sessão, a IA fará a síntese semiológica completa.
-                </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                {/* Opção 1: Teleconsulta / Online */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCaptureMode('teleconsulta');
+                    localStorage.setItem('cortex_recording_capture_mode', 'teleconsulta');
+                  }}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    captureMode === 'teleconsulta'
+                      ? 'bg-primary/15 border-primary text-text-main shadow-md ring-1 ring-primary/40'
+                      : 'bg-bg-deep/50 border-white/[0.06] text-text-dim hover:text-text-main hover:border-white/[0.15]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 font-bold text-xs">
+                      <div className={`p-2 rounded-lg ${captureMode === 'teleconsulta' ? 'bg-primary text-bg-deep' : 'bg-white/[0.05] text-text-dim'}`}>
+                        <Monitor size={15} />
+                      </div>
+                      <span className={captureMode === 'teleconsulta' ? 'text-primary' : 'text-text-main'}>
+                        Teleconsulta / Online
+                      </span>
+                    </div>
+                    <span className="text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">
+                      Duplo Canal Digital
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-text-dim mt-2.5 leading-relaxed">
+                    Captura o <strong>microfone</strong> do psicólogo + o <strong>áudio digital da chamada</strong> (Google Meet, Zoom, Jitsi, WhatsApp Web). <strong>Grava o paciente com perfeição mesmo se você usar fone de ouvido!</strong>
+                  </p>
+                </button>
+
+                {/* Opção 2: Presencial Alta Sensibilidade */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCaptureMode('presencial_hd');
+                    localStorage.setItem('cortex_recording_capture_mode', 'presencial_hd');
+                  }}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    captureMode === 'presencial_hd'
+                      ? 'bg-emerald-500/15 border-emerald-500 text-text-main shadow-md ring-1 ring-emerald-500/40'
+                      : 'bg-bg-deep/50 border-white/[0.06] text-text-dim hover:text-text-main hover:border-white/[0.15]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 font-bold text-xs">
+                      <div className={`p-2 rounded-lg ${captureMode === 'presencial_hd' ? 'bg-emerald-500 text-bg-deep' : 'bg-white/[0.05] text-text-dim'}`}>
+                        <Users size={15} />
+                      </div>
+                      <span className={captureMode === 'presencial_hd' ? 'text-emerald-400' : 'text-text-main'}>
+                        Presencial (Consultório)
+                      </span>
+                    </div>
+                    <span className="text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      Alta Sensibilidade
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-text-dim mt-2.5 leading-relaxed">
+                    Capta o paciente a 2 a 3 metros no divã ou poltrona. <strong>Desativa o corte agressivo de ruído</strong> do Windows que tratava a voz do paciente como ruído de fundo e gerava "[inaudível]".
+                  </p>
+                </button>
               </div>
             </div>
 
-            <button
-              onClick={startRecording}
-              className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-primary-hover text-bg-deep font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 text-xs uppercase tracking-wider shadow-lg shadow-primary/20"
-            >
-              <Mic size={15} />
-              <span>Iniciar Atendimento (Gravar)</span>
-            </button>
+            {/* Gaveta de Configurações e Diagnóstico de Microfone */}
+            <AnimatePresence>
+              {showSettingsDrawer && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="p-3.5 bg-bg-deep/70 rounded-xl border border-white/[0.08] space-y-3 overflow-hidden"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label className="text-[11px] font-bold text-text-main flex items-center gap-1.5">
+                      <Mic size={13} className="text-primary" /> Dispositivo de Microfone:
+                    </label>
+                    <select
+                      value={selectedAudioDeviceId}
+                      onChange={(e) => {
+                        setSelectedAudioDeviceId(e.target.value);
+                        localStorage.setItem('cortex_selected_audio_device', e.target.value);
+                      }}
+                      className="bg-bg-card border border-white/[0.1] rounded-lg px-2.5 py-1.5 text-xs text-text-main focus:border-primary focus:outline-none max-w-xs cursor-pointer"
+                    >
+                      <option value="">Microfone Padrão do Sistema</option>
+                      {availableAudioDevices.map((dev, idx) => (
+                        <option key={dev.deviceId || idx} value={dev.deviceId}>
+                          {dev.label || `Microfone ${idx + 1}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-sky-500/10 border border-sky-500/20 text-[10px] text-sky-200 leading-relaxed flex items-start gap-2.5">
+                    <Info size={15} className="text-sky-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-sky-300 block mb-1">💡 Por que a fala do paciente ficava registrada como "[inaudível]"?</strong>
+                      <div className="space-y-1">
+                        <p>
+                          <strong>1. Em teleconsultas (Online):</strong> O microfone do seu computador capta apenas o ar da sua sala. Quando você usa fone de ouvido ou quando o cancelamento de eco do computador está ativo, o microfone é impedido de captar o som que vem da chamada. No modo <strong>Teleconsulta</strong>, o Cortex agora se conecta diretamente ao fluxo de áudio digital da chamada (Meet/Zoom/Jitsi/WhatsApp) e o combina com o seu microfone.
+                        </p>
+                        <p>
+                          <strong>2. No consultório (Presencial):</strong> Algoritmos de cancelamento de ruído consideram qualquer som a mais de 1 metro como "ruído distante" e silenciam a pessoa. O modo <strong>Presencial</strong> desativa esses filtros e ativa o ganho dinâmico automático.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Ação de Iniciar Gravação */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-bg-deep/40 rounded-xl border border-white/[0.04]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  {captureMode === 'teleconsulta' ? <Monitor size={20} /> : <Mic size={20} />}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-text-main flex items-center gap-2">
+                    <span>Pronto para Iniciar o Atendimento</span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-white/[0.05] text-text-dim border border-white/[0.06]">
+                      {captureMode === 'teleconsulta' ? 'Modo Online (Mixagem PC + Mic)' : 'Modo Presencial (Alta Sensibilidade)'}
+                    </span>
+                  </h4>
+                  <p className="text-[10px] text-text-dim mt-0.5">
+                    {captureMode === 'teleconsulta' 
+                      ? 'Ao clicar em Iniciar, selecione a aba da chamada e certifique-se de marcar a caixinha "Compartilhar áudio da aba".'
+                      : 'Posicione o computador entre você e o paciente para fidelidade acústica máxima.'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={startRecording}
+                className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-primary-hover text-bg-deep font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 text-xs uppercase tracking-wider shadow-lg shadow-primary/20 shrink-0"
+              >
+                <Mic size={15} />
+                <span>Iniciar Atendimento (Gravar)</span>
+              </button>
+            </div>
           </motion.div>
         )}
 
